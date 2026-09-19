@@ -1,0 +1,134 @@
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          email: string;
+          display_name: string | null;
+          avatar_url: string | null;
+          native_language: string;
+          target_language: string;
+          hsk_level: number;
+          learning_goal: string;
+          daily_minutes: number;
+          speaking_level: number;
+          listening_level: number;
+          reading_level: number;
+          writing_level: number;
+          show_pinyin: boolean;
+          show_translation: boolean;
+          preferred_voice: string | null;
+          speech_speed: number;
+          onboarding_completed: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['profiles']['Row']> & {
+          id: string;
+          email: string;
+        };
+        Update: Partial<Database['public']['Tables']['profiles']['Row']>;
+      };
+      conversation_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          topic: string;
+          learner_level: number;
+          summary: string;
+          key_facts: string[];
+          vocabulary: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['conversation_sessions']['Row']> & {
+          user_id: string;
+          title: string;
+          topic: string;
+        };
+        Update: Partial<Database['public']['Tables']['conversation_sessions']['Row']>;
+      };
+      conversation_messages: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          role: string;
+          chinese: string;
+          pinyin: string | null;
+          translation: string | null;
+          analysis: any | null;
+          timestamp: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          role: string;
+          chinese: string;
+          pinyin?: string | null;
+          translation?: string | null;
+          analysis?: any | null;
+          timestamp?: string;
+        };
+        Update: Partial<Database['public']['Tables']['conversation_messages']['Row']>;
+      };
+      learning_progress: {
+        Row: {
+          user_id: string;
+          total_study_minutes: number;
+          lessons_completed: number;
+          words_learned: number;
+          speaking_minutes: number;
+          conversations_completed: number;
+          current_streak: number;
+          longest_streak: number;
+          last_study_date: string | null;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['learning_progress']['Row']> & {
+          user_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['learning_progress']['Row']>;
+      };
+      user_vocabulary: {
+        Row: {
+          id: string;
+          user_id: string;
+          hanzi: string;
+          pinyin: string;
+          meaning: string;
+          hsk_level: number;
+          status: string;
+          review_count: number;
+          last_reviewed_at: string | null;
+          next_review_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['user_vocabulary']['Row']> & {
+          user_id: string;
+          hanzi: string;
+          pinyin: string;
+          meaning: string;
+        };
+        Update: Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
+      };
+      subscriptions: {
+        Row: {
+          user_id: string;
+          plan: string;
+          status: string;
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['subscriptions']['Row']> & {
+          user_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['subscriptions']['Row']>;
+      };
+    };
+  };
+}

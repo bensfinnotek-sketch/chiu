@@ -1,0 +1,317 @@
+import React, { useState } from 'react';
+import {
+  BookOpen,
+  CheckCircle2,
+  Lock,
+  Play,
+  Clock,
+  ChevronRight,
+  Sparkles,
+  Trophy,
+  ArrowRight,
+  Search,
+  Filter,
+  Layers,
+  GraduationCap,
+} from 'lucide-react';
+import { HSKLevelNumber } from '../types/curriculum';
+import { useCurriculum } from '../hooks/useCurriculum';
+import { useAuth } from '../hooks/useAuth';
+
+interface CurriculumLearnPageProps {
+  onSelectLesson: (lessonId: string) => void;
+  onNavigate?: (route: string, param?: string) => void;
+}
+
+export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
+  onSelectLesson,
+  onNavigate,
+}) => {
+  const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const {
+    levels,
+    units,
+    lessons,
+    progressMap,
+    levelCompletion,
+    recommendations,
+    isLoading,
+  } = useCurriculum(selectedLevel);
+
+  const activeLevelInfo = levels.find((l) => l.level === selectedLevel) || levels[0];
+
+  // Search filter
+  const filteredLessons = lessons.filter((l) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      l.title.toLowerCase().includes(q) ||
+      l.titleZh.includes(q) ||
+      l.description.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#E86F51]/10">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <GraduationCap size={14} />
+              Giáo trình chuẩn HSK 3.0
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-[#211A17] dark:text-white mt-1.5">
+            Lộ trình học tập có cấu trúc
+          </h1>
+          <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+            Chương trình HSK chuẩn quốc tế tích hợp ngữ âm, từ vựng, ngữ pháp và đàm thoại cùng trợ lý AI Lina.
+          </p>
+        </div>
+
+        {/* Global Level Switcher Badges */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
+          {[1, 2, 3, 4, 5, 6].map((lvl) => {
+            const isSelected = selectedLevel === lvl;
+            return (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setSelectedLevel(lvl as HSKLevelNumber)}
+                className={`px-4 py-2.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#E86F51] text-white shadow-md shadow-[#E86F51]/25 scale-102'
+                    : 'bg-white dark:bg-[#241F1C] text-[#716761] dark:text-[#A89E97] border border-[#E86F51]/15 hover:border-[#E86F51]'
+                }`}
+              >
+                <span>HSK {lvl}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recommended Next Action / In-progress Widget */}
+      {recommendations.length > 0 && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FFF5F1] via-white to-[#FFF9F4] dark:from-[#2A2320] dark:via-[#241F1C] dark:to-[#1E1917] border-2 border-[#E86F51]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1">
+            <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase flex items-center gap-1.5">
+              <Sparkles size={14} className="animate-pulse" />
+              Gợi ý tiếp theo dành cho bạn
+            </span>
+            <h3 className="text-xl font-black text-[#211A17] dark:text-white">
+              {recommendations[0].title}
+            </h3>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+              {recommendations[0].description}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (recommendations[0].targetId === 'flashcards' && onNavigate) {
+                onNavigate('flashcards');
+              } else {
+                onSelectLesson(recommendations[0].targetId);
+              }
+            }}
+            className="px-6 py-3.5 rounded-2xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-sm font-bold shadow-md shadow-[#E86F51]/25 transition-all flex items-center justify-center gap-2 cursor-pointer self-start md:self-center"
+          >
+            <span>{recommendations[0].actionText}</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Level Completion Overview Card */}
+      {activeLevelInfo && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
+                  {activeLevelInfo.nameZh}
+                </span>
+                <span className="text-xs text-[#716761] dark:text-[#A89E97]">
+                  Ước tính ~{activeLevelInfo.estimatedHours} giờ học
+                </span>
+              </div>
+              <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+                {activeLevelInfo.title} · {activeLevelInfo.descriptionVi}
+              </h2>
+            </div>
+
+            {/* Completion metrics */}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-xs text-[#716761] dark:text-[#A89E97]">Tiến độ cấp độ</p>
+                <p className="text-2xl font-black text-[#E86F51]">
+                  {levelCompletion?.completionPercent || 0}%
+                </p>
+              </div>
+              <div className="w-24 h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#E86F51] rounded-full transition-all duration-500"
+                  style={{ width: `${levelCompletion?.completionPercent || 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Key Objectives */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-[#E86F51]/10">
+            {activeLevelInfo.objectives.map((obj, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-[#716761] dark:text-[#A89E97]">
+                <CheckCircle2 size={14} className="text-[#65A873] shrink-0 mt-0.5" />
+                <span>{obj}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search & Filter bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm bài học, Hán tự, chủ đề..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 text-sm text-[#211A17] dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#E86F51]"
+          />
+        </div>
+
+        <div className="text-xs text-[#716761] dark:text-[#A89E97] self-end sm:self-center">
+          Hiển thị <strong>{filteredLessons.length}</strong> bài học trong HSK {selectedLevel}
+        </div>
+      </div>
+
+      {/* Curriculum Units & Lessons Structure */}
+      {isLoading ? (
+        <div className="text-center py-16 space-y-3">
+          <div className="w-8 h-8 border-3 border-[#E86F51] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-[#716761] dark:text-[#A89E97]">Đang tải cấu trúc bài học HSK...</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {units.map((unit) => {
+            const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
+            if (unitLessons.length === 0 && searchQuery) return null;
+
+            return (
+              <div key={unit.id} className="space-y-4">
+                {/* Unit Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#E86F51]/15">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
+                      Unit {unit.order} · {unit.titleZh}
+                    </span>
+                    <h3 className="text-xl font-black text-[#211A17] dark:text-white">
+                      {unit.title}
+                    </h3>
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                      {unit.description}
+                    </p>
+                  </div>
+                  <span className="text-xs px-3 py-1 rounded-xl bg-gray-100 dark:bg-[#342822] text-[#716761] dark:text-[#A89E97] font-semibold">
+                    {unitLessons.length} bài
+                  </span>
+                </div>
+
+                {/* Lessons Grid in Unit */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {unitLessons.map((lesson) => {
+                    const progress = progressMap[lesson.id];
+                    const isCompleted = progress?.status === 'completed';
+                    const isInProgress = progress?.status === 'in_progress';
+
+                    // Determine lock status: unlocked if first lesson or if prerequisite completed
+                    let isLocked = false;
+                    if (lesson.prerequisiteLessonId) {
+                      const prereq = progressMap[lesson.prerequisiteLessonId];
+                      isLocked = !prereq || prereq.status !== 'completed';
+                    }
+
+                    return (
+                      <div
+                        key={lesson.id}
+                        onClick={() => !isLocked && onSelectLesson(lesson.id)}
+                        className={`p-5 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
+                          isLocked
+                            ? 'bg-gray-50/70 dark:bg-[#1C1816]/70 border-gray-200 dark:border-gray-800 opacity-60 cursor-not-allowed'
+                            : 'bg-white dark:bg-[#241F1C] border-[#E86F51]/15 hover:border-[#E86F51] hover:shadow-lg cursor-pointer group'
+                        }`}
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
+                              Bài {lesson.order} · {lesson.titleZh}
+                            </span>
+                            {isCompleted ? (
+                              <span className="flex items-center gap-1 text-xs font-bold text-[#65A873]">
+                                <CheckCircle2 size={16} />
+                                Đã xong ({progress?.score || 100}%)
+                              </span>
+                            ) : isInProgress ? (
+                              <span className="flex items-center gap-1 text-xs font-bold text-[#E86F51]">
+                                Đang học ({progress?.progressPercent || 0}%)
+                              </span>
+                            ) : isLocked ? (
+                              <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                                <Lock size={14} />
+                                Khóa
+                              </span>
+                            ) : (
+                              <span className="text-xs font-bold text-[#716761] dark:text-[#A89E97]">
+                                Sẵn sàng
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="text-lg font-bold text-[#211A17] dark:text-white group-hover:text-[#E86F51] transition-colors">
+                              {lesson.title}
+                            </h4>
+                            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1 line-clamp-2">
+                              {lesson.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Card Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-[#E86F51]/10 text-xs text-[#716761] dark:text-[#A89E97]">
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            {lesson.estimatedMinutes} phút
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={isLocked}
+                            className={`flex items-center gap-1 font-bold ${
+                              isLocked
+                                ? 'text-gray-400'
+                                : 'text-[#E86F51] group-hover:translate-x-1 transition-transform'
+                            }`}
+                          >
+                            <span>{isCompleted ? 'Ôn tập lại' : isInProgress ? 'Học tiếp' : 'Bắt đầu'}</span>
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};

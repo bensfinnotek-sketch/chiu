@@ -1,0 +1,68 @@
+import { SongItem } from '../types';
+
+export const CHINESE_SONGS: SongItem[] = [
+  {
+    id: 'song-1',
+    title: '月亮代表我的心',
+    artist: '邓丽君 (Teresa Teng)',
+    coverImage: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
+    difficulty: 'Beginner',
+    hskLevel: 'HSK 1',
+    duration: '3:20',
+    lyrics: [
+      { time: 0, chinese: '你问我爱你有多深', pinyin: 'Nǐ wèn wǒ ài nǐ yǒu duō shēn', translationVi: 'Anh hỏi em yêu anh sâu đậm dường nào' },
+      { time: 5, chinese: '我爱你有几分', pinyin: 'Wǒ ài nǐ yǒu jǐ fēn', translationVi: 'Em yêu anh được mấy phần' },
+      { time: 10, chinese: '我的情也真，我的爱也真', pinyin: 'Wǒ de qíng yě zhēn, wǒ de ài yě zhēn', translationVi: 'Tình cảm của em là thật, tình yêu của em cũng chân thành' },
+      { time: 15, chinese: '月亮代表我的心', pinyin: 'Yuèliang dàibiǎo wǒ de xīn', translationVi: 'Ánh trăng kia sẽ thay lời trái tim em' },
+      { time: 20, chinese: '轻轻的一个吻', pinyin: 'Qīngqīng de yí gè wěn', translationVi: 'Một nụ hôn nhẹ nhàng sâu lắng' },
+      { time: 25, chinese: '已经打动我的心', pinyin: 'Yǐjīng dǎdòng wǒ de xīn', translationVi: 'Đã làm xao xuyến trái tim em' },
+      { time: 30, chinese: '深深的一段情', pinyin: 'Shēnshēn de yí duàn qíng', translationVi: 'Một mối tình thắm thiết ngọt ngào' },
+      { time: 35, chinese: '叫我思念到如今', pinyin: 'Jiào wǒ sīniàn dào rújīn', translationVi: 'Khiến em mãi nhung nhớ đến tận hôm nay' },
+    ],
+  },
+  {
+    id: 'song-2',
+    title: '对面的女孩看过来',
+    artist: '任贤齐 (Richie Jen)',
+    coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+    difficulty: 'Beginner',
+    hskLevel: 'HSK 2',
+    duration: '3:10',
+    lyrics: [
+      { time: 0, chinese: '对面的女孩看过来', pinyin: 'Duìmiàn de nǚhái kàn guòlái', translationVi: 'Cô gái phía bên kia hãy nhìn qua đây' },
+      { time: 5, chinese: '看过来，看过来', pinyin: 'Kàn guòlái, kàn guòlái', translationVi: 'Hãy nhìn qua đây, hãy nhìn qua đây nào' },
+      { time: 10, chinese: '这里的表演很精彩', pinyin: 'Zhèlǐ de biǎoyǎn hěn jīngcǎi', translationVi: 'Màn biểu diễn ở đây vô cùng đặc sắc' },
+      { time: 15, chinese: '请不要假装不理不睬', pinyin: 'Qǐng bú yào jiǎzhuāng bù lǐ bù cǎi', translationVi: 'Xin đừng vờ như không đoái hoài gì tới tôi' },
+    ],
+  },
+  {
+    id: 'song-3',
+    title: '青花瓷 (Sứ Thanh Hoa)',
+    artist: '周杰伦 (Jay Chou)',
+    coverImage: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80',
+    difficulty: 'Intermediate',
+    hskLevel: 'HSK 4',
+    duration: '3:58',
+    lyrics: [
+      { time: 0, chinese: '素胚勾勒出青花笔锋浓转淡', pinyin: 'Sù pēi gōulè chū qīnghuā bǐfēng nóng zhuǎn dàn', translationVi: 'Nét bút men gốm phác họa hoa lam từ đậm chuyển sang thanh' },
+      { time: 7, chinese: '瓶身描绘的牡丹一如你初妆', pinyin: 'Píng shēn miáohuì de mǔdān yì rú nǐ chū zhuāng', translationVi: 'Đóa mẫu đơn vẽ trên thân bình hệt như nét điểm trang thuở đầu của nàng' },
+      { time: 14, chinese: '冉冉檀香透过窗心事我了然', pinyin: 'Rǎnrǎn tánxiāng tòuguò chuāng xīnshì wǒ liǎorán', translationVi: 'Hương trầm thoang thoảng qua ô cửa sổ, nỗi lòng nàng ta thấu tỏ' },
+      { time: 21, chinese: '天青色等烟雨，而我在等你', pinyin: 'Tiān qīngsè děng yānyǔ, ér wǒ zài děng nǐ', translationVi: 'Sắc lam của trời mải miết đợi cơn mưa mù, còn ta thì mải miết đợi nàng' },
+    ],
+  },
+  {
+    id: 'song-4',
+    title: '童话 (Đồng Thoại)',
+    artist: '光良 (Michael Wong)',
+    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+    difficulty: 'Beginner',
+    hskLevel: 'HSK 2',
+    duration: '4:05',
+    lyrics: [
+      { time: 0, chinese: '忘了有多久，再没听到你', pinyin: 'Wàng le yǒu duōjiǔ, zài méi tīngdào nǐ', translationVi: 'Đã quên bao lâu rồi, không còn nghe thấy em' },
+      { time: 6, chinese: '对我说你最爱的故事', pinyin: 'Duì wǒ shuō nǐ zuì ài de gùshi', translationVi: 'Kể cho anh nghe câu chuyện em yêu thích nhất' },
+      { time: 12, chinese: '我想了很久，我开始慌了', pinyin: 'Wǒ xiǎng le hěnjiǔ, wǒ kāishǐ huāng le', translationVi: 'Anh suy nghĩ rất lâu, bắt đầu cảm thấy hoang mang' },
+      { time: 18, chinese: '是不是我又做错了什么', pinyin: 'Shì bú shì wǒ yòu zuò cuò le shénme', translationVi: 'Có phải chăng anh lại làm sai điều gì rồi' },
+    ],
+  },
+];

@@ -1,0 +1,6 @@
+{
+  "name": "HanziAI",
+  "description": "Learn Chinese. Speak Naturally. Practice Mandarin with AI teacher Lina, HSK 1-6 roadmap, conversation, and voice practice.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
