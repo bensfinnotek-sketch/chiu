@@ -313,11 +313,14 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setStatusMessage('Đến lượt bạn nói!');
         setMicState('IDLE');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error generating AI response:', err);
       setTeacherState('idle');
       setMicState('IDLE');
-      setStatusMessage('Đã có lỗi xảy ra. Hãy thử nói lại nhé!');
+      const errorMsg = err?.message?.includes('429')
+        ? 'Hệ thống AI đang bận (429 Rate limit). Vui lòng thử lại sau giây lát!'
+        : (err?.message || 'Đã có lỗi kết nối đến AI. Hãy thử gửi lại nhé!');
+      setStatusMessage(errorMsg);
     }
   };
 

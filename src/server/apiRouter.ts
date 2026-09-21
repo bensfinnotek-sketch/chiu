@@ -12,7 +12,7 @@ import {
   handleQuiz,
   getAI,
   generateContentSafely,
-} from "../../api/_lib/geminiHandlers";
+} from "../../api/_lib/geminiHandlers.ts";
 
 export {
   handleHealth,

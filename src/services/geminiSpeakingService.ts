@@ -200,45 +200,16 @@ class GeminiSpeakingService {
   }
 
   public async analyzeSpeaking(input: SpeakingAnalysisInput): Promise<SpeakingAnalysis> {
-    try {
-      // Delegate directly to the unified Gemini Service
-      return await geminiService.analyzeSpeaking({
-        userText: input.userText,
-        targetLevel: input.targetLevel,
-        topic: input.topic,
-        conversationHistory: input.conversationHistory,
-        nativeLanguage: input.nativeLanguage,
-        difficulty: input.difficulty,
-        memory: (input as any).memory,
-      });
-    } catch (e) {
-      console.warn('Speaking analysis request failed, using educational fallback:', e);
-    }
-
-    // High quality offline fallback
-    const langVi = input.nativeLanguage === 'vi';
-    return {
-      reply: `太棒了！我听懂了。关于${input.topic}，你平时主要在哪里使用中文呢？`,
-      pinyin: `Tài bàng le! Wǒ tīng dǒng le. Guānyú ${input.topic}, nǐ píngshí zhǔyào zài nǎlǐ shǐyòng zhōngwén ne?`,
-      translation: langVi
-        ? `Tuyệt vời quá! Mình đã hiểu rồi. Về chủ đề ${input.topic}, bạn thường dùng tiếng Trung ở đâu nhất?`
-        : `Awesome! I understood. Regarding ${input.topic}, where do you mainly use Chinese?`,
-      question: `关于${input.topic}，你平时主要在哪里使用中文呢？`,
-      corrections: [],
-      vocabulary: [
-        { hanzi: '练习', pinyin: 'liànxí', meaning: langVi ? 'luyện tập' : 'to practice', hsk: 'HSK 2' },
-        { hanzi: '表达', pinyin: 'biǎodá', meaning: langVi ? 'diễn đạt' : 'to express', hsk: 'HSK 3' },
-      ],
-      grammarNote: langVi
-        ? 'Mẹo nhỏ: Khi biểu đạt suy nghĩ, dùng cụm "我觉得..." (wǒ juéde...) để mở đầu câu tự nhiên hơn.'
-        : 'Tip: Use "我觉得..." (wǒ juéde...) to introduce your personal perspective naturally.',
-      encouragement: langVi ? 'Câu nói trôi chảy và tự nhiên!' : 'Fluent and natural expression!',
-      followUpQuestion: undefined,
-      clarityScore: 5,
-      grammarScore: 5,
-      vocabularyScore: 4,
-      naturalnessScore: 4,
-    };
+    // Delegate directly to the unified Gemini Service without swallowing errors
+    return await geminiService.analyzeSpeaking({
+      userText: input.userText,
+      targetLevel: input.targetLevel,
+      topic: input.topic,
+      conversationHistory: input.conversationHistory,
+      nativeLanguage: input.nativeLanguage,
+      difficulty: input.difficulty,
+      memory: (input as any).memory,
+    });
   }
 }
 

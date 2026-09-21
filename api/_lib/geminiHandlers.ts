@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-
-dotenv.config();
 
 const MODEL_CANDIDATES = Array.from(
   new Set([process.env.GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"].filter(Boolean) as string[])
