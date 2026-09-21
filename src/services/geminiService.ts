@@ -105,12 +105,7 @@ export class GeminiServiceImpl implements AIService {
         }
 
         if (res.status === 429) {
-          console.warn('Gemini rate limited (429). Falling back to resilient mock response.');
-          const fallback = await mockGeminiService.analyzeSpeaking(params);
-          fallback.encouragement = nativeLanguage === 'vi'
-            ? 'Cô Lina đang có nhiều bạn cùng luyện tập, hãy thong thả một chút nhé!'
-            : 'Lina is taking a brief pause. Take your time!';
-          return fallback;
+          throw new Error('Gemini API đang bận (429 Rate limit). Vui lòng thử lại sau giây lát.');
         }
 
         if (!res.ok) {
@@ -130,7 +125,7 @@ export class GeminiServiceImpl implements AIService {
         } else {
           console.warn('[AI Schema Validation Issue]', validation.error, rawData);
           if (attempt >= maxAttempts) {
-            return createFallbackSpeakingAnalysis(userText, topic, targetLevel, nativeLanguage);
+            throw new Error(validation.error || 'Dữ liệu phản hồi từ AI không đúng cấu trúc.');
           }
         }
       } catch (err: any) {
@@ -139,12 +134,12 @@ export class GeminiServiceImpl implements AIService {
         }
         console.warn(`[AI Attempt ${attempt} failed]:`, err.message);
         if (attempt >= maxAttempts) {
-          return mockGeminiService.analyzeSpeaking(params);
+          throw err;
         }
       }
     }
 
-    return createFallbackSpeakingAnalysis(userText, topic, targetLevel, nativeLanguage);
+    throw new Error('Không thể kết nối đến AI Speaking server.');
   }
 
   async generateConversation(params: any): Promise<any> {
@@ -164,25 +159,7 @@ export class GeminiServiceImpl implements AIService {
     topic: string = 'Hội thoại thường ngày',
     language: string = 'vi'
   ) {
-    try {
-      const res = await fetch('/api/gemini/conversation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({
-          messages: messages.map((m) => ({
-            sender: m.sender,
-            text: m.chinese,
-          })),
-          userLevel,
-          topic,
-          language,
-        }),
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('Fallback conversation response:', err);
+    if (AI_CONFIG.provider === 'mock') {
       return {
         chinese: '太棒了！你的中文发音越来越标准了。',
         pinyin: 'Tài bàng le! Nǐ de zhōngwén fāyīn yuè lái yuè biāozhǔn le.',
@@ -193,20 +170,29 @@ export class GeminiServiceImpl implements AIService {
         encouragement: 'Tiếp tục luyện tập nhé! Bạn làm rất tốt.',
       };
     }
+    const res = await fetch('/api/gemini/conversation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        messages: messages.map((m) => ({
+          sender: m.sender,
+          text: m.chinese,
+        })),
+        userLevel,
+        topic,
+        language,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned HTTP ${res.status}`);
+    }
+    return await res.json();
   }
 
   async correctSentence(sentence: string, level: string = 'HSK 1', language: string = 'vi') {
-    try {
-      const res = await fetch('/api/gemini/correct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({ sentence, level, language }),
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('Fallback sentence correction:', err);
+    if (AI_CONFIG.provider === 'mock') {
       return {
         isCorrect: true,
         original: sentence,
@@ -217,6 +203,17 @@ export class GeminiServiceImpl implements AIService {
         mistakes: [],
       };
     }
+    const res = await fetch('/api/gemini/correct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({ sentence, level, language }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned HTTP ${res.status}`);
+    }
+    return await res.json();
   }
 
   async correctChinese(sentence: string, level: string = 'HSK 1', language: string = 'vi') {
@@ -224,17 +221,7 @@ export class GeminiServiceImpl implements AIService {
   }
 
   async getSpeakingFeedback(sentence: string, targetPrompt: string, language: string = 'vi'): Promise<SpeakingFeedback> {
-    try {
-      const res = await fetch('/api/gemini/speaking-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({ sentence, targetPrompt, language }),
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('Fallback speaking feedback:', err);
+    if (AI_CONFIG.provider === 'mock') {
       return {
         pronunciationScore: 90,
         grammarScore: 88,
@@ -245,6 +232,17 @@ export class GeminiServiceImpl implements AIService {
         suggestedImprovement: 'Hãy chú ý thêm về biến điệu của thanh 3 khi nói nhanh.',
       };
     }
+    const res = await fetch('/api/gemini/speaking-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({ sentence, targetPrompt, language }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned HTTP ${res.status}`);
+    }
+    return await res.json();
   }
 
   async translateText(text: string, from: string = 'zh', to: string = 'vi', formality: string = 'standard'): Promise<any> {
