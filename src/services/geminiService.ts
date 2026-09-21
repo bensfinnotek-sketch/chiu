@@ -9,6 +9,7 @@ import {
 } from '../ai/schemas/speakingSchema';
 import { mockGeminiService } from './mockGeminiService';
 import { ConversationMessage, SpeakingFeedback, TranslationResult, DictionaryEntry } from '../types';
+import { getAuthHeaders } from './flashcardService';
 
 export interface AIService {
   generateConversation(params: any): Promise<any>;
@@ -79,9 +80,15 @@ export class GeminiServiceImpl implements AIService {
           attempt,
         };
 
+        const authHeaders = await getAuthHeaders();
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        };
+
         const res = await fetch('/api/ai/speaking', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
           cache: 'no-store',
           signal,
@@ -91,7 +98,7 @@ export class GeminiServiceImpl implements AIService {
         if (res.status === 404) {
           const fallbackRes = await fetch('/api/gemini/speaking-analyze', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(payload),
             cache: 'no-store',
             signal,

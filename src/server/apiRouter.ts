@@ -13,6 +13,13 @@ import {
   getAI,
   generateContentSafely,
 } from "../../api/_lib/geminiHandlers.ts";
+import {
+  handleGetFlashcards,
+  handleCreateFlashcard,
+  handleUpdateFlashcard,
+  handleDeleteFlashcard,
+  handleGetUserProfile,
+} from "../../api/_lib/flashcardHandlers.ts";
 
 export {
   handleHealth,
@@ -25,6 +32,11 @@ export {
   handleDictionaryLookup,
   handleLesson,
   handleQuiz,
+  handleGetFlashcards,
+  handleCreateFlashcard,
+  handleUpdateFlashcard,
+  handleDeleteFlashcard,
+  handleGetUserProfile,
   getAI,
   generateContentSafely,
 };
@@ -75,6 +87,17 @@ export function createApiRouter(): Router {
 
   // AI Quiz Generator
   router.post("/gemini/quiz", handleQuiz);
+
+  // Flashcards CRUD endpoints (Protected)
+  router.get("/flashcards", handleGetFlashcards);
+  router.post("/flashcards", handleCreateFlashcard);
+  router.patch("/flashcards/:id", (req, res) => handleUpdateFlashcard(req, res, req.params.id));
+  router.put("/flashcards/:id", (req, res) => handleUpdateFlashcard(req, res, req.params.id));
+  router.delete("/flashcards/:id", (req, res) => handleDeleteFlashcard(req, res, req.params.id));
+  router.delete("/flashcards", (req, res) => handleDeleteFlashcard(req, res));
+
+  // User Profile endpoint (Protected)
+  router.get("/user/profile", handleGetUserProfile);
 
   return router;
 }

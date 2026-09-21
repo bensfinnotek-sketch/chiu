@@ -240,7 +240,7 @@ function AppContent() {
           )}
 
           {currentRoute === 'flashcards' && (
-            <FlashcardsPage />
+            <FlashcardsPage onNavigate={handleNavigate} />
           )}
 
           {currentRoute === 'review' && (

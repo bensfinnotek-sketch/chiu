@@ -11,6 +11,13 @@ import {
   handleQuiz,
   sendJson,
 } from "./_lib/geminiHandlers.ts";
+import {
+  handleGetFlashcards,
+  handleCreateFlashcard,
+  handleUpdateFlashcard,
+  handleDeleteFlashcard,
+  handleGetUserProfile,
+} from "./_lib/flashcardHandlers.ts";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
@@ -61,6 +68,24 @@ export default async function handler(req: any, res: any) {
   }
   if (fullSubPath === "gemini/quiz") {
     return handleQuiz(req, res);
+  }
+
+  // Flashcards CRUD endpoints (Protected)
+  if (fullSubPath === "flashcards") {
+    if (req.method === "GET") return handleGetFlashcards(req, res);
+    if (req.method === "POST") return handleCreateFlashcard(req, res);
+    if (req.method === "PATCH" || req.method === "PUT") return handleUpdateFlashcard(req, res);
+    if (req.method === "DELETE") return handleDeleteFlashcard(req, res);
+  }
+  if (fullSubPath.startsWith("flashcards/")) {
+    const cardId = segments[1];
+    if (req.method === "PATCH" || req.method === "PUT") return handleUpdateFlashcard(req, res, cardId);
+    if (req.method === "DELETE") return handleDeleteFlashcard(req, res, cardId);
+  }
+
+  // User Profile endpoint (Protected)
+  if (fullSubPath === "user/profile") {
+    if (req.method === "GET") return handleGetUserProfile(req, res);
   }
 
   return sendJson(res, 404, { error: `API route /api/${fullSubPath} not found` });

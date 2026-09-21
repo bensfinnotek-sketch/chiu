@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCcw,
   Volume2,
@@ -8,29 +8,84 @@ import {
   Sparkles,
   ArrowRight,
   Filter,
+  User,
+  LogIn,
 } from 'lucide-react';
 import { VocabularyItem } from '../types';
 import { storageService } from '../services/storageService';
 import { AudioButton } from '../components/common/AudioButton';
+import { flashcardService, Flashcard } from '../services/flashcardService';
+import { useAuth } from '../hooks/useAuth';
 
-export const FlashcardsPage: React.FC = () => {
-  const [cards, setCards] = useState<VocabularyItem[]>(storageService.getSavedWords());
+export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
+  const { user } = useAuth();
+  const [cards, setCards] = useState<any[]>(() => storageService.getSavedWords());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'HSK 1' | 'HSK 2'>('all');
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load user flashcards from Supabase if authenticated
+  useEffect(() => {
+    let isMounted = true;
+    if (user) {
+      setIsLoading(true);
+      flashcardService
+        .getFlashcards()
+        .then((dbCards) => {
+          if (!isMounted) return;
+          if (dbCards && dbCards.length > 0) {
+            // Map db cards to VocabularyItem format
+            const mapped = dbCards.map((c) => ({
+              id: c.id,
+              hanzi: c.hanzi,
+              chinese: c.hanzi,
+              pinyin: c.pinyin,
+              meaningVi: c.meaning,
+              exampleSentence: c.example_sentence,
+              hskLevel: c.hsk_level ? `HSK ${c.hsk_level}` : 'HSK 1',
+              status: c.status,
+              reviewCount: c.review_count,
+            }));
+            setCards(mapped);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load user flashcards from database:', err);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const filteredCards =
-    activeFilter === 'all' ? cards : cards.filter((c) => c.hskLevel === activeFilter);
+    activeFilter === 'all'
+      ? cards
+      : cards.filter((c) => (c.hskLevel || c.level || 'HSK 1') === activeFilter);
   const currentCard = filteredCards[currentIndex] || cards[0];
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
   };
 
-  const handleRating = (rating: 'again' | 'hard' | 'good' | 'easy') => {
+  const handleRating = async (rating: 'again' | 'hard' | 'good' | 'easy') => {
     setIsFlipped(false);
     setReviewedCount((prev) => prev + 1);
+
+    if (currentCard && user && currentCard.id) {
+      const newStatus = rating === 'easy' ? 'learned' : 'learning';
+      flashcardService
+        .updateFlashcard(currentCard.id, {
+          status: newStatus,
+          review_count: (currentCard.reviewCount || 0) + 1,
+        })
+        .catch((err) => console.warn('Could not update card progress:', err));
+    }
 
     if (currentIndex < filteredCards.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -74,6 +129,28 @@ export const FlashcardsPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Guest Mode Notice */}
+      {!user && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-[#E86F51] shrink-0" />
+            <span>
+              Bạn đang học ở chế độ Khách. Đăng nhập bằng Google để tự động lưu và đồng bộ từ vựng cá nhân từ các buổi trò chuyện với Cô Lina!
+            </span>
+          </div>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('login')}
+              className="px-3 py-1.5 rounded-xl bg-[#E86F51] text-white font-bold text-xs shrink-0 hover:bg-[#d65f42] transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <LogIn size={13} />
+              <span>Đăng nhập</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Progress indicators */}
       <div className="flex items-center justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
