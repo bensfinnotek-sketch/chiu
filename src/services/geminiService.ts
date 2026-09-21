@@ -83,6 +83,7 @@ export class GeminiServiceImpl implements AIService {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+          cache: 'no-store',
           signal,
         });
 
@@ -92,6 +93,7 @@ export class GeminiServiceImpl implements AIService {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
+            cache: 'no-store',
             signal,
           });
           if (!fallbackRes.ok) throw new Error(`Fallback HTTP ${fallbackRes.status}`);
@@ -112,7 +114,9 @@ export class GeminiServiceImpl implements AIService {
         }
 
         if (!res.ok) {
-          throw new Error(`Server returned HTTP ${res.status}`);
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error || `Server returned HTTP ${res.status}`;
+          throw new Error(errMsg);
         }
 
         const rawData = await res.json();
@@ -164,6 +168,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/conversation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({
           messages: messages.map((m) => ({
             sender: m.sender,
@@ -195,6 +200,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/correct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ sentence, level, language }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -222,6 +228,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/speaking-feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ sentence, targetPrompt, language }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -245,6 +252,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ text, from, to, formality }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -277,6 +285,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/speaking-feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ sentence: spokenText, targetPrompt: targetSentence }),
       });
       if (res.ok) {
@@ -304,6 +313,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/correct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ sentence: prompt, level: 'HSK 1', language: 'vi' }),
       });
       if (res.ok) {
@@ -318,7 +328,9 @@ export class GeminiServiceImpl implements AIService {
 
   async getDictionaryDetail(charOrWord: string): Promise<DictionaryEntry | null> {
     try {
-      const res = await fetch(`/api/gemini/dictionary?word=${encodeURIComponent(charOrWord)}`);
+      const res = await fetch(`/api/gemini/dictionary?word=${encodeURIComponent(charOrWord)}`, {
+        cache: 'no-store',
+      });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       return await res.json();
     } catch (err) {
@@ -332,6 +344,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ level, lessonNumber, topic }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -347,6 +360,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/gemini/quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ level, count }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -362,6 +376,7 @@ export class GeminiServiceImpl implements AIService {
       const res = await fetch('/api/ai/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ memory }),
       });
       if (res.ok) {
