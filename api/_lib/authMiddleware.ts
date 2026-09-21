@@ -69,9 +69,10 @@ export async function getAuthenticatedUser(req: any): Promise<AuthenticatedUser 
     }
   }
 
-  // Fallback for local development / automated tests when live Supabase is not configured
-  // Allows testing user isolation (User A vs User B) without live credentials.
-  if (token.startsWith("test-token-")) {
+  // Fallback ONLY for non-production environments (development / automated testing)
+  // when live Supabase is not configured. NEVER allowed in production.
+  const isNonProduction = process.env.NODE_ENV !== "production";
+  if (isNonProduction && token.startsWith("test-token-")) {
     const userId = token.replace("test-token-", "").trim();
     if (userId) {
       return {
