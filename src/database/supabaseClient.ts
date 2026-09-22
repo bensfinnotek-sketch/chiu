@@ -7,6 +7,14 @@ const forceMock = import.meta.env.VITE_USE_MOCK_AUTH === 'true' || import.meta.e
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && !forceMock);
 
+// Safe diagnostic info: only logs booleans, never logs secret values, keys, or URLs
+console.info('[Supabase Init Config]', {
+  hasUrl: Boolean(supabaseUrl),
+  hasAnonKey: Boolean(supabaseAnonKey),
+  forceMock: Boolean(forceMock),
+  isSupabaseConfigured,
+});
+
 export const supabase: SupabaseClient<any> | null = isSupabaseConfigured
   ? createClient<any>(supabaseUrl as string, supabaseAnonKey as string, {
       auth: {
