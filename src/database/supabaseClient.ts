@@ -13,6 +13,7 @@ console.info('[Supabase Init Config]', {
   hasAnonKey: Boolean(supabaseAnonKey),
   forceMock: Boolean(forceMock),
   isSupabaseConfigured,
+  hasDiagnostic: Boolean(import.meta.env.VITE_SUPABASE_DIAGNOSTIC),
 });
 
 export const supabase: SupabaseClient<any> | null = isSupabaseConfigured
