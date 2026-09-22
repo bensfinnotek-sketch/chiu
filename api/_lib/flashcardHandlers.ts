@@ -281,6 +281,38 @@ export async function handleCreateFlashcard(req: any, res: any) {
   if (!user) return;
 
   const body = parseBody(req);
+
+  // Support batch creation when `cards` array is provided
+  if (Array.isArray(body?.cards)) {
+    const rawCards = body.cards;
+    const upsertedCards: FlashcardItem[] = [];
+
+    for (const item of rawCards) {
+      const hanzi = (item.hanzi || item.chinese || "").trim();
+      if (!hanzi) continue;
+
+      const card = await upsertFlashcardForUser(user.id, {
+        hanzi,
+        pinyin: (item.pinyin || "").trim(),
+        meaning: (item.meaning || item.meaningVi || "").trim(),
+        example_sentence: item.example_sentence || item.exampleSentence || item.exampleChinese || "",
+        topic: item.topic || "lesson",
+        hsk_level: item.hsk_level || item.hskLevel || 1,
+      });
+
+      if (card) {
+        upsertedCards.push(card);
+      }
+    }
+
+    return sendJson(res, 201, {
+      flashcards: upsertedCards,
+      count: upsertedCards.length,
+      message: `Successfully processed ${upsertedCards.length} flashcards`,
+    });
+  }
+
+  // Single card creation (original behavior preserved 100%)
   const { hanzi, pinyin, meaning, example_sentence, exampleSentence, topic, hskLevel, hsk_level } = body;
 
   if (!hanzi || typeof hanzi !== "string" || !hanzi.trim()) {

@@ -67,7 +67,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
     activeFilter === 'all'
       ? cards
       : cards.filter((c) => (c.hskLevel || c.level || 'HSK 1') === activeFilter);
-  const currentCard = filteredCards[currentIndex] || cards[0];
+  const currentCard = filteredCards[currentIndex] || null;
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -153,12 +153,14 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
       )}
 
       {/* Progress indicators */}
-      <div className="flex items-center justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
-        <span>
-          Thẻ số {currentIndex + 1} / {filteredCards.length}
-        </span>
-        <span>Hôm nay đã ôn: {reviewedCount} lượt</span>
-      </div>
+      {filteredCards.length > 0 && (
+        <div className="flex items-center justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
+          <span>
+            Thẻ số {currentIndex + 1} / {filteredCards.length}
+          </span>
+          <span>Hôm nay đã ôn: {reviewedCount} lượt</span>
+        </div>
+      )}
 
       {/* 3D Flashcard Box */}
       {currentCard ? (
@@ -257,10 +259,10 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
         <div className="p-12 text-center bg-white dark:bg-[#241F1C] rounded-3xl border border-[#E86F51]/15 space-y-4">
           <Layers size={36} className="mx-auto text-[#E86F51]" />
           <h3 className="text-xl font-bold text-[#211A17] dark:text-white">
-            Chưa có từ vựng nào trong danh sách
+            Chưa có thẻ nhớ nào cho cấp độ này
           </h3>
-          <p className="text-sm text-[#716761]">
-            Hãy học các bài học HSK và nhấn biểu tượng bookmark để lưu từ vựng vào đây nhé!
+          <p className="text-sm text-[#716761] dark:text-[#A89E97] max-w-md mx-auto">
+            Hãy hoàn thành bài học để tự động mở khóa từ vựng! Bạn cũng có thể lưu từ mới bằng biểu tượng bookmark khi học.
           </p>
         </div>
       )}

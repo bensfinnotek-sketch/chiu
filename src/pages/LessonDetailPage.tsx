@@ -20,6 +20,8 @@ import { LinaAvatar } from '../components/common/LinaAvatar';
 import { storageService } from '../services/storageService';
 import { voiceService } from '../services/voiceService';
 import { geminiService } from '../services/geminiService';
+import { flashcardService } from '../services/flashcardService';
+import { useAuth } from '../hooks/useAuth';
 
 interface LessonDetailPageProps {
   lessonId: string;
@@ -32,6 +34,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   onBack,
   onNavigate,
 }) => {
+  const { user } = useAuth();
   const lesson = ALL_LESSONS.find((l) => l.id === lessonId) || ALL_LESSONS[0];
   const [activeTab, setActiveTab] = useState<'objectives' | 'vocabulary' | 'dialogue' | 'speaking' | 'quiz'>('vocabulary');
 
@@ -81,6 +84,53 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     // Mark as completed
     storageService.markLessonCompleted(lesson.id);
     setLessonCompleted(true);
+
+    // Auto-Flashcard: When an authenticated user completes a lesson, automatically upsert lesson vocabulary
+    if (user && lesson.vocabulary && lesson.vocabulary.length > 0) {
+      // Normalize and deduplicate vocabulary items
+      const seenHanzi = new Set<string>();
+      const cardsToUpsert: Array<{
+        hanzi: string;
+        pinyin: string;
+        meaning: string;
+        example_sentence?: string;
+        topic?: string;
+        hsk_level?: number;
+      }> = [];
+
+      for (const item of lesson.vocabulary) {
+        const rawHanzi = (item.chinese || (item as any).hanzi || '').trim();
+        if (!rawHanzi || seenHanzi.has(rawHanzi)) continue;
+        seenHanzi.add(rawHanzi);
+
+        // Parse numerical HSK level
+        let parsedHsk = 1;
+        const rawLevel = (item.hskLevel ?? lesson.hskLevel) as unknown;
+
+        if (typeof rawLevel === 'number') {
+          parsedHsk = rawLevel;
+        } else if (typeof rawLevel === 'string') {
+          const match = rawLevel.match(/\d+/);
+          if (match) parsedHsk = parseInt(match[0], 10);
+        }
+
+        cardsToUpsert.push({
+          hanzi: rawHanzi,
+          pinyin: (item.pinyin || '').trim(),
+          meaning: (item.meaningVi || (item as any).meaningEn || '').trim(),
+          example_sentence: item.exampleSentence || (item as any).exampleChinese || '',
+          topic: `lesson-${lesson.id}`,
+          hsk_level: parsedHsk,
+        });
+      }
+
+      if (cardsToUpsert.length > 0) {
+        // Non-blocking background call: never breaks or rolls back lesson completion if API fails
+        flashcardService.upsertBatchFlashcards(cardsToUpsert).catch((err) => {
+          console.warn('[Auto-Flashcard] Failed to auto-save lesson vocabulary:', err);
+        });
+      }
+    }
   };
 
   // Speaking voice capture

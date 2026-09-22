@@ -330,6 +330,16 @@ Format output strictly as JSON with this exact schema:
     // (Preserves progress, updates example sentence and updated_at, enforces UNIQUE(user_id, hanzi))
     if (authenticatedUser && validVocabulary.length > 0) {
       try {
+        let sessionHskLevel = 1;
+        if (typeof actualLevel === 'number') {
+          sessionHskLevel = actualLevel;
+        } else if (typeof actualLevel === 'string') {
+          const match = actualLevel.match(/\d+/);
+          if (match) {
+            sessionHskLevel = parseInt(match[0], 10);
+          }
+        }
+
         for (const item of validVocabulary) {
           await upsertFlashcardForUser(authenticatedUser.id, {
             hanzi: item.hanzi,
@@ -337,6 +347,7 @@ Format output strictly as JSON with this exact schema:
             meaning: item.meaning,
             example_sentence: item.example || actualUserText,
             topic,
+            hsk_level: sessionHskLevel,
           });
         }
       } catch (err) {

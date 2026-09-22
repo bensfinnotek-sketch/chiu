@@ -113,6 +113,44 @@ export const flashcardService = {
   },
 
   /**
+   * Upserts multiple flashcards in a single request for the authenticated user.
+   * If user is not authenticated, safely returns empty list without error.
+   */
+  async upsertBatchFlashcards(
+    cards: Array<{
+      hanzi: string;
+      pinyin: string;
+      meaning: string;
+      example_sentence?: string;
+      topic?: string;
+      hsk_level?: number;
+    }>
+  ): Promise<Flashcard[]> {
+    if (!cards || cards.length === 0) return [];
+    const token = await getAccessToken();
+    if (!token) {
+      return [];
+    }
+
+    const response = await fetch('/api/flashcards', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ cards }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to batch upsert flashcards (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data.flashcards || [];
+  },
+
+  /**
    * Updates status or progress of a flashcard owned by the authenticated user.
    */
   async updateFlashcard(
