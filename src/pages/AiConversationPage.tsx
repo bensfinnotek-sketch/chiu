@@ -88,10 +88,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Conversation Memory State (Sections 11-20)
   const [memory, setMemory] = useState<ConversationMemory>(() => {
-    return (
-      loadMemoryFromStorage(`speaking_${activeTopic}`) ||
-      createEmptyMemory(`speaking_${activeTopic}`, activeTopic, activeLevel)
-    );
+    return createEmptyMemory(`speaking_${activeTopic}`, activeTopic, activeLevel);
   });
   const [showMemoryDetails, setShowMemoryDetails] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
@@ -158,9 +155,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setMessages(loadedMessages);
         if (session.summary || session.keyFacts.length || session.vocabulary.length) {
           setMemory((previous) => ({ ...previous, sessionId: session!.id, topic: session!.topic,
-            learnerLevel: session!.learnerLevel, summary: session!.summary || previous.summary,
+            learnerLevel: String(session!.learnerLevel), summary: session!.summary || previous.summary,
             keyFacts: session!.keyFacts || previous.keyFacts, vocabulary: session!.vocabulary || previous.vocabulary,
-            recentMessages: persistedMessages.slice(-12) as any }));
+            recentMessages: loadedMessages.slice(-12).map((m) => ({
+              ...m,
+              sender: m.sender,
+            })) as any }));
         }
         if (loadedMessages.length === 0) {
           const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
@@ -321,8 +321,9 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
       // Update and persist long-term conversation memory (facts, contradictions, vocabulary)
       const updatedMemory = updateMemoryWithTurn(memory, userMsg, linaMsg, analysis as any);
-      setMemory(updatedMemory);
-      saveMemoryToStorage(updatedMemory);
+      const sessionMemory = { ...updatedMemory, sessionId: conversationSessionId || updatedMemory.sessionId };
+      setMemory(sessionMemory);
+      saveMemoryToStorage(sessionMemory);
 
       // Persist the completed turn after AI analysis enriches the user message.
       if (conversationSessionId) {
@@ -343,7 +344,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           scores: { clarity: analysis.clarityScore ?? 5, grammar: analysis.grammarScore ?? 5, vocabulary: analysis.vocabularyScore ?? 4, naturalness: analysis.naturalnessScore ?? 4 },
         });
         await conversationRepository.updateMemory(conversationSessionId, {
-          summary: updatedMemory.summary, keyFacts: updatedMemory.keyFacts, vocabulary: updatedMemory.vocabulary,
+          summary: sessionMemory.summary, keyFacts: sessionMemory.keyFacts, vocabulary: sessionMemory.vocabulary,
         });
       }
 
@@ -490,7 +491,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Reset conversation memory for this topic (Section 51)
   const handleResetMemory = () => {
     clearMemoryFromStorage(memory.sessionId);
-    const fresh = createEmptyMemory(`speaking_${activeTopic}`, activeTopic, activeLevel);
+    const fresh = createEmptyMemory(memory.sessionId, activeTopic, activeLevel);
     setMemory(fresh);
     setStatusMessage('Đã làm mới trí nhớ của cô Lina.');
   };
