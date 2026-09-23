@@ -2,6 +2,7 @@
 // Follows strict rules for Teacher Lina and structured JSON communication
 
 import { geminiService } from './geminiService';
+import type { ConversationMemory } from '../ai/memory/conversationMemory';
 
 export interface Correction {
   original: string;
@@ -43,6 +44,7 @@ export interface SpeakingAnalysisInput {
   }>;
   nativeLanguage?: string;
   difficulty?: 'easy' | 'normal' | 'challenge';
+  memory?: ConversationMemory;
 }
 
 // Section 19: Pronunciation Analyzer Architecture
@@ -208,7 +210,7 @@ class GeminiSpeakingService {
       conversationHistory: input.conversationHistory,
       nativeLanguage: input.nativeLanguage,
       difficulty: input.difficulty,
-      memory: (input as any).memory,
+      memory: input.memory,
     });
   }
 }
