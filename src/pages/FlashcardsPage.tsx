@@ -25,12 +25,14 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
   const [activeFilter, setActiveFilter] = useState<'all' | 'HSK 1' | 'HSK 2'>('all');
   const [reviewedCount, setReviewedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load user flashcards from Supabase if authenticated
   useEffect(() => {
     let isMounted = true;
     if (user) {
       setIsLoading(true);
+      setLoadError(null);
       flashcardService
         .getFlashcards()
         .then((dbCards) => {
@@ -52,7 +54,8 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
           }
         })
         .catch((err) => {
-          console.warn('Could not load user flashcards from database:', err);
+          console.error('Could not load user flashcards from database:', err);
+          if (isMounted) setLoadError(err instanceof Error ? err.message : 'Không thể tải thẻ nhớ từ máy chủ.');
         })
         .finally(() => {
           if (isMounted) setIsLoading(false);
@@ -149,6 +152,12 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
               <span>Đăng nhập</span>
             </button>
           )}
+        </div>
+      )}
+
+      {loadError && user && (
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-800 dark:text-red-200">
+          Không thể tải dữ liệu flashcard từ tài khoản. Vui lòng thử lại. Chi tiết: {loadError}
         </div>
       )}
 
