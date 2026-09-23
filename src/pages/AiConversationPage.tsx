@@ -31,7 +31,8 @@ import { MicrophoneButton, MicrophoneState } from '../components/common/Micropho
 import { storageService } from '../services/storageService';
 import { speechRecognitionService } from '../services/speechRecognitionService';
 import { textToSpeechService } from '../services/textToSpeechService';
-import { geminiSpeakingService, SpeakingAnalysis } from '../services/geminiSpeakingService';
+import { geminiSpeakingService } from '../services/geminiSpeakingService';
+import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
