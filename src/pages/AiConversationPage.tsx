@@ -22,6 +22,7 @@ import {
   Cpu,
 } from 'lucide-react';
 import { ConversationMessage, SupportedLanguage } from '../types';
+import type { ConversationMessage as PersistedConversationMessage } from '../types/conversation';
 import { useAuth } from '../hooks/useAuth';
 import { getConversationRepository } from '../services/repositories/repositoryFactory';
 import { LinaAvatar, LinaTeacherState } from '../components/common/LinaAvatar';
@@ -40,7 +41,6 @@ import {
   ConversationMemory,
   createEmptyMemory,
   updateMemoryWithTurn,
-  loadMemoryFromStorage,
   saveMemoryToStorage,
   clearMemoryFromStorage,
 } from '../ai/memory/conversationMemory';
@@ -141,7 +141,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setConversationSessionId(session.id);
         const persistedMessages = await conversationRepository.getSessionMessages(session.id);
         if (cancelled) return;
-        const toUiMessage = (message: any): ConversationMessage => ({
+        const toUiMessage = (message: PersistedConversationMessage): ConversationMessage => ({
           id: message.id, sender: message.role === 'user' ? 'user' : 'lina', chinese: message.chinese,
           pinyin: message.pinyin, translation: message.translation,
           timestamp: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -161,10 +161,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           summary: session!.summary || previous.summary,
           keyFacts: session!.keyFacts || previous.keyFacts,
           vocabulary: session!.vocabulary || previous.vocabulary,
-          recentMessages: loadedMessages.slice(-12).map((m) => ({
-            ...m,
-            sender: m.sender,
-          })) as any,
+          recentMessages: loadedMessages.slice(-12),
         }));
         if (loadedMessages.length === 0) {
           const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
