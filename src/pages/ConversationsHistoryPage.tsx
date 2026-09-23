@@ -212,7 +212,14 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
                   <SessionCard
                     key={s.id}
                     session={s}
-                    onResume={() => onResumeConversation(s.id)}
+                    onResume={() => {
+                    sessionStorage.setItem('selected_speaking_topic', s.topic);
+                    sessionStorage.setItem(
+                      'selected_speaking_level',
+                      typeof s.learnerLevel === 'number' ? `HSK ${s.learnerLevel}` : String(s.learnerLevel)
+                    );
+                    onResumeConversation(s.id);
+                  }}
                     onDelete={() => setDeleteTargetId(s.id)}
                   />
                 ))}
@@ -231,7 +238,14 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
                   <SessionCard
                     key={s.id}
                     session={s}
-                    onResume={() => onResumeConversation(s.id)}
+                    onResume={() => {
+                    sessionStorage.setItem('selected_speaking_topic', s.topic);
+                    sessionStorage.setItem(
+                      'selected_speaking_level',
+                      typeof s.learnerLevel === 'number' ? `HSK ${s.learnerLevel}` : String(s.learnerLevel)
+                    );
+                    onResumeConversation(s.id);
+                  }}
                     onDelete={() => setDeleteTargetId(s.id)}
                   />
                 ))}
