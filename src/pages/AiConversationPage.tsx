@@ -58,7 +58,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   initialLevel,
   selectedSessionId,
 }) => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const conversationRepository = getConversationRepository(authUser);
   // Retrieve selected topic and level
   const activeTopic =
@@ -131,6 +131,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   useEffect(() => {
     let cancelled = false;
     const initialiseConversation = async () => {
+      if (authLoading) return;
       setConversationReady(false);
       const persistenceUserId = authUser?.id || 'guest_user';
       try {
@@ -191,7 +192,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     };
     initialiseConversation();
     return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.stopListening(); };
-  }, [activeTopic, activeLevel, selectedSessionId, authUser?.id]);
+  }, [activeTopic, activeLevel, selectedSessionId, authUser?.id, authLoading]);
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
