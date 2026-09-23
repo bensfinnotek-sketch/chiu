@@ -157,13 +157,6 @@ export class SupabaseConversationRepository implements ConversationRepository {
       throw new Error(`Không thể cập nhật thời gian hội thoại: ${sessionError.message}`);
     }
 
-    return;
-
-    // Touch session updated_at
-    await supabase
-      .from('conversation_sessions')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', sessionId);
   }
 
   async getSessionMessages(sessionId: string): Promise<ConversationMessage[]> {
