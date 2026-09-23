@@ -62,11 +62,12 @@ export class SupabaseProgressRepository implements ProgressRepository {
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (error || !data) {
-      // Create initial progress row if missing
-      const initial = this.getDefaultProgress(userId);
-      await this.updateProgress(userId, initial);
-      return initial;
+    if (error) {
+      throw new Error(`Không thể tải tiến trình học: ${error.message}`);
+    }
+
+    if (!data) {
+      return this.updateProgress(userId, this.getDefaultProgress(userId));
     }
 
     return {
@@ -106,7 +107,9 @@ export class SupabaseProgressRepository implements ProgressRepository {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(`Không thể lưu tiến trình học: ${error.message}`);
+    }
 
     return {
       userId: data.user_id,
@@ -162,14 +165,14 @@ export class SupabaseProgressRepository implements ProgressRepository {
   private getDefaultProgress(userId: string): LearningProgress {
     return {
       userId,
-      totalStudyMinutes: 45,
-      lessonsCompleted: 4,
-      wordsLearned: 38,
-      speakingMinutes: 15,
-      conversationsCompleted: 2,
-      currentStreak: 1,
-      longestStreak: 1,
-      lastStudyDate: new Date().toISOString().split('T')[0],
+      totalStudyMinutes: 0,
+      lessonsCompleted: 0,
+      wordsLearned: 0,
+      speakingMinutes: 0,
+      conversationsCompleted: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastStudyDate: null,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -187,18 +190,7 @@ export class LocalStorageProgressRepository implements ProgressRepository {
     } catch {
       // ignore
     }
-    const def: LearningProgress = {
-      userId,
-      totalStudyMinutes: 45,
-      lessonsCompleted: 4,
-      wordsLearned: 38,
-      speakingMinutes: 15,
-      conversationsCompleted: 2,
-      currentStreak: 1,
-      longestStreak: 1,
-      lastStudyDate: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString(),
-    };
+    const def = this.getDefaultProgress(userId);
     await this.updateProgress(userId, def);
     return def;
   }
@@ -253,5 +245,20 @@ export class LocalStorageProgressRepository implements ProgressRepository {
     }
 
     return this.updateProgress(userId, updates);
+  }
+
+  private getDefaultProgress(userId: string): LearningProgress {
+    return {
+      userId,
+      totalStudyMinutes: 0,
+      lessonsCompleted: 0,
+      wordsLearned: 0,
+      speakingMinutes: 0,
+      conversationsCompleted: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastStudyDate: null,
+      updatedAt: new Date().toISOString(),
+    };
   }
 }
