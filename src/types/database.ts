@@ -115,6 +115,57 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
       };
+      user_vocabulary_progress: {
+        Row: {
+          user_id: string;
+          vocabulary_id: string;
+          status: string;
+          exposure_count: number;
+          correct_count: number;
+          incorrect_count: number;
+          last_seen_at: string | null;
+          mastered_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']> & {
+          user_id: string;
+          vocabulary_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']>;
+      };
+      user_grammar_progress: {
+        Row: {
+          user_id: string;
+          grammar_point_id: string;
+          exposure_count: number;
+          correct_count: number;
+          incorrect_count: number;
+          mastery_score: number;
+          last_practiced_at: string | null;
+        };
+        Insert: Partial<Database['public']['Tables']['user_grammar_progress']['Row']> & {
+          user_id: string;
+          grammar_point_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['user_grammar_progress']['Row']>;
+      };
+      user_skill_progress: {
+        Row: {
+          user_id: string;
+          skill: string;
+          level: number;
+          score: number;
+          completed_activities: number;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['user_skill_progress']['Row']> & {
+          user_id: string;
+          skill: string;
+          level: number;
+        };
+        Update: Partial<Database['public']['Tables']['user_skill_progress']['Row']>;
+      };
       subscriptions: {
         Row: {
           user_id: string;
