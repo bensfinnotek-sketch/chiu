@@ -26,7 +26,7 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
   onNavigate,
   onResumeConversation,
 }) => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -47,8 +47,9 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
   };
 
   useEffect(() => {
+    if (authLoading) return;
     fetchSessions();
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleDelete = async (sessionId: string) => {
     setIsDeleting(true);
