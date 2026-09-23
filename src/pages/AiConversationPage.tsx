@@ -264,7 +264,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         nativeLanguage: 'vi',
         difficulty: settings.difficulty,
         memory,
-      } as any);
+      });
 
       // Update user message with correction if any
       if (analysis.corrections && analysis.corrections.length > 0) {
@@ -321,7 +321,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       setMessages(finalMessages);
 
       // Update and persist long-term conversation memory (facts, contradictions, vocabulary)
-      const updatedMemory = updateMemoryWithTurn(memory, userMsg, linaMsg, analysis as any);
+      const updatedMemory = updateMemoryWithTurn(memory, userMsg, linaMsg, analysis);
       const sessionMemory = { ...updatedMemory, sessionId: conversationSessionId || updatedMemory.sessionId };
       setMemory(sessionMemory);
       saveMemoryToStorage(sessionMemory);
