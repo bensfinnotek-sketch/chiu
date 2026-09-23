@@ -2,35 +2,9 @@
 // Follows strict rules for Teacher Lina and structured JSON communication
 
 import { geminiService } from './geminiService';
+import type { ConversationMemory } from '../ai/memory/conversationMemory';
+import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 
-export interface Correction {
-  original: string;
-  corrected: string;
-  explanation: string;
-}
-
-export interface SpeakingVocabularyItem {
-  hanzi: string;
-  pinyin: string;
-  meaning: string;
-  hsk?: string;
-}
-
-export interface SpeakingAnalysis {
-  reply: string;
-  pinyin?: string;
-  translation?: string;
-  question?: string | null;
-  corrections: Correction[];
-  vocabulary: SpeakingVocabularyItem[];
-  grammarNote?: string | null;
-  encouragement?: string;
-  followUpQuestion?: string;
-  clarityScore?: number; // 1-5 scale based on transcript
-  grammarScore?: number;
-  vocabularyScore?: number;
-  naturalnessScore?: number;
-}
 
 export interface SpeakingAnalysisInput {
   userText: string;
@@ -43,6 +17,7 @@ export interface SpeakingAnalysisInput {
   }>;
   nativeLanguage?: string;
   difficulty?: 'easy' | 'normal' | 'challenge';
+  memory?: ConversationMemory;
 }
 
 // Section 19: Pronunciation Analyzer Architecture
@@ -208,7 +183,7 @@ class GeminiSpeakingService {
       conversationHistory: input.conversationHistory,
       nativeLanguage: input.nativeLanguage,
       difficulty: input.difficulty,
-      memory: (input as any).memory,
+      memory: input.memory,
     });
   }
 }

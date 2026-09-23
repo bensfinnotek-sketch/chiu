@@ -235,6 +235,7 @@ function AppContent() {
 
           {currentRoute === 'practice-conversation' && (
             <AiConversationPage
+              selectedSessionId={selectedSessionId}
               onBackToTopics={() => handleNavigate('practice-speaking')}
             />
           )}
