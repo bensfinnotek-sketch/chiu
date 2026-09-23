@@ -275,65 +275,90 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
   }
 }
 
-// Supabase Hybrid with local cache
+// Supabase is the source of truth for authenticated users.
+// LocalStorage is used only when Supabase is not configured.
 export class SupabaseLessonProgressRepository implements LessonProgressRepository {
-  private localFallback = new LocalStorageLessonProgressRepository();
-
   async getProgress(userId: string): Promise<UserLessonProgress[]> {
-    if (!isSupabaseConfigured || !supabase) return this.localFallback.getProgress(userId);
-    try {
-      const { data, error } = await supabase
-        .from('user_lesson_progress')
-        .select('*')
-        .eq('user_id', userId);
+    if (!isSupabaseConfigured || !supabase) return [];
 
-      if (error || !data || data.length === 0) {
-        return this.localFallback.getProgress(userId);
-      }
+    const { data, error } = await supabase
+      .from('user_lesson_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_accessed_at', { ascending: false });
 
-      return data.map((d: any) => ({
-        userId: d.user_id,
-        lessonId: d.lesson_id,
-        levelNumber: d.level_number || 1,
-        status: d.status as LessonProgressStatus,
-        progressPercent: d.progress_percent || 0,
-        currentSectionId: d.current_section_id,
-        score: d.score,
-        attempts: d.attempts || 1,
-        startedAt: d.started_at,
-        completedAt: d.completed_at,
-        lastAccessedAt: d.last_accessed_at,
-      }));
-    } catch {
-      return this.localFallback.getProgress(userId);
+    if (error) {
+      throw new Error(`Không thể tải tiến trình bài học: ${error.message}`);
     }
+
+    return (data || []).map((d: any) => ({
+      userId: d.user_id,
+      lessonId: d.lesson_id,
+      levelNumber: d.level_number || 1,
+      status: d.status as LessonProgressStatus,
+      progressPercent: d.progress_percent || 0,
+      currentSectionId: d.current_section_id,
+      score: d.score,
+      attempts: d.attempts || 1,
+      startedAt: d.started_at,
+      completedAt: d.completed_at,
+      lastAccessedAt: d.last_accessed_at,
+    }));
   }
 
   async getLessonProgress(userId: string, lessonId: string): Promise<UserLessonProgress | null> {
-    const all = await this.getProgress(userId);
-    return all.find((p) => p.lessonId === lessonId) || null;
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const { data, error } = await supabase
+      .from('user_lesson_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Không thể tải tiến trình bài học: ${error.message}`);
+    }
+
+    if (!data) return null;
+
+    return {
+      userId: data.user_id,
+      lessonId: data.lesson_id,
+      levelNumber: data.level_number || 1,
+      status: data.status as LessonProgressStatus,
+      progressPercent: data.progress_percent || 0,
+      currentSectionId: data.current_section_id,
+      score: data.score,
+      attempts: data.attempts || 1,
+      startedAt: data.started_at,
+      completedAt: data.completed_at,
+      lastAccessedAt: data.last_accessed_at,
+    };
   }
 
   async saveProgress(progress: UserLessonProgress): Promise<void> {
-    await this.localFallback.saveProgress(progress);
     if (!isSupabaseConfigured || !supabase) return;
 
-    try {
-      await supabase.from('user_lesson_progress').upsert({
+    const { error } = await supabase.from('user_lesson_progress').upsert(
+      {
         user_id: progress.userId,
         lesson_id: progress.lessonId,
         level_number: progress.levelNumber,
         status: progress.status,
         progress_percent: progress.progressPercent,
         current_section_id: progress.currentSectionId || null,
-        score: progress.score || null,
+        score: progress.score ?? null,
         attempts: progress.attempts,
         started_at: progress.startedAt || new Date().toISOString(),
         completed_at: progress.completedAt || null,
         last_accessed_at: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.warn('Cloud lesson progress sync failed, local progress preserved:', e);
+      },
+      { onConflict: 'user_id,lesson_id' }
+    );
+
+    if (error) {
+      throw new Error(`Không thể lưu tiến trình bài học: ${error.message}`);
     }
   }
 
@@ -342,13 +367,31 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     lessonId: string,
     levelNumber: HSKLevelNumber
   ): Promise<UserLessonProgress> {
-    const res = await this.localFallback.markLessonStarted(userId, lessonId, levelNumber);
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await this.saveProgress(res);
-      } catch {}
-    }
-    return res;
+    const existing = await this.getLessonProgress(userId, lessonId);
+    const now = new Date().toISOString();
+
+    const progress: UserLessonProgress = existing
+      ? {
+          ...existing,
+          status:
+            existing.status === 'completed' ? 'completed' : 'in_progress',
+          attempts: existing.attempts + 1,
+          lastAccessedAt: now,
+        }
+      : {
+          userId,
+          lessonId,
+          levelNumber,
+          status: 'in_progress',
+          progressPercent: 10,
+          attempts: 1,
+          startedAt: now,
+          completedAt: null,
+          lastAccessedAt: now,
+        };
+
+    await this.saveProgress(progress);
+    return progress;
   }
 
   async markLessonCompleted(
@@ -357,64 +400,129 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     score: number,
     levelNumber: HSKLevelNumber
   ): Promise<{ progress: UserLessonProgress; isFirstCompletion: boolean }> {
-    const res = await this.localFallback.markLessonCompleted(
+    const existing = await this.getLessonProgress(userId, lessonId);
+    const isFirstCompletion = !existing || existing.status !== 'completed';
+    const now = new Date().toISOString();
+
+    const progress: UserLessonProgress = {
       userId,
       lessonId,
-      score,
-      levelNumber
-    );
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await this.saveProgress(res.progress);
-        // Also increment aggregate if first completion
-        if (res.isFirstCompletion) {
-          const { data: prog } = await supabase
-            .from('learning_progress')
-            .select('lessons_completed')
-            .eq('user_id', userId)
-            .single();
-          const currentCount = prog?.lessons_completed || 0;
-          await supabase
-            .from('learning_progress')
-            .update({ lessons_completed: currentCount + 1 })
-            .eq('user_id', userId);
-        }
-      } catch (e) {
-        console.warn('Cloud sync completion warning:', e);
+      levelNumber,
+      status: 'completed',
+      progressPercent: 100,
+      score: Math.max(existing?.score || 0, score),
+      attempts: (existing?.attempts || 0) + 1,
+      startedAt: existing?.startedAt || now,
+      completedAt: existing?.completedAt || now,
+      lastAccessedAt: now,
+    };
+
+    await this.saveProgress(progress);
+
+    if (isFirstCompletion && supabase) {
+      const { data: aggregate, error: readError } = await supabase
+        .from('learning_progress')
+        .select('lessons_completed')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (readError) {
+        throw new Error(`Không thể cập nhật tổng số bài đã học: ${readError.message}`);
+      }
+
+      const { error: updateError } = await supabase
+        .from('learning_progress')
+        .upsert({
+          user_id: userId,
+          lessons_completed: (aggregate?.lessons_completed || 0) + 1,
+          updated_at: now,
+        });
+
+      if (updateError) {
+        throw new Error(`Không thể cập nhật tổng số bài đã hoàn thành: ${updateError.message}`);
       }
     }
-    return res;
+
+    return { progress, isFirstCompletion };
   }
 
   async saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
-    await this.localFallback.saveQuizAttempt(attempt);
     if (!isSupabaseConfigured || !supabase) return;
-    try {
-      await supabase.from('quiz_attempts').insert({
-        id: attempt.id,
-        user_id: attempt.userId,
-        lesson_id: attempt.lessonId,
-        score: attempt.score,
-        total_points: attempt.totalPoints,
-        earned_points: attempt.earnedPoints,
-        correct_answers: attempt.correctAnswers,
-        total_questions: attempt.totalQuestions,
-        passed: attempt.passed,
-        answers: attempt.answers,
-        started_at: attempt.startedAt,
-        completed_at: attempt.completedAt,
-      });
-    } catch (e) {
-      console.warn('Cloud quiz attempt sync warning:', e);
+
+    const { error } = await supabase.from('quiz_attempts').insert({
+      id: attempt.id,
+      user_id: attempt.userId,
+      lesson_id: attempt.lessonId,
+      score: attempt.score,
+      total_points: attempt.totalPoints,
+      earned_points: attempt.earnedPoints,
+      correct_answers: attempt.correctAnswers,
+      total_questions: attempt.totalQuestions,
+      passed: attempt.passed,
+      answers: attempt.answers,
+      started_at: attempt.startedAt,
+      completed_at: attempt.completedAt,
+    });
+
+    if (error) {
+      throw new Error(`Không thể lưu kết quả bài kiểm tra: ${error.message}`);
     }
   }
 
   async getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]> {
-    return this.localFallback.getQuizAttempts(userId, lessonId);
+    if (!isSupabaseConfigured || !supabase) return [];
+
+    const { data, error } = await supabase
+      .from('quiz_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .order('completed_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Không thể tải lịch sử bài kiểm tra: ${error.message}`);
+    }
+
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      userId: d.user_id,
+      lessonId: d.lesson_id,
+      score: d.score,
+      totalPoints: d.total_points,
+      earnedPoints: d.earned_points,
+      correctAnswers: d.correct_answers,
+      totalQuestions: d.total_questions,
+      passed: d.passed,
+      answers: d.answers || [],
+      startedAt: d.started_at,
+      completedAt: d.completed_at,
+    }));
   }
 
   async getVocabularyProgress(userId: string): Promise<UserVocabularyProgress[]> {
-    return this.localFallback.getVocabularyProgress(userId);
+    if (!isSupabaseConfigured || !supabase) return [];
+
+    const { data, error } = await supabase
+      .from('user_vocabulary_progress')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Không thể tải tiến độ từ vựng: ${error.message}`);
+    }
+
+    return (data || []).map((d: any) => ({
+      userId: d.user_id,
+      vocabularyId: d.vocabulary_id,
+      status: d.status,
+      exposureCount: d.exposure_count,
+      correctCount: d.correct_count,
+      incorrectCount: d.incorrect_count,
+      lastSeenAt: d.last_seen_at,
+      masteredAt: d.mastered_at,
+      createdAt: d.created_at,
+      updatedAt: d.updated_at,
+    }));
   }
 
   async updateVocabularyStatus(
@@ -423,11 +531,62 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     status: 'new' | 'learning' | 'known' | 'mastered',
     isCorrect?: boolean
   ): Promise<void> {
-    await this.localFallback.updateVocabularyStatus(userId, vocabularyId, status, isCorrect);
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const { data: existing, error: readError } = await supabase
+      .from('user_vocabulary_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('vocabulary_id', vocabularyId)
+      .maybeSingle();
+
+    if (readError) {
+      throw new Error(`Không thể đọc tiến độ từ vựng: ${readError.message}`);
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('user_vocabulary_progress').upsert(
+      {
+        user_id: userId,
+        vocabulary_id: vocabularyId,
+        status,
+        exposure_count: (existing?.exposure_count || 0) + 1,
+        correct_count: (existing?.correct_count || 0) + (isCorrect === true ? 1 : 0),
+        incorrect_count: (existing?.incorrect_count || 0) + (isCorrect === false ? 1 : 0),
+        last_seen_at: now,
+        mastered_at: status === 'mastered' ? existing?.mastered_at || now : existing?.mastered_at || null,
+        created_at: existing?.created_at || now,
+        updated_at: now,
+      },
+      { onConflict: 'user_id,vocabulary_id' }
+    );
+
+    if (error) {
+      throw new Error(`Không thể lưu tiến độ từ vựng: ${error.message}`);
+    }
   }
 
   async getGrammarProgress(userId: string): Promise<UserGrammarProgress[]> {
-    return this.localFallback.getGrammarProgress(userId);
+    if (!isSupabaseConfigured || !supabase) return [];
+
+    const { data, error } = await supabase
+      .from('user_grammar_progress')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Không thể tải tiến độ ngữ pháp: ${error.message}`);
+    }
+
+    return (data || []).map((d: any) => ({
+      userId: d.user_id,
+      grammarPointId: d.grammar_point_id,
+      exposureCount: d.exposure_count,
+      correctCount: d.correct_count,
+      incorrectCount: d.incorrect_count,
+      masteryScore: d.mastery_score,
+      lastPracticedAt: d.last_practiced_at,
+    }));
   }
 
   async updateGrammarScore(
@@ -435,11 +594,65 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     grammarPointId: string,
     isCorrect: boolean
   ): Promise<void> {
-    await this.localFallback.updateGrammarScore(userId, grammarPointId, isCorrect);
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const { data: existing, error: readError } = await supabase
+      .from('user_grammar_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('grammar_point_id', grammarPointId)
+      .maybeSingle();
+
+    if (readError) {
+      throw new Error(`Không thể đọc tiến độ ngữ pháp: ${readError.message}`);
+    }
+
+    const correctCount = (existing?.correct_count || 0) + (isCorrect ? 1 : 0);
+    const incorrectCount = (existing?.incorrect_count || 0) + (isCorrect ? 0 : 1);
+    const exposureCount = (existing?.exposure_count || 0) + 1;
+    const masteryScore = Math.max(
+      0,
+      Math.min(100, (existing?.mastery_score || 0) + (isCorrect ? 15 : -10))
+    );
+
+    const { error } = await supabase.from('user_grammar_progress').upsert(
+      {
+        user_id: userId,
+        grammar_point_id: grammarPointId,
+        exposure_count: exposureCount,
+        correct_count: correctCount,
+        incorrect_count: incorrectCount,
+        mastery_score: masteryScore,
+        last_practiced_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,grammar_point_id' }
+    );
+
+    if (error) {
+      throw new Error(`Không thể lưu tiến độ ngữ pháp: ${error.message}`);
+    }
   }
 
   async getSkillProgress(userId: string): Promise<UserSkillProgress[]> {
-    return this.localFallback.getSkillProgress(userId);
+    if (!isSupabaseConfigured || !supabase) return [];
+
+    const { data, error } = await supabase
+      .from('user_skill_progress')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Không thể tải tiến độ kỹ năng: ${error.message}`);
+    }
+
+    return (data || []).map((d: any) => ({
+      userId: d.user_id,
+      skill: d.skill,
+      level: d.level,
+      score: d.score,
+      completedActivities: d.completed_activities,
+      updatedAt: d.updated_at,
+    }));
   }
 
   async updateSkillScore(
@@ -448,7 +661,35 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     level: HSKLevelNumber,
     pointsDelta: number
   ): Promise<void> {
-    await this.localFallback.updateSkillScore(userId, skill, level, pointsDelta);
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const { data: existing, error: readError } = await supabase
+      .from('user_skill_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('skill', skill)
+      .eq('level', level)
+      .maybeSingle();
+
+    if (readError) {
+      throw new Error(`Không thể đọc tiến độ kỹ năng: ${readError.message}`);
+    }
+
+    const { error } = await supabase.from('user_skill_progress').upsert(
+      {
+        user_id: userId,
+        skill,
+        level,
+        score: Math.max(0, Math.min(100, (existing?.score || 0) + pointsDelta)),
+        completed_activities: (existing?.completed_activities || 0) + 1,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,skill,level' }
+    );
+
+    if (error) {
+      throw new Error(`Không thể lưu tiến độ kỹ năng: ${error.message}`);
+    }
   }
 }
 
