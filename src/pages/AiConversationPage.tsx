@@ -22,6 +22,8 @@ import {
   Cpu,
 } from 'lucide-react';
 import { ConversationMessage, SupportedLanguage } from '../types';
+import { useAuth } from '../hooks/useAuth';
+import { getConversationRepository } from '../services/repositories/repositoryFactory';
 import { LinaAvatar, LinaTeacherState } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
 import { MicrophoneButton, MicrophoneState } from '../components/common/MicrophoneButton';
@@ -47,13 +49,17 @@ interface AiConversationPageProps {
   onBackToTopics?: () => void;
   initialTopic?: string;
   initialLevel?: string;
+  selectedSessionId?: string;
 }
 
 export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   onBackToTopics,
   initialTopic,
   initialLevel,
+  selectedSessionId,
 }) => {
+  const { user: authUser } = useAuth();
+  const conversationRepository = getConversationRepository(authUser);
   // Retrieve selected topic and level
   const activeTopic =
     initialTopic ||
@@ -75,6 +81,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Conversation state
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [inputVal, setInputVal] = useState('');
+  const [conversationSessionId, setConversationSessionId] = useState<string | null>(selectedSessionId || null);
+  const [conversationReady, setConversationReady] = useState(false);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
@@ -122,40 +130,67 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, interimTranscript, teacherState]);
 
-  // Initial Lina prompt on topic mount
+  // Load an existing conversation or create a new persisted session.
   useEffect(() => {
-    const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
-
-    const firstMsg: ConversationMessage = {
-      id: 'lina-init',
-      sender: 'lina',
-      chinese: starter.chinese,
-      pinyin: starter.pinyin,
-      translation: starter.translation,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages([firstMsg]);
-
-    // Play greeting voice if autoPlayAi is enabled
-    if (settings.autoPlayAi) {
-      setTeacherState('speaking');
-      textToSpeechService.speakChinese(starter.chinese, {
-        rate: settings.speed,
-        onEnd: () => {
-          setTeacherState('idle');
-          if (settings.autoListen) {
-            handleStartListening();
+    let cancelled = false;
+    const initialiseConversation = async () => {
+      setConversationReady(false);
+      const persistenceUserId = authUser?.id || 'guest_user';
+      try {
+        let session = selectedSessionId ? await conversationRepository.getSession(selectedSessionId) : null;
+        if (session && session.userId !== persistenceUserId) session = null;
+        if (!session) session = await conversationRepository.createSession(persistenceUserId, activeTopic, activeLevel, `Trò chuyện về ${activeTopic}`);
+        if (cancelled) return;
+        setConversationSessionId(session.id);
+        const persistedMessages = await conversationRepository.getSessionMessages(session.id);
+        if (cancelled) return;
+        const toUiMessage = (message: any): ConversationMessage => ({
+          id: message.id, sender: message.role === 'user' ? 'user' : 'lina', chinese: message.chinese,
+          pinyin: message.pinyin, translation: message.translation,
+          timestamp: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          correction: message.corrections?.length ? { hasMistake: true, userSentence: message.corrections[0].original,
+            naturalVersion: message.corrections[0].corrected, betterChinese: message.corrections[0].corrected,
+            explanationVi: message.corrections[0].explanation } : message.role === 'user' ? { hasMistake: false } : undefined,
+          detectedVocabulary: message.vocabulary, grammarNote: message.grammarNote || undefined,
+          encouragement: message.encouragement, followUpQuestion: message.followUpQuestion, scores: message.scores,
+        });
+        const loadedMessages = persistedMessages.map(toUiMessage);
+        setMessages(loadedMessages);
+        if (session.summary || session.keyFacts.length || session.vocabulary.length) {
+          setMemory((previous) => ({ ...previous, sessionId: session!.id, topic: session!.topic,
+            learnerLevel: session!.learnerLevel, summary: session!.summary || previous.summary,
+            keyFacts: session!.keyFacts || previous.keyFacts, vocabulary: session!.vocabulary || previous.vocabulary,
+            recentMessages: persistedMessages.slice(-12) as any }));
+        }
+        if (loadedMessages.length === 0) {
+          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
+          const firstMsg: ConversationMessage = { id: `lina-init-${session.id}`, sender: 'lina', chinese: starter.chinese,
+            pinyin: starter.pinyin, translation: starter.translation,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+          setMessages([firstMsg]);
+          await conversationRepository.saveMessage(session.id, persistenceUserId, { id: firstMsg.id, sessionId: session.id,
+            userId: persistenceUserId, role: 'assistant', chinese: firstMsg.chinese, pinyin: firstMsg.pinyin,
+            translation: firstMsg.translation, timestamp: new Date().toISOString() });
+          if (settings.autoPlayAi) {
+            setTeacherState('speaking');
+            textToSpeechService.speakChinese(starter.chinese, { rate: settings.speed, onEnd: () => {
+              setTeacherState('idle'); if (settings.autoListen) handleStartListening();
+            }});
           }
-        },
-      });
-    }
-
-    return () => {
-      textToSpeechService.stopSpeaking();
-      speechRecognitionService.stopListening();
+        }
+      } catch (error) {
+        console.error('Error initialising persisted conversation:', error);
+        if (!cancelled) {
+          setConversationSessionId(selectedSessionId || null);
+          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
+          setMessages([{ id: 'lina-init-fallback', sender: 'lina', chinese: starter.chinese, pinyin: starter.pinyin,
+            translation: starter.translation, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+        }
+      } finally { if (!cancelled) setConversationReady(true); }
     };
-  }, [activeTopic, activeLevel]);
+    initialiseConversation();
+    return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.stopListening(); };
+  }, [activeTopic, activeLevel, selectedSessionId, authUser?.id]);
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
@@ -289,6 +324,29 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       setMemory(updatedMemory);
       saveMemoryToStorage(updatedMemory);
 
+      // Persist the completed turn after AI analysis enriches the user message.
+      if (conversationSessionId) {
+        const persistenceUserId = authUser?.id || 'guest_user';
+        const corrections = userMsg.correction?.hasMistake && userMsg.correction.userSentence ? [{
+          original: userMsg.correction.userSentence,
+          corrected: userMsg.correction.naturalVersion || userMsg.correction.betterChinese || cleanText,
+          explanation: userMsg.correction.explanationVi || '',
+        }] : [];
+        await conversationRepository.saveMessage(conversationSessionId, persistenceUserId, {
+          id: userMsg.id, sessionId: conversationSessionId, userId: persistenceUserId, role: 'user', chinese: userMsg.chinese,
+          timestamp: new Date().toISOString(), corrections, vocabulary: userMsg.detectedVocabulary || [],
+        });
+        await conversationRepository.saveMessage(conversationSessionId, persistenceUserId, {
+          id: linaMsg.id, sessionId: conversationSessionId, userId: persistenceUserId, role: 'assistant', chinese: linaMsg.chinese,
+          pinyin: linaMsg.pinyin, translation: linaMsg.translation, timestamp: new Date().toISOString(),
+          grammarNote: linaMsg.grammarNote, encouragement: linaMsg.encouragement, followUpQuestion: linaMsg.followUpQuestion,
+          scores: { clarity: analysis.clarityScore ?? 5, grammar: analysis.grammarScore ?? 5, vocabulary: analysis.vocabularyScore ?? 4, naturalness: analysis.naturalnessScore ?? 4 },
+        });
+        await conversationRepository.updateMemory(conversationSessionId, {
+          summary: updatedMemory.summary, keyFacts: updatedMemory.keyFacts, vocabulary: updatedMemory.vocabulary,
+        });
+      }
+
       // Speak Lina's reply
       if (settings.autoPlayAi) {
         setTeacherState('speaking');
@@ -381,6 +439,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Toggle Microphone
   const handleToggleMicrophone = () => {
+    if (!conversationReady) return;
     if (micState === 'LISTENING') {
       speechRecognitionService.stopListening();
       if (interimTranscript.trim()) {
@@ -399,7 +458,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Manual text submit fallback
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputVal.trim() || micState === 'PROCESSING') return;
+    if (!inputVal.trim() || micState === 'PROCESSING' || !conversationReady) return;
     const text = inputVal;
     setInputVal('');
     processUserMessage(text);
@@ -839,7 +898,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               />
               <button
                 type="submit"
-                disabled={!inputVal.trim() || micState === 'PROCESSING'}
+                disabled={!inputVal.trim() || micState === 'PROCESSING' || !conversationReady}
                 className="p-2.5 rounded-2xl bg-[#E86F51] hover:bg-[#D55F42] disabled:opacity-40 text-white transition-colors cursor-pointer"
                 title="Gửi câu trả lời"
               >
