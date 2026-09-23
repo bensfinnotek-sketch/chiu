@@ -31,16 +31,19 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
   const [loading, setLoading] = useState(true);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const repo = getConversationRepository(user);
 
   const fetchSessions = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await repo.getUserSessions(user?.id || 'guest_user');
       setSessions(data);
     } catch (e) {
       console.warn('Error fetching conversation history:', e);
+      setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -147,6 +150,18 @@ export const ConversationsHistoryPage: React.FC<ConversationsHistoryPageProps> =
       )}
 
       {/* Content */}
+      {loadError && !loading && (
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm">
+          <div className="flex items-start gap-2">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="font-bold">Không thể tải lịch sử hội thoại</p>
+              <p className="mt-1 break-words">${'{loadError}'}</p>
+              <button type="button" onClick={fetchSessions} className="mt-3 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold">Thử lại</button>
+            </div>
+          </div>
+        </div>
+      )}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3 text-[#8C8078]">
           <Loader2 size={32} className="animate-spin text-[#E86F51]" />
