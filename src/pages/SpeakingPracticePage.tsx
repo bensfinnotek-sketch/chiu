@@ -20,8 +20,9 @@ import {
 } from 'lucide-react';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { progressService, SpeakingProgress } from '../services/progressService';
-import { subscriptionService } from '../services/subscriptionService';
 import { storageService } from '../services/storageService';
+import { useAuth } from '../hooks/useAuth';
+import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 
 interface SpeakingPracticePageProps {
   onStartConversation?: (topicId: string, level: string) => void;
@@ -162,14 +163,59 @@ export const HSK_LEVEL_DESCRIPTIONS: Record<string, { descVi: string; wordCount:
 export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
   onStartConversation,
 }) => {
-  const userProfile = storageService.getUserProfile();
-  const [selectedLevel, setSelectedLevel] = useState<string>(userProfile.chineseLevel || 'HSK 1');
+  const { user: authUser, isLoading: authLoading } = useAuth();
+  const localProfile = storageService.getUserProfile();
+  const [selectedLevel, setSelectedLevel] = useState<string>(localProfile.chineseLevel || 'HSK 1');
   const [progress, setProgress] = useState<SpeakingProgress>(progressService.getProgress());
-  const remainingMinutes = subscriptionService.getRemainingMinutes();
 
   useEffect(() => {
-    setProgress(progressService.getProgress());
-  }, []);
+    let cancelled = false;
+
+    const loadCloudProgress = async () => {
+      if (authLoading) return;
+
+      if (!authUser || !isSupabaseConfigured || !supabase) {
+        setSelectedLevel(localProfile.chineseLevel || 'HSK 1');
+        setProgress(progressService.getProgress());
+        return;
+      }
+
+      try {
+        const [{ data: profile, error: profileError }, { data: cloudProgress, error: progressError }] =
+          await Promise.all([
+            supabase.from('profiles').select('hsk_level').eq('id', authUser.id).maybeSingle(),
+            supabase.from('learning_progress').select('*').eq('user_id', authUser.id).maybeSingle(),
+          ]);
+
+        if (profileError) throw new Error(profileError.message);
+        if (progressError) throw new Error(progressError.message);
+        if (cancelled) return;
+
+        setSelectedLevel(profile?.hsk_level ? `HSK ${profile.hsk_level}` : 'HSK 1');
+
+        if (cloudProgress) {
+          setProgress({
+            speaking_minutes: cloudProgress.speaking_minutes || 0,
+            conversation_count: cloudProgress.conversations_completed || 0,
+            vocabulary_learned: [],
+            corrections_count: 0,
+            topics: [],
+            last_practice: cloudProgress.last_study_date || '',
+            streak: cloudProgress.current_streak || 0,
+            session_history: [],
+          });
+        }
+      } catch (error) {
+        console.warn('Cloud speaking progress fetch error:', error);
+        if (!cancelled) setProgress(progressService.getProgress());
+      }
+    };
+
+    loadCloudProgress();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id, authLoading]);
 
   const handleSelectTopic = (topicId: string) => {
     if (onStartConversation) {
