@@ -17,11 +17,13 @@ export const GuestMigrationModal: React.FC<GuestMigrationModalProps> = ({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen || !user) return null;
 
   const handleMigrate = async () => {
     setLoading(true);
+    setErrorMessage(null);
     try {
       await migrateGuestDataToUser(user);
       setDone(true);
@@ -31,7 +33,7 @@ export const GuestMigrationModal: React.FC<GuestMigrationModalProps> = ({
       }, 1200);
     } catch (e) {
       console.warn('Migration failed:', e);
-      onClose();
+      setErrorMessage(e instanceof Error ? e.message : 'Không thể đồng bộ dữ liệu. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -62,6 +64,12 @@ export const GuestMigrationModal: React.FC<GuestMigrationModalProps> = ({
             <strong className="text-[#211A17] dark:text-white">{user.email}</strong> để không bị mất?
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-xs font-medium">
+            {errorMessage}
+          </div>
+        )}
 
         {done ? (
           <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
