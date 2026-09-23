@@ -2,8 +2,8 @@
 // Provides Short-Term recent turn storage and Long-Term key facts + summary retention.
 // Implements contradiction updates, privacy safeguards, and token management.
 
-import { ConversationMessage } from '../../types';
-import { SpeakingAnalysis } from '../schemas/speakingSchema';
+import type { ConversationMessage } from '../../types';
+import type { SpeakingAnalysis } from '../schemas/speakingSchema';
 
 export interface GrammarIssue {
   pattern: string;
