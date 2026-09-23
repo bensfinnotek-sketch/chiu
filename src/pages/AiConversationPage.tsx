@@ -25,6 +25,7 @@ import { ConversationMessage } from '../types';
 import type { ConversationMessage as PersistedConversationMessage } from '../types/conversation';
 import { useAuth } from '../hooks/useAuth';
 import { getConversationRepository } from '../services/repositories/repositoryFactory';
+import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 import { LinaAvatar, LinaTeacherState } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
 import { MicrophoneButton, MicrophoneState } from '../components/common/MicrophoneButton';
@@ -503,7 +504,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   };
 
   // End Session and Show Summary
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
     stopLinaSpeech();
     speechRecognitionService.stopListening();
 
@@ -511,8 +512,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     const turnsCount = messages.filter((m) => m.sender === 'user').length;
     const correctionsCount = messages.filter((m) => m.correction?.hasMistake).length;
 
-    // Record session into progressService
-    progressService.recordSession({
+    const sessionData = {
       topic: activeTopic,
       level: activeLevel,
       durationMinutes,
@@ -520,10 +520,57 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       wordsLearned: wordsLearnedSession.map((w) => w.hanzi),
       correctionsCount,
       averageScores: sessionScores,
-    });
+    };
 
-    subscriptionService.addUsage(durationMinutes);
-    setSummaryOpen(true);
+    if (!authUser || !isSupabaseConfigured || !supabase) {
+      progressService.recordSession(sessionData);
+      subscriptionService.addUsage(durationMinutes);
+      setSummaryOpen(true);
+      return;
+    }
+
+    try {
+      const { data: existing, error: readError } = await supabase
+        .from('learning_progress')
+        .select('total_study_minutes, speaking_minutes, conversations_completed, current_streak, longest_streak, last_study_date')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      if (readError) throw new Error(readError.message);
+
+      const today = new Date();
+      const todayDate = today.toISOString().slice(0, 10);
+      const previousDate = existing?.last_study_date || null;
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+      let currentStreak = existing?.current_streak || 0;
+      if (previousDate !== todayDate) {
+        currentStreak = previousDate === yesterday ? currentStreak + 1 : 1;
+      }
+      const longestStreak = Math.max(existing?.longest_streak || 0, currentStreak);
+
+      const { error: updateError } = await supabase
+        .from('learning_progress')
+        .upsert({
+          user_id: authUser.id,
+          total_study_minutes: (existing?.total_study_minutes || 0) + Math.max(1, Math.round(durationMinutes)),
+          speaking_minutes: (existing?.speaking_minutes || 0) + Math.max(1, Math.round(durationMinutes)),
+          conversations_completed: (existing?.conversations_completed || 0) + 1,
+          current_streak: currentStreak,
+          longest_streak: longestStreak,
+          last_study_date: todayDate,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (updateError) throw new Error(updateError.message);
+      setSummaryOpen(true);
+    } catch (error) {
+      console.error('Cloud learning progress update error:', error);
+      setPersistenceError(
+        `Không thể lưu tiến trình luyện nói: ${error instanceof Error ? error.message : String(error)}`
+      );
+      setSummaryOpen(true);
+    }
   };
 
   // Navigation handlers
