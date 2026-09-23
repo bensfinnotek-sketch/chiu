@@ -21,7 +21,7 @@ import {
   Brain,
   Cpu,
 } from 'lucide-react';
-import { ConversationMessage, SupportedLanguage } from '../types';
+import { ConversationMessage } from '../types';
 import type { ConversationMessage as PersistedConversationMessage } from '../types/conversation';
 import { useAuth } from '../hooks/useAuth';
 import { getConversationRepository } from '../services/repositories/repositoryFactory';
@@ -36,7 +36,6 @@ import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
 import { SessionSummaryModal } from '../components/speaking/SessionSummaryModal';
-import { AI_CONFIG } from '../config/ai';
 import {
   ConversationMemory,
   createEmptyMemory,
@@ -373,13 +372,14 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setStatusMessage('Đến lượt bạn nói!');
         setMicState('IDLE');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error generating AI response:', err);
       setTeacherState('idle');
       setMicState('IDLE');
-      const errorMsg = err?.message?.includes('429')
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMsg = errorMessage.includes('429')
         ? 'Hệ thống AI đang bận (429 Rate limit). Vui lòng thử lại sau giây lát!'
-        : (err?.message || 'Đã có lỗi kết nối đến AI. Hãy thử gửi lại nhé!');
+        : (errorMessage || 'Đã có lỗi kết nối đến AI. Hãy thử gửi lại nhé!');
       setStatusMessage(errorMsg);
     }
   };
