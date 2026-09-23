@@ -20,6 +20,7 @@ import { UserProfile as LegacyUserProfile } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface ProfilePageProps {
   user?: LegacyUserProfile;
@@ -37,6 +38,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const { user: authUser, signOut, isGuest } = useAuth();
   const { profile, updateProfile, isLoading: profileLoading } = useUserProfile();
   const { progress } = useDashboardData();
+  const { isPremium, isLoading: subscriptionLoading } = useSubscription();
 
   const [name, setName] = useState('');
   const [hskLevel, setHskLevel] = useState(1);
@@ -98,7 +100,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const streakDays = progress?.currentStreak ?? legacyUser?.streakDays ?? 1;
   const wordsLearned = progress?.wordsLearned ?? legacyUser?.wordsLearned ?? 38;
-  const isPremium = legacyUser?.isPremium ?? false;
+  const displayIsPremium = authUser ? isPremium : (legacyUser?.isPremium ?? false);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
@@ -134,14 +136,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-[#211A17] dark:text-white">{name || 'Học viên'}</h2>
-              {isPremium ? (
+              {displayIsPremium ? (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold flex items-center gap-1">
                   <Crown size={12} className="fill-amber-600" />
                   <span>PRO</span>
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[#716761] dark:text-[#A89E97] text-[10px] font-bold">
-                  {isGuest ? 'Khách' : 'Miễn phí'}
+                  {isGuest ? 'Khách' : subscriptionLoading ? 'Đang tải gói…' : 'Miễn phí'}
                 </span>
               )}
             </div>
