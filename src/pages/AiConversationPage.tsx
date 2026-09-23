@@ -92,6 +92,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   });
   const [showMemoryDetails, setShowMemoryDetails] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   // Check backend Gemini API readiness
   useEffect(() => {
@@ -183,6 +184,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } catch (error) {
         console.error('Error initialising persisted conversation:', error);
         if (!cancelled) {
+          const message = error instanceof Error ? error.message : String(error);
+          setPersistenceError(`Không thể khởi tạo bộ nhớ hội thoại: ${message}`);
           setConversationSessionId(selectedSessionId || null);
           const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
           setMessages([{ id: 'lina-init-fallback', sender: 'lina', chinese: starter.chinese, pinyin: starter.pinyin,
@@ -713,6 +716,16 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
         {/* CENTER COLUMN: Conversation History & Control Dock */}
         <div className="col-span-1 lg:col-span-6 flex flex-col bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-3xl shadow-xs overflow-hidden">
+          {persistenceError && (
+            <div className="mx-4 mt-4 p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-start gap-2">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Bộ nhớ hội thoại chưa lưu được</p>
+                <p className="mt-1 break-words">{persistenceError}</p>
+              </div>
+            </div>
+          )}
+
           {/* Messages Feed */}
           <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4">
             {messages.map((msg) => {
