@@ -86,7 +86,10 @@ export class SupabaseConversationRepository implements ConversationRepository {
       .eq('id', sessionId)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      throw new Error(`Không thể tải phiên hội thoại: ${formatSupabaseError(error)}`);
+    }
+    if (!data) return null;
 
     return {
       id: data.id,
@@ -169,7 +172,6 @@ export class SupabaseConversationRepository implements ConversationRepository {
     if (sessionError) {
       throw new Error(`Không thể cập nhật thời gian hội thoại: ${formatSupabaseError(sessionError)}`);
     }
-
   }
 
   async getSessionMessages(sessionId: string): Promise<ConversationMessage[]> {
@@ -181,7 +183,10 @@ export class SupabaseConversationRepository implements ConversationRepository {
       .eq('session_id', sessionId)
       .order('timestamp', { ascending: true });
 
-    if (error || !data) return [];
+    if (error) {
+      throw new Error(`Không thể tải tin nhắn hội thoại: ${formatSupabaseError(error)}`);
+    }
+    if (!data) return [];
 
     return data.map((m) => ({
       id: m.id,
@@ -210,7 +215,14 @@ export class SupabaseConversationRepository implements ConversationRepository {
     };
     if (keyFacts) updates.key_facts = keyFacts;
 
-    await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase
+      .from('conversation_sessions')
+      .update(updates)
+      .eq('id', sessionId);
+
+    if (error) {
+      throw new Error(`Không thể cập nhật tóm tắt hội thoại: ${formatSupabaseError(error)}`);
+    }
   }
 
   async updateMemory(sessionId: string, memory: Partial<ConversationMemory>): Promise<void> {
@@ -223,15 +235,36 @@ export class SupabaseConversationRepository implements ConversationRepository {
     if (memory.keyFacts !== undefined) updates.key_facts = memory.keyFacts;
     if (memory.vocabulary !== undefined) updates.vocabulary = memory.vocabulary;
 
-    await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase
+      .from('conversation_sessions')
+      .update(updates)
+      .eq('id', sessionId);
+
+    if (error) {
+      throw new Error(`Không thể cập nhật bộ nhớ hội thoại: ${formatSupabaseError(error)}`);
+    }
   }
 
   async deleteSession(sessionId: string): Promise<void> {
     if (!supabase) return;
 
-    // Messages cascade or delete manually
-    await supabase.from('conversation_messages').delete().eq('session_id', sessionId);
-    await supabase.from('conversation_sessions').delete().eq('id', sessionId);
+    const { error: messageError } = await supabase
+      .from('conversation_messages')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (messageError) {
+      throw new Error(`Không thể xóa tin nhắn hội thoại: ${formatSupabaseError(messageError)}`);
+    }
+
+    const { error: sessionError } = await supabase
+      .from('conversation_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (sessionError) {
+      throw new Error(`Không thể xóa phiên hội thoại: ${formatSupabaseError(sessionError)}`);
+    }
   }
 }
 
@@ -298,7 +331,6 @@ export class LocalStorageConversationRepository implements ConversationRepositor
       list.push(message);
       localStorage.setItem(key, JSON.stringify(list.slice(-50)));
 
-      // update session message count & timestamp
       const sessions = this.getSessions();
       const sIndex = sessions.findIndex((s) => s.id === sessionId);
       if (sIndex >= 0) {
