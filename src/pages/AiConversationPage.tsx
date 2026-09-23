@@ -153,15 +153,19 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         });
         const loadedMessages = persistedMessages.map(toUiMessage);
         setMessages(loadedMessages);
-        if (session.summary || session.keyFacts.length || session.vocabulary.length) {
-          setMemory((previous) => ({ ...previous, sessionId: session!.id, topic: session!.topic,
-            learnerLevel: String(session!.learnerLevel), summary: session!.summary || previous.summary,
-            keyFacts: session!.keyFacts || previous.keyFacts, vocabulary: session!.vocabulary || previous.vocabulary,
-            recentMessages: loadedMessages.slice(-12).map((m) => ({
-              ...m,
-              sender: m.sender,
-            })) as any }));
-        }
+        setMemory((previous) => ({
+          ...previous,
+          sessionId: session!.id,
+          topic: session!.topic,
+          learnerLevel: String(session!.learnerLevel),
+          summary: session!.summary || previous.summary,
+          keyFacts: session!.keyFacts || previous.keyFacts,
+          vocabulary: session!.vocabulary || previous.vocabulary,
+          recentMessages: loadedMessages.slice(-12).map((m) => ({
+            ...m,
+            sender: m.sender,
+          })) as any,
+        }));
         if (loadedMessages.length === 0) {
           const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
           const firstMsg: ConversationMessage = { id: `lina-init-${session.id}`, sender: 'lina', chinese: starter.chinese,
