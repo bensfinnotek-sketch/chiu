@@ -13,8 +13,20 @@ export interface ConversationRepository {
 }
 
 export class SupabaseConversationRepository implements ConversationRepository {
+  private async assertAuthenticatedUser(userId: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase is not configured.');
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw new Error(`Không thể xác thực tài khoản: ${error.message}`);
+    if (!data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
+    if (data.user.id !== userId) {
+      throw new Error('Tài khoản đăng nhập không khớp với tài khoản đang lưu hội thoại.');
+    }
+  }
+
   async createSession(userId: string, topic: string, level: string | number, title?: string): Promise<ConversationSession> {
     if (!supabase) throw new Error('Supabase is not configured.');
+    await this.assertAuthenticatedUser(userId);
 
     const now = new Date().toISOString();
     const cleanLevel = typeof level === 'number' ? level : parseInt(String(level).replace(/\D/g, ''), 10) || 1;
@@ -80,13 +92,18 @@ export class SupabaseConversationRepository implements ConversationRepository {
   async getUserSessions(userId: string): Promise<ConversationSession[]> {
     if (!supabase) return [];
 
+    await this.assertAuthenticatedUser(userId);
+
     const { data, error } = await supabase
       .from('conversation_sessions')
       .select('*, conversation_messages(count)')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+      throw new Error(`Không thể tải lịch sử trò chuyện: ${error.message}`);
+    }
+    if (!data) return [];
 
     return data.map((item: any) => ({
       id: item.id,
@@ -105,6 +122,7 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async saveMessage(sessionId: string, userId: string, message: ConversationMessage): Promise<void> {
     if (!supabase) return;
+    await this.assertAuthenticatedUser(userId);
 
     const { error } = await supabase.from('conversation_messages').insert({
       id: message.id,
@@ -126,8 +144,20 @@ export class SupabaseConversationRepository implements ConversationRepository {
     });
 
     if (error) {
-      console.warn('Error saving message to Supabase:', error);
+      throw new Error(`Không thể lưu tin nhắn vào tài khoản: ${error.message}`);
     }
+
+    const { error: sessionError } = await supabase
+      .from('conversation_sessions')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', sessionId)
+      .eq('user_id', userId);
+
+    if (sessionError) {
+      throw new Error(`Không thể cập nhật thời gian hội thoại: ${sessionError.message}`);
+    }
+
+    return;
 
     // Touch session updated_at
     await supabase
