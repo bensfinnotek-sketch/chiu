@@ -20,9 +20,11 @@ export class SupabaseVocabularyRepository implements VocabularyRepository {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+      throw new Error(`Không thể tải từ vựng: ${error.message}`);
+    }
 
-    return data.map((row) => ({
+    return (data || []).map((row) => ({
       id: row.id,
       userId: row.user_id,
       hanzi: row.hanzi,
@@ -61,7 +63,7 @@ export class SupabaseVocabularyRepository implements VocabularyRepository {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(`Không thể lưu từ vựng: ${error.message}`);
 
     return {
       id: data.id,
@@ -80,23 +82,36 @@ export class SupabaseVocabularyRepository implements VocabularyRepository {
 
   async updateWordStatus(id: string, status: 'new' | 'learning' | 'learned'): Promise<void> {
     if (!supabase) return;
-    await supabase.from('user_vocabulary').update({ status }).eq('id', id);
+
+    const { error } = await supabase
+      .from('user_vocabulary')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Không thể cập nhật trạng thái từ vựng: ${error.message}`);
+    }
   }
 
   async recordReview(id: string, success: boolean): Promise<void> {
     if (!supabase) return;
+
     const now = new Date().toISOString();
     const nextDays = success ? 3 : 1;
     const nextDate = new Date(Date.now() + nextDays * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data } = await supabase
+    const { data, error: readError } = await supabase
       .from('user_vocabulary')
       .select('review_count')
       .eq('id', id)
       .single();
 
+    if (readError) {
+      throw new Error(`Không thể đọc tiến độ ôn từ vựng: ${readError.message}`);
+    }
+
     const count = (data?.review_count || 0) + 1;
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_vocabulary')
       .update({
         review_count: count,
@@ -105,6 +120,10 @@ export class SupabaseVocabularyRepository implements VocabularyRepository {
         status: count >= 3 ? 'learned' : 'learning',
       })
       .eq('id', id);
+
+    if (updateError) {
+      throw new Error(`Không thể lưu kết quả ôn từ vựng: ${updateError.message}`);
+    }
   }
 }
 
@@ -158,7 +177,6 @@ export class LocalStorageVocabularyRepository implements VocabularyRepository {
   }
 
   async updateWordStatus(id: string, status: 'new' | 'learning' | 'learned'): Promise<void> {
-    // Search across user's keys
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith('hanzi_ai_user_vocab_')) {
