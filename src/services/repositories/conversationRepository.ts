@@ -1,6 +1,19 @@
 import { ConversationSession, ConversationMessage, ConversationMemory } from '../../types/conversation';
 import { supabase } from '../../database/supabaseClient';
 
+function formatSupabaseError(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object') {
+    const candidate = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    const parts = [candidate.message, candidate.details, candidate.hint, candidate.code]
+      .filter((value) => typeof value === 'string' && value.trim())
+      .map((value) => String(value));
+    if (parts.length > 0) return parts.join(' | ');
+    try { return JSON.stringify(error); } catch { return 'Lỗi Supabase không xác định.'; }
+  }
+  return String(error || 'Lỗi Supabase không xác định.');
+}
+
 export interface ConversationRepository {
   createSession(userId: string, topic: string, level: string | number, title?: string): Promise<ConversationSession>;
   getSession(sessionId: string): Promise<ConversationSession | null>;
@@ -48,7 +61,7 @@ export class SupabaseConversationRepository implements ConversationRepository {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(`Không thể tạo phiên hội thoại: ${formatSupabaseError(error)}`);
 
     return {
       id: data.id,
@@ -101,7 +114,7 @@ export class SupabaseConversationRepository implements ConversationRepository {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      throw new Error(`Không thể tải lịch sử trò chuyện: ${error.message}`);
+      throw new Error(`Không thể tải lịch sử trò chuyện: ${formatSupabaseError(error)}`);
     }
     if (!data) return [];
 
@@ -144,7 +157,7 @@ export class SupabaseConversationRepository implements ConversationRepository {
     });
 
     if (error) {
-      throw new Error(`Không thể lưu tin nhắn vào tài khoản: ${error.message}`);
+      throw new Error(`Không thể lưu tin nhắn vào tài khoản: ${formatSupabaseError(error)}`);
     }
 
     const { error: sessionError } = await supabase
@@ -154,7 +167,7 @@ export class SupabaseConversationRepository implements ConversationRepository {
       .eq('user_id', userId);
 
     if (sessionError) {
-      throw new Error(`Không thể cập nhật thời gian hội thoại: ${sessionError.message}`);
+      throw new Error(`Không thể cập nhật thời gian hội thoại: ${formatSupabaseError(sessionError)}`);
     }
 
   }
