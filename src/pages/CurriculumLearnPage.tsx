@@ -69,11 +69,18 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   React.useEffect(() => {
     const currentProfileLevel = Number(profile?.hskLevel || 1);
     const completedLevel = levelCompletion?.completionPercent === 100;
-    const passedAverage = (levelCompletion?.averageQuizScore || 0) >= 80;
+    const masteryReady =
+      (levelCompletion?.masteryScore || 0) >= 80 &&
+      (levelCompletion?.vocabularyMastery || 0) >= 70 &&
+      (levelCompletion?.grammarMastery || 0) >= 70 &&
+      ((levelCompletion?.quizMastery || 0) >= 80 || (levelCompletion?.quizMastery || 0) === 0) &&
+      (levelCompletion?.weakVocabularyCount || 0) <= 5 &&
+      (levelCompletion?.weakGrammarCount || 0) <= 2;
     const canAdvance = selectedLevel < 6 && (isPremium || selectedLevel < 2);
 
-    if (!profile || !completedLevel || !passedAverage || !canAdvance) return;
+    if (!profile || !completedLevel || !masteryReady || !canAdvance) return;
     if (currentProfileLevel !== selectedLevel) return;
+    // Mastery, not lesson completion alone, controls automatic HSK progression.
 
     updateProfile({ hskLevel: selectedLevel + 1 }).catch((error) => {
       console.warn('Could not advance HSK profile:', error);
