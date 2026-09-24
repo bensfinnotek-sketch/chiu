@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, RotateCcw, CheckCircle2, XCircle, LogIn } from 'lucide-react';
 import { AudioButton } from '../components/common/AudioButton';
 import { LinaAvatar } from '../components/common/LinaAvatar';
@@ -24,6 +24,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const answerInFlightRef = useRef<string | null>(null);
   const lessonProgressRepository = useMemo(() => getLessonProgressRepository(user?.id || null), [user?.id]);
 
   useEffect(() => {
@@ -127,8 +128,9 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   }, [current, cards]);
 
   const handleSelectOption = async (index: number) => {
-    if (!current || selectedAnswer !== null) return;
+    if (!current || selectedAnswer !== null || answerInFlightRef.current === current.id) return;
 
+    answerInFlightRef.current = current.id;
     setSelectedAnswer(index);
     const correct = options[index] === current.meaning;
 
@@ -163,6 +165,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     }
 
     window.setTimeout(() => {
+      answerInFlightRef.current = null;
       setSelectedAnswer(null);
       if (step < cards.length - 1) {
         setStep((value) => value + 1);
