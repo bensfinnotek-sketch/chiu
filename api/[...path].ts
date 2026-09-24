@@ -12,6 +12,7 @@ import {
   sendJson,
 } from "./_lib/geminiHandlers.ts";
 import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.ts";
+import { handleGeneratePersonalizedLesson } from "./_lib/personalizedLessonHandlers.ts";
 import {
   handleGetFlashcards,
   handleCreateFlashcard,
@@ -71,9 +72,12 @@ export default async function handler(req: any, res: any) {
     return handleQuiz(req, res);
   }
 
-  // Personalized learning plan endpoint (Protected)
+  // Personalized learning endpoints (Protected)
   if (fullSubPath === "learning/plan" && req.method === "GET") {
     return handleGetLearningPlan(req, res);
+  }
+  if (fullSubPath === "learning/personalized-lesson" && req.method === "POST") {
+    return handleGeneratePersonalizedLesson(req, res);
   }
 
   // Flashcards CRUD endpoints (Protected)
