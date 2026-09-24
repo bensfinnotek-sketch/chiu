@@ -240,7 +240,19 @@ export function useLesson(lessonId: string) {
     if (!lesson || attempt.lessonId !== lessonId) return null;
 
     // Persist the quiz as the source event for the learning loop.
-    await repo.saveQuizAttempt(attempt);
+    // Duplicate attempt IDs are treated as already processed, preventing mastery
+    // and skill evidence from being applied twice after retries/double submits.
+    const isNewAttempt = await repo.saveQuizAttempt(attempt);
+    if (!isNewAttempt) {
+      return {
+        progress: userProgress,
+        isFirstCompletion: false,
+        flashcardsSaved: 0,
+        skillDelta: 0,
+        recommendations: await recommendationService.getRecommendations(userId, lesson.levelNumber, repo),
+        levelCompletion: await recommendationService.calculateLevelCompletion(userId, lesson.levelNumber, repo),
+      };
+    }
 
     // Feed answer-level evidence back into vocabulary and grammar mastery.
     // The same answer can contribute to both skill dimensions when a quiz
