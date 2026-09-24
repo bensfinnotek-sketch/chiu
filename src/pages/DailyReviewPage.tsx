@@ -81,7 +81,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     setSelectedAnswer(index);
     const correct = options[index] === current.meaning;
 
-    if (correct) setScore((value) => value + Math.round(100 / cards.length));
+    if (correct) setScore((value) => value + 1);
 
     try {
       if (user && current.id) {
@@ -245,7 +245,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           <div className="space-y-2">
             <h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Hoàn thành phiên ôn tập</h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97]">
-              Bạn đã ôn {cards.length} từ và đạt <span className="font-bold text-[#E86F51]">{Math.round(score)} / 100 điểm</span>.
+              Bạn đã ôn {cards.length} từ và đạt <span className="font-bold text-[#E86F51]">{Math.round((score / Math.max(cards.length, 1)) * 100)} / 100 điểm</span>.
             </p>
           </div>
           <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 flex items-center gap-3 text-left">
