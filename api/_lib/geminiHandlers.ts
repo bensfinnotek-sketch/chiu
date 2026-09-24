@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { parseBody, sendJson } from "./httpUtils.ts";
-import { getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
+import { extractBearerToken, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
 import { PLAN_ENTITLEMENTS, normalizePlan } from "../../src/config/planEntitlements.ts";
 import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers.ts";
 
@@ -419,27 +419,11 @@ Format output strictly as JSON with this exact schema:
         }
 
         const entitlement = PLAN_ENTITLEMENTS[plan];
+        const accessToken = extractBearerToken(req);
         const knownHanzi = new Set(learnerFlashcards.map((card) => card.hanzi));
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        let newCardsSavedToday = learnerFlashcards.filter((card) => {
-          const createdAt = new Date(card.created_at).getTime();
-          return (
-            card.auto_saved === true &&
-            Number.isFinite(createdAt) &&
-            createdAt >= startOfDay.getTime()
-          );
-        }).length;
 
         for (const item of validVocabulary) {
           const isExisting = knownHanzi.has(item.hanzi);
-          if (
-            !isExisting &&
-            entitlement.dailyAutoFlashcardLimit !== null &&
-            newCardsSavedToday >= entitlement.dailyAutoFlashcardLimit
-          ) {
-            continue;
-          }
 
           const parsedItemHsk =
             typeof item.hsk === "string" ? Number(item.hsk.match(/\d+/)?.[0]) : NaN;
@@ -455,11 +439,13 @@ Format output strictly as JSON with this exact schema:
             topic,
             hsk_level: itemHskLevel,
             auto_saved: true,
-          });
+          },
+          accessToken,
+          entitlement.dailyAutoFlashcardLimit
+        );
 
           if (saved && !isExisting) {
             knownHanzi.add(item.hanzi);
-            newCardsSavedToday += 1;
           }
         }
       } catch (err) {
