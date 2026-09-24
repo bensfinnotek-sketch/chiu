@@ -83,7 +83,6 @@ export class RecommendationService {
       curriculumRepository.getAllVocabulary(),
     ]);
     const allGrammar = ALL_GRAMMAR_POINTS;
-    const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const nextLesson = this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
 
     // Mastery profile is the main decision signal. It combines repeated
@@ -110,6 +109,15 @@ export class RecommendationService {
       lessonLevels,
     });
     const currentMastery = getHskMasteryProfile(masteryProfiles, currentLevelNumber);
+    const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo, {
+      allLessons,
+      userProgressList,
+      vocabularyLevels,
+      grammarLevels,
+      vocabularyProgress: vocabProgress,
+      grammarProgress,
+      skillProgress,
+    });
 
     // One decision engine now coordinates SRS, quiz/grammar reinforcement,
     // lesson progression, and HSK advancement.
