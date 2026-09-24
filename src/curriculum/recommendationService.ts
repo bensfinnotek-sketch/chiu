@@ -67,14 +67,21 @@ export class RecommendationService {
       const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
       const isResume = userProgress?.status === 'in_progress';
 
+      const isCompletedReview = userProgress?.status === 'completed';
       recommendations.push({
-        type: isResume ? 'continue_lesson' : 'next_lesson',
-        title: isResume ? `Tiếp tục bài học: ${nextLesson.title}` : `Bài học tiếp theo: ${nextLesson.title}`,
-        description: `${nextLesson.titleZh} · Dự kiến ${nextLesson.estimatedMinutes} phút`,
+        type: isCompletedReview ? 'retry_quiz' : isResume ? 'continue_lesson' : 'next_lesson',
+        title: isCompletedReview
+          ? `Củng cố bài cần ôn: ${nextLesson.title}`
+          : isResume
+            ? `Tiếp tục bài học: ${nextLesson.title}`
+            : `Bài học tiếp theo: ${nextLesson.title}`,
+        description: isCompletedReview
+          ? `Điểm tốt nhất ${userProgress?.score ?? 0}% · ${nextLesson.titleZh}`
+          : `${nextLesson.titleZh} · Dự kiến ${nextLesson.estimatedMinutes} phút`,
         targetId: nextLesson.id,
         priority: 1,
-        actionText: isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
-        metadata: { levelNumber: nextLesson.levelNumber },
+        actionText: isCompletedReview ? 'Ôn lại bài' : isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
+        metadata: { levelNumber: nextLesson.levelNumber, score: userProgress?.score ?? undefined },
       });
     }
 
