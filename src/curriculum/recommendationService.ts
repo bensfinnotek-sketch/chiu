@@ -200,6 +200,8 @@ export class RecommendationService {
           levelNumber: currentLevelNumber,
           score: currentMastery.vocabularyScore,
           wordCount: dueCards.length,
+          decision: decision.decision,
+          reason: decision.reason,
         },
       });
     }
@@ -230,7 +232,12 @@ export class RecommendationService {
         targetId: `level:${nextLevel}`,
         priority: 0,
         actionText: `Học HSK ${nextLevel}`,
-        metadata: { levelNumber: nextLevel, score: currentMastery.overallScore },
+        metadata: {
+          levelNumber: nextLevel,
+          score: currentMastery.overallScore,
+          decision: decision.decision,
+          reason: decision.reason,
+        },
       });
     }
 
@@ -255,6 +262,8 @@ export class RecommendationService {
           levelNumber: currentLevelNumber,
           score: currentMastery.vocabularyScore,
           wordCount: currentMastery.weakVocabularyCount,
+          decision: decision.decision,
+          reason: decision.reason,
         },
       });
     }
@@ -267,7 +276,12 @@ export class RecommendationService {
         targetId: 'grammar',
         priority: 1,
         actionText: 'Ôn ngữ pháp',
-        metadata: { levelNumber: currentLevelNumber, score: currentMastery.grammarScore },
+        metadata: {
+          levelNumber: currentLevelNumber,
+          score: currentMastery.grammarScore,
+          decision: decision.decision,
+          reason: decision.reason,
+        },
       });
     }
 
