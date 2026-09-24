@@ -423,7 +423,7 @@ export async function handleGetUserProfile(req: any, res: any) {
   const user = await requireAuth(req, res, sendJson);
   if (!user) return;
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(extractBearerToken(req));
   if (supabase) {
     const { data } = await supabase
       .from("profiles")
