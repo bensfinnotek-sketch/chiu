@@ -404,7 +404,8 @@ Format output strictly as JSON with this exact schema:
         }
         sessionHskLevel = Math.min(6, Math.max(1, sessionHskLevel));
 
-        const supabase = getSupabaseServerClient();
+        const accessToken = extractBearerToken(req);
+        const supabase = getSupabaseServerClient(accessToken);
         let plan: "free" | "premium" = "free";
         if (supabase) {
           const { data: subscription } = await supabase
@@ -420,7 +421,6 @@ Format output strictly as JSON with this exact schema:
         }
 
         const entitlement = PLAN_ENTITLEMENTS[plan];
-        const accessToken = extractBearerToken(req);
         const knownHanzi = new Set(learnerFlashcards.map((card) => card.hanzi));
 
         for (const item of validVocabulary) {
