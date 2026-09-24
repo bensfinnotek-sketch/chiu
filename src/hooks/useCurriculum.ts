@@ -17,6 +17,7 @@ import { getLessonProgressRepository } from '../curriculum/lessonProgressReposit
 import { recommendationService } from '../curriculum/recommendationService';
 import { useAuth } from './useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
+import { flashcardService } from '../services/flashcardService';
 
 export function useCurriculum(levelNumber: HSKLevelNumber = 1) {
   const { user } = useAuth();
@@ -151,18 +152,17 @@ export function useLesson(lessonId: string) {
   };
 
   const completeLesson = async (score: number) => {
-    if (!lesson) return;
+    if (!lesson) return null;
+
+    const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
     const { progress, isFirstCompletion } = await repo.markLessonCompleted(
       userId,
       lessonId,
-      score,
+      normalizedScore,
       lesson.levelNumber
     );
     setUserProgress(progress);
 
-    // Keep the global learning dashboard in sync with curriculum completion.
-    // Count a lesson and its vocabulary only on the first successful completion
-    // so reopening/retrying a lesson does not inflate aggregate progress.
     if (isFirstCompletion) {
       await progressRepo.recordStudyActivity(userId, {
         type: 'lesson',
@@ -171,14 +171,53 @@ export function useLesson(lessonId: string) {
       });
     }
 
-    // Also record vocabulary exposure.
-    for (const item of vocabulary) {
-      await repo.updateVocabularyStatus(userId, item.id, 'learning', true);
+    // Lesson vocabulary becomes personal flashcards through the normal
+    // authenticated path, so this does not consume the AI auto-save quota.
+    let flashcardsSaved = 0;
+    if (user && vocabulary.length > 0) {
+      const saved = await flashcardService.upsertBatchFlashcards(
+        vocabulary.slice(0, 20).map((item) => ({
+          hanzi: item.hanzi,
+          pinyin: item.pinyin,
+          meaning: item.meaning,
+          example_sentence: item.exampleSentence,
+          topic: `hsk-${lesson.levelNumber}-lesson`,
+          hsk_level: lesson.levelNumber,
+        }))
+      );
+      flashcardsSaved = saved.length;
     }
 
-    // Update skill scores.
-    await repo.updateSkillScore(userId, 'vocabulary', lesson.levelNumber, 10);
-    await repo.updateSkillScore(userId, 'grammar', lesson.levelNumber, 10);
+    // Completing a lesson records vocabulary exposure. Individual quiz
+    // correctness can still refine these records when quiz answers are saved.
+    await Promise.all(
+      vocabulary.map((item) =>
+        repo.updateVocabularyStatus(userId, item.id, 'learning')
+      )
+    );
+
+    // Skill progress now follows the actual quiz result instead of a fixed
+    // amount for every lesson.
+    const skillDelta = Math.max(5, Math.round(normalizedScore * 0.15));
+    await Promise.all([
+      repo.updateSkillScore(userId, 'vocabulary', lesson.levelNumber, skillDelta),
+      repo.updateSkillScore(userId, 'grammar', lesson.levelNumber, skillDelta),
+    ]);
+
+    // Recompute the next action immediately: review, next lesson, or next HSK.
+    const [nextRecommendations, nextLevelCompletion] = await Promise.all([
+      recommendationService.getRecommendations(userId, lesson.levelNumber, repo),
+      recommendationService.calculateLevelCompletion(userId, lesson.levelNumber, repo),
+    ]);
+
+    return {
+      progress,
+      isFirstCompletion,
+      flashcardsSaved,
+      skillDelta,
+      recommendations: nextRecommendations,
+      levelCompletion: nextLevelCompletion,
+    };
   };
 
   return {
