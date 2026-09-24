@@ -323,6 +323,7 @@ export function useLesson(lessonId: string) {
       vocabulary: vocabularyDelta,
       grammar: grammarDelta,
     });
+  };
 
   return {
     lesson,
