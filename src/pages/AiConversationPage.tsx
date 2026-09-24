@@ -59,7 +59,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   initialLevel,
   selectedSessionId,
 }) => {
-  const { user: authUser, isLoading: authLoading } = useAuth();
+  const { user: authUser, isLoading: authLoading, signInWithGoogle } = useAuth();
   const conversationRepository = getConversationRepository(authUser);
   // Retrieve selected topic and level
   const activeTopic =
@@ -94,6 +94,46 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   const [showMemoryDetails, setShowMemoryDetails] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
+
+  // Guest AI Speaking limit: 5 minutes per browser speaking session.
+  const GUEST_SPEAKING_LIMIT_SECONDS = 5 * 60;
+  const GUEST_SPEAKING_STARTED_KEY = 'hanzi_guest_speaking_started_at';
+  const [guestRemainingSeconds, setGuestRemainingSeconds] = useState(GUEST_SPEAKING_LIMIT_SECONDS);
+  const [guestLimitReached, setGuestLimitReached] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || authUser) {
+      setGuestLimitReached(false);
+      return;
+    }
+
+    const existing = Number(localStorage.getItem(GUEST_SPEAKING_STARTED_KEY));
+    const startedAt = Number.isFinite(existing) && existing > 0 ? existing : Date.now();
+    if (!existing || !Number.isFinite(existing) || existing <= 0) {
+      localStorage.setItem(GUEST_SPEAKING_STARTED_KEY, String(startedAt));
+    }
+
+    const updateGuestTimer = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      const remaining = Math.max(0, GUEST_SPEAKING_LIMIT_SECONDS - elapsed);
+      setGuestRemainingSeconds(remaining);
+      if (remaining <= 0) {
+        setGuestLimitReached(true);
+        speechRecognitionService.stopListening();
+        textToSpeechService.stopSpeaking();
+        setMicState('IDLE');
+        setTeacherState('idle');
+        setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí.');
+      }
+    };
+
+    updateGuestTimer();
+    const intervalId = window.setInterval(updateGuestTimer, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [authLoading, authUser?.id]);
+
+  const guestCanSpeak = Boolean(authUser) || (!authLoading && guestRemainingSeconds > 0 && !guestLimitReached);
+  const formattedGuestTime = `${Math.floor(guestRemainingSeconds / 60)}:${String(guestRemainingSeconds % 60).padStart(2, '0')}`;
 
   // Check backend Gemini API readiness
   useEffect(() => {
@@ -235,6 +275,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Process user message with Gemini Speaking Engine
   const processUserMessage = async (userText: string) => {
+    if (!guestCanSpeak) {
+      setGuestLimitReached(true);
+      setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
+      return;
+    }
+
     const cleanText = userText.trim();
     if (!cleanText) return;
 
@@ -383,6 +429,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       setTeacherState('idle');
       setMicState('IDLE');
       const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('Guest AI Speaking limit reached')) {
+        setGuestLimitReached(true);
+        setGuestRemainingSeconds(0);
+        setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
+        return;
+      }
       const errorMsg = errorMessage.includes('429')
         ? 'Hệ thống AI đang bận (429 Rate limit). Vui lòng thử lại sau giây lát!'
         : (errorMessage || 'Đã có lỗi kết nối đến AI. Hãy thử gửi lại nhé!');
@@ -392,6 +444,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Start listening logic
   const handleStartListening = () => {
+    if (!guestCanSpeak) {
+      setGuestLimitReached(true);
+      setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
+      return;
+    }
+
     // Interrupt teacher speech immediately
     stopLinaSpeech();
 
@@ -447,7 +505,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Toggle Microphone
   const handleToggleMicrophone = () => {
-    if (!conversationReady) return;
+    if (!conversationReady || !guestCanSpeak) {
+      if (!guestCanSpeak) setGuestLimitReached(true);
+      return;
+    }
     if (micState === 'LISTENING') {
       speechRecognitionService.stopListening();
       if (interimTranscript.trim()) {
@@ -466,7 +527,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Manual text submit fallback
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputVal.trim() || micState === 'PROCESSING' || !conversationReady) return;
+    if (!inputVal.trim() || micState === 'PROCESSING' || !conversationReady || !guestCanSpeak) return;
     const text = inputVal;
     setInputVal('');
     processUserMessage(text);
@@ -941,6 +1002,31 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
           {/* Bottom Interactive Control Dock */}
           <div className="p-4 bg-[#FFF9F4] dark:bg-[#251D19] border-t border-[#EFE4D8] dark:border-[#342A24] space-y-3">
+            {!authLoading && !authUser && (
+              <div className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 border ${guestRemainingSeconds <= 30 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-[#EADCCF] text-[#5F554F]'}`}>
+                <div>
+                  <p className="text-xs font-semibold">AI Speaking miễn phí cho khách</p>
+                  <p className="text-[11px] mt-0.5">
+                    {guestLimitReached ? 'Đã hết 5 phút cho phiên này.' : 'Thời gian còn lại trong phiên:'}
+                  </p>
+                </div>
+                <span className="text-sm font-bold tabular-nums">{formattedGuestTime}</span>
+              </div>
+            )}
+
+            {guestLimitReached && !authUser && !authLoading && (
+              <div className="rounded-2xl border border-[#EADCCF] bg-white p-3 space-y-2">
+                <p className="text-xs text-[#5F554F]">Đăng nhập Google để tiếp tục luyện nói không giới hạn.</p>
+                <button
+                  type="button"
+                  onClick={() => void signInWithGoogle()}
+                  className="w-full py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D55F42] text-white text-xs font-semibold transition-colors"
+                >
+                  Continue with Google
+                </button>
+              </div>
+            )}
+
             {/* Center Microphone Button */}
             <div className="flex items-center justify-center">
               <MicrophoneButton
@@ -962,7 +1048,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               />
               <button
                 type="submit"
-                disabled={!inputVal.trim() || micState === 'PROCESSING' || !conversationReady}
+                disabled={!inputVal.trim() || micState === 'PROCESSING' || !conversationReady || !guestCanSpeak}
                 className="p-2.5 rounded-2xl bg-[#E86F51] hover:bg-[#D55F42] disabled:opacity-40 text-white transition-colors cursor-pointer"
                 title="Gửi câu trả lời"
               >
