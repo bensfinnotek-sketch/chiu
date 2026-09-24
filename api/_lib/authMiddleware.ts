@@ -12,10 +12,24 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 
 let serverSupabaseClient: any = null;
 
-export function getSupabaseServerClient() {
+export function getSupabaseServerClient(accessToken?: string | null) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return null;
   }
+  if (accessToken) {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    });
+  }
+
   if (!serverSupabaseClient) {
     serverSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
