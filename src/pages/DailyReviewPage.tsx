@@ -22,7 +22,6 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [skillScores, setSkillScores] = useState<Record<number, number>>({});
   const lessonProgressRepository = useMemo(() => getLessonProgressRepository(user?.id || null), [user?.id]);
 
   useEffect(() => {
@@ -72,7 +71,6 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           })
           .slice(0, 10);
 
-        setSkillScores(vocabularyScores);
 
         setCards(reviewable);
       })
