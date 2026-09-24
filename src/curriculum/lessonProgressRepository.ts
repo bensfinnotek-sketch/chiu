@@ -22,7 +22,6 @@
       throw new Error(`Không thể cập nhật tiến độ kỹ năng: ${error.message}`);
     }
   }
-  }
 }
 
 export function getLessonProgressRepository(userId: string | null): LessonProgressRepository {
