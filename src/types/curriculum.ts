@@ -273,6 +273,12 @@ export interface HSKLevelCompletion {
   completedLessons: number;
   totalRequiredLessons: number;
   averageQuizScore: number;
+  masteryScore: number;
+  vocabularyMastery: number;
+  grammarMastery: number;
+  quizMastery: number;
+  weakVocabularyCount: number;
+  weakGrammarCount: number;
   completedAt?: string | null;
 }
 
