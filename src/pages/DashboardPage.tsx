@@ -28,6 +28,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   user,
   onNavigate,
 }) => {
+  const { profile, isLoading: profileLoading } = useUserProfile();
+  const { progress, vocabularyCount } = useDashboardData();
+  const displayName = profile?.displayName?.trim() || (profileLoading ? '...' : 'bạn');
+  const streakDays = progress?.currentStreak ?? user.streakDays;
+  const wordsLearned = progress?.wordsLearned ?? vocabularyCount;
+  const minutesLearnedToday = progress?.totalStudyMinutes ?? user.minutesLearnedToday;
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
       {/* 1. Header Greeting & Lina Callout */}
