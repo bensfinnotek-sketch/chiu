@@ -25,12 +25,14 @@ interface CurriculumLessonViewerProps {
   lessonId: string;
   onBack: () => void;
   onNavigateToSpeaking?: (topic: string) => void;
+  onNavigate?: (route: string, param?: string) => void;
 }
 
 export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   lessonId,
   onBack,
   onNavigateToSpeaking,
+  onNavigate,
 }) => {
   const {
     lesson,
@@ -51,6 +53,9 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [quizStartedAt, setQuizStartedAt] = useState<string | null>(null);
+  const [learningLoopResult, setLearningLoopResult] = useState<Awaited<ReturnType<typeof completeQuiz>>>(null);
+  const [quizPersistenceError, setQuizPersistenceError] = useState<string | null>(null);
 
   if (isLoading || !lesson) {
     return (
@@ -86,6 +91,8 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   // Quiz evaluation
   const handleAnswerSelect = (questionId: string, optionId: string) => {
     if (quizSubmitted) return;
+    setQuizPersistenceError(null);
+    setQuizStartedAt((startedAt) => startedAt || new Date().toISOString());
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionId }));
   };
 
@@ -93,7 +100,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     if (quizSubmitted || quizQuestions.length === 0) return;
 
     const completedAt = new Date().toISOString();
-    const startedAt = userProgress?.lastAccessedAt || new Date().toISOString();
+    const startedAt = quizStartedAt || completedAt;
     const answers: QuizAnswer[] = quizQuestions.map((q) => {
       const answer = selectedAnswers[q.id];
       const correct = Array.isArray(q.correctAnswer)
@@ -133,11 +140,14 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
     setQuizScore(score);
     setQuizSubmitted(true);
+    setQuizPersistenceError(null);
 
     try {
-      await completeQuiz(attempt);
+      const result = await completeQuiz(attempt);
+      setLearningLoopResult(result);
     } catch (error) {
       console.error('Failed to persist quiz learning loop:', error);
+      setQuizPersistenceError('Kết quả đã được chấm trên màn hình, nhưng chưa đồng bộ được tiến độ. Hãy thử lại sau.');
     }
   };
 
@@ -558,6 +568,78 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
               })}
             </div>
 
+            {quizSubmitted && (
+              <div className="p-5 rounded-2xl border border-[#E86F51]/15 bg-[#FFF9F4] dark:bg-[#2A2320] space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${quizScore >= lesson.passingScore ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>
+                    {quizScore >= lesson.passingScore ? <CheckCircle2 size={20} /> : <RotateCcw size={20} />}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-[#211A17] dark:text-white">
+                      {quizScore >= lesson.passingScore ? 'Đã cập nhật vòng học tập' : 'Kết quả đã được ghi nhận'}
+                    </h4>
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
+                      {quizScore >= lesson.passingScore
+                        ? 'Kết quả quiz đã cập nhật kỹ năng, từ vựng, flashcards và gợi ý học tiếp.'
+                        : 'Các câu trả lời đã được dùng để cập nhật từ vựng và ngữ pháp; hãy ôn lại bài để vượt qua.'}
+                    </p>
+                  </div>
+                </div>
+
+                {learningLoopResult && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#1E1917] border border-[#E86F51]/10">
+                      <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">Flashcards</p>
+                      <p className="font-black text-[#E86F51]">{learningLoopResult.flashcardsSaved}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#1E1917] border border-[#E86F51]/10">
+                      <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">Kỹ năng</p>
+                      <p className="font-black text-[#E86F51]">+{learningLoopResult.skillDelta}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#1E1917] border border-[#E86F51]/10">
+                      <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">Tiến độ HSK</p>
+                      <p className="font-black text-[#E86F51]">{learningLoopResult.levelCompletion.completionPercent}%</p>
+                    </div>
+                  </div>
+                )}
+
+                {learningLoopResult?.recommendations?.[0] && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#E86F51]/10">
+                    <div>
+                      <p className="text-xs font-bold text-[#E86F51]">Bước tiếp theo</p>
+                      <p className="text-sm font-black text-[#211A17] dark:text-white">
+                        {learningLoopResult.recommendations[0].title}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = learningLoopResult.recommendations[0];
+                        if (next.targetId === 'flashcards') {
+                          onNavigate?.('flashcards');
+                          return;
+                        }
+                        if (next.targetId.startsWith('level:')) {
+                          onNavigate?.('learn');
+                          return;
+                        }
+                        onNavigate?.('learn-detail', next.targetId);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-xs font-bold transition-all"
+                    >
+                      {learningLoopResult.recommendations[0].actionText}
+                    </button>
+                  </div>
+                )}
+
+                {quizPersistenceError && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    {quizPersistenceError}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Quiz Action button */}
             <div className="pt-4 flex justify-end gap-3">
               {!quizSubmitted ? (
@@ -576,6 +658,9 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                     setQuizSubmitted(false);
                     setSelectedAnswers({});
                     setQuizScore(0);
+                    setQuizStartedAt(null);
+                    setLearningLoopResult(null);
+                    setQuizPersistenceError(null);
                   }}
                   className="px-5 py-2.5 rounded-2xl border border-[#E86F51] text-[#E86F51] text-xs font-bold hover:bg-[#FFF0EB] transition-all cursor-pointer flex items-center gap-1.5"
                 >
