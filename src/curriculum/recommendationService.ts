@@ -7,6 +7,7 @@ import {
 } from '../types/curriculum';
 import { curriculumRepository } from './curriculumRepository';
 import { LessonProgressRepository } from './lessonProgressRepository';
+import { buildHskMasteryProfile, getHskMasteryProfile } from './masteryProfile';
 
 export class RecommendationService {
   async getNextLessonToStudy(
@@ -130,86 +131,117 @@ export class RecommendationService {
       });
     }
 
-    // Skill profile signal: use the weakest measured skill to shape the next action.
-    const skillProgress = await repo.getSkillProgress(userId);
-    const currentLevelSkills = skillProgress
-      .filter((skill) => skill.level === currentLevelNumber)
-      .sort((a, b) => a.score - b.score);
-    const weakestSkill = currentLevelSkills[0];
+    // Mastery profile is the main decision signal. It combines repeated
+    // vocabulary/grammar evidence with quiz performance for this HSK level.
+    const [skillProgress, vocabProgress, grammarProgress] = await Promise.all([
+      repo.getSkillProgress(userId),
+      repo.getVocabularyProgress(userId),
+      repo.getGrammarProgress(userId),
+    ]);
 
-    if (weakestSkill && weakestSkill.score < 60) {
-      const skillLabels: Record<string, string> = {
-        vocabulary: 'từ vựng',
-        grammar: 'ngữ pháp',
-        listening: 'nghe',
-        speaking: 'nói',
-        reading: 'đọc',
-        writing: 'viết',
-      };
-      const label = skillLabels[weakestSkill.skill] || weakestSkill.skill;
+    const [allVocabulary, allGrammar, allLessons] = await Promise.all([
+      curriculumRepository.getAllVocabulary(),
+      Promise.resolve(curriculumRepository.getAllGrammarPoints()),
+      curriculumRepository.getAllLessons(),
+    ]);
+    const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
+    const vocabularyLevels = new Map(allVocabulary.map((vocab) => [vocab.id, vocab.hskLevel]));
+    const grammarLevels = new Map(allGrammar.map((grammar) => [grammar.id, grammar.level]));
 
-      // Only emit an actionable recommendation for skills that currently have
-      // a supported destination in the learning UI. Do not mislabel listening,
-      // speaking, reading, or writing weakness as grammar weakness.
-      if (weakestSkill.skill === 'vocabulary' || weakestSkill.skill === 'grammar') {
-        recommendations.push({
-          type: weakestSkill.skill === 'vocabulary' ? 'review_vocabulary' : 'review_grammar',
-          title: `Củng cố kỹ năng ${label}`,
-          description: `Hồ sơ kỹ năng HSK ${currentLevelNumber} hiện ở ${weakestSkill.score}/100. Ưu tiên luyện ${label} trước khi học thêm nội dung mới.`,
-          targetId: weakestSkill.skill === 'vocabulary' ? 'flashcards' : 'grammar',
-          priority: 2,
-          actionText: weakestSkill.skill === 'vocabulary' ? 'Ôn flashcards' : 'Ôn ngữ pháp',
-          metadata: { levelNumber: currentLevelNumber, score: weakestSkill.score },
-        });
-      }
-    }
+    const quizAttempts = (
+      await Promise.all(
+        allLessons
+          .filter((lesson) => lesson.levelNumber === currentLevelNumber)
+          .map((lesson) => repo.getQuizAttempts(userId, lesson.id))
+      )
+    ).flat();
 
-    // Check vocabulary review recommendation
-    const vocabProgress = await repo.getVocabularyProgress(userId);
-    const weakVocab = vocabProgress
-      .map((vocab) => {
-        const exposure = Math.max(0, vocab.exposureCount || 0);
-        const accuracy = exposure > 0 ? (vocab.correctCount / exposure) * 100 : 0;
-        const recencyPenalty = vocab.lastSeenAt ? 0 : 8;
-        const masteryScore = Math.max(
-          0,
-          Math.min(100, accuracy - (vocab.incorrectCount * 5) + Math.min(10, exposure * 2) - recencyPenalty)
-        );
-        return { vocab, masteryScore };
-      })
-      .filter(({ vocab, masteryScore }) => vocab.status === 'learning' || vocab.incorrectCount > 1 || masteryScore < 60)
-      .sort((a, b) => a.masteryScore - b.masteryScore);
+    const masteryProfiles = buildHskMasteryProfile({
+      vocabulary: vocabProgress,
+      grammar: grammarProgress,
+      quizAttempts,
+      skillProgress,
+      vocabularyLevels,
+      grammarLevels,
+      lessonLevels,
+    });
+    const currentMastery = getHskMasteryProfile(masteryProfiles, currentLevelNumber);
 
-    if (weakVocab.length > 0) {
-      const weakestVocabularyScore = Math.round(weakVocab[0].masteryScore);
-      const isVocabularyWeakestSkill = weakestSkill?.skill === 'vocabulary';
+    // Weakest component of the current HSK has priority over generic
+    // "learn something new" suggestions.
+    const componentScores = [
+      { key: 'vocabulary' as const, score: currentMastery.vocabularyScore },
+      { key: 'grammar' as const, score: currentMastery.grammarScore },
+      { key: 'quiz' as const, score: currentMastery.quizScore },
+    ].sort((a, b) => a.score - b.score);
+    const weakestComponent = componentScores[0];
+
+    if (weakestComponent.key === 'vocabulary' && currentMastery.weakVocabularyCount > 0) {
       recommendations.push({
         type: 'review_vocabulary',
-        title: `Ôn tập ${Math.min(weakVocab.length, 10)} từ vựng cần củng cố`,
-        description: `Hồ sơ từ vựng yếu nhất hiện khoảng ${weakestVocabularyScore}/100. Daily Review sẽ ưu tiên thẻ sai nhiều, quá hạn và sát HSK hiện tại.`,
+        title: `Ôn ${currentMastery.weakVocabularyCount} từ vựng yếu ở HSK ${currentLevelNumber}`,
+        description: `Vocabulary ${currentMastery.vocabularyScore}/100. Daily Review sẽ kết hợp điểm yếu với lịch SRS để chọn thẻ cần ôn trước.`,
         targetId: 'flashcards',
-        priority: isVocabularyWeakestSkill ? 1 : 2,
-        actionText: 'Ôn tập ngay',
+        priority: 1,
+        actionText: 'Ôn flashcards',
         metadata: {
-          wordCount: weakVocab.length,
-          score: weakestVocabularyScore,
           levelNumber: currentLevelNumber,
+          score: currentMastery.vocabularyScore,
+          wordCount: currentMastery.weakVocabularyCount,
         },
       });
     }
 
-    // Check grammar review recommendation
-    const grammarProgress = await repo.getGrammarProgress(userId);
-    const weakGrammar = grammarProgress.filter((g) => g.masteryScore < 60);
-
-    if (weakGrammar.length > 0) {
+    if (weakestComponent.key === 'grammar' && currentMastery.weakGrammarCount > 0) {
       recommendations.push({
         type: 'review_grammar',
-        title: 'Củng cố ngữ pháp còn yếu',
-        description: 'Luyện tập các mẫu câu và bài tập cấu trúc trọng điểm.',
-        targetId: weakGrammar[0].grammarPointId,
-        priority: 3,
-        actionText: 'Xem ngữ pháp',
+        title: `Củng cố ${currentMastery.weakGrammarCount} điểm ngữ pháp yếu`,
+        description: `Grammar ${currentMastery.grammarScore}/100. Ưu tiên ôn cấu trúc trước khi mở rộng nội dung mới.`,
+        targetId: 'grammar',
+        priority: 1,
+        actionText: 'Ôn ngữ pháp',
+        metadata: { levelNumber: currentLevelNumber, score: currentMastery.grammarScore },
+      });
+    }
+
+    if (weakestComponent.key === 'quiz' && currentMastery.quizAttempts > 0 && currentMastery.quizScore < 80) {
+      const weakQuiz = levelLessons
+        .map((lesson) => ({
+          lesson,
+          score: quizAttempts
+            .filter((attempt) => attempt.lessonId === lesson.id)
+            .reduce((best, attempt) => Math.max(best, attempt.score), 0),
+        }))
+        .filter((item) => item.score > 0 && item.score < 80)
+        .sort((a, b) => a.score - b.score)[0];
+
+      if (weakQuiz) {
+        recommendations.push({
+          type: 'retry_quiz',
+          title: `Luyện lại quiz: ${weakQuiz.lesson.title}`,
+          description: `Điểm quiz HSK ${currentLevelNumber} đang ở ${currentMastery.quizScore}/100. Ôn lại bài kiểm tra để củng cố điểm yếu.`,
+          targetId: weakQuiz.lesson.id,
+          priority: 1,
+          actionText: 'Luyện lại',
+          metadata: { levelNumber: currentLevelNumber, score: weakQuiz.score },
+        });
+      }
+    }
+
+    // Fallback: if the profile has no weak component with actionable evidence,
+    // continue the curriculum. This keeps new learners moving forward.
+    if (recommendations.length === 0 && nextLesson && levelCompletion.completionPercent < 100) {
+      const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
+      recommendations.push({
+        type: userProgress?.status === 'in_progress' ? 'continue_lesson' : 'next_lesson',
+        title: userProgress?.status === 'in_progress'
+          ? `Tiếp tục bài học: ${nextLesson.title}`
+          : `Bài học tiếp theo: ${nextLesson.title}`,
+        description: `HSK ${currentLevelNumber} hiện ở ${currentMastery.overallScore}/100 (${currentMastery.vocabularyScore} từ vựng · ${currentMastery.grammarScore} ngữ pháp · ${currentMastery.quizScore} quiz).`,
+        targetId: nextLesson.id,
+        priority: 2,
+        actionText: userProgress?.status === 'in_progress' ? 'Học tiếp' : 'Bắt đầu học',
+        metadata: { levelNumber: currentLevelNumber, score: currentMastery.overallScore },
       });
     }
 
