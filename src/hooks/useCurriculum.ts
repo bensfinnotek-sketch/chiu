@@ -175,17 +175,23 @@ export function useLesson(lessonId: string) {
     // authenticated path, so this does not consume the AI auto-save quota.
     let flashcardsSaved = 0;
     if (user && vocabulary.length > 0) {
-      const saved = await flashcardService.upsertBatchFlashcards(
-        vocabulary.slice(0, 20).map((item) => ({
-          hanzi: item.hanzi,
-          pinyin: item.pinyin,
-          meaning: item.meaning,
-          example_sentence: item.exampleSentence,
-          topic: `hsk-${lesson.levelNumber}-lesson`,
-          hsk_level: lesson.levelNumber,
-        }))
-      );
-      flashcardsSaved = saved.length;
+      try {
+        const saved = await flashcardService.upsertBatchFlashcards(
+          vocabulary.slice(0, 20).map((item) => ({
+            hanzi: item.hanzi,
+            pinyin: item.pinyin,
+            meaning: item.meaningVi,
+            example_sentence: item.exampleSentence || undefined,
+            topic: `hsk-${lesson.levelNumber}-lesson`,
+            hsk_level: lesson.levelNumber,
+          }))
+        );
+        flashcardsSaved = saved.length;
+      } catch (error) {
+        // Flashcards are a learning-loop side effect; a transient save error
+        // must not erase the already-persisted lesson/quiz completion.
+        console.warn('Failed to save lesson vocabulary to flashcards:', error);
+      }
     }
 
     // Completing a lesson records vocabulary exposure. Individual quiz
