@@ -9,6 +9,8 @@ import { curriculumRepository } from './curriculumRepository';
 import { LessonProgressRepository } from './lessonProgressRepository';
 import { ALL_GRAMMAR_POINTS } from './vocabularyAndGrammarData';
 import { buildHskMasteryProfile, getHskMasteryProfile } from './masteryProfile';
+import { flashcardService } from '../services/flashcardService';
+import { getDailyReviewPriority } from './dailyReviewRanking';
 
 export class RecommendationService {
   async getNextLessonToStudy(
@@ -147,6 +149,60 @@ export class RecommendationService {
       lessonLevels,
     });
     const currentMastery = getHskMasteryProfile(masteryProfiles, currentLevelNumber);
+
+    // One decision engine now coordinates SRS, quiz/grammar reinforcement,
+    // lesson progression, and HSK advancement.
+    const flashcards = await flashcardService.getFlashcards();
+    const now = Date.now();
+    const dueCards = flashcards.filter((card) => {
+      if (!card.next_review_at) return true;
+      const dueAt = Date.parse(card.next_review_at);
+      return Number.isFinite(dueAt) && dueAt <= now;
+    });
+    const rankedDueCards = dueCards
+      .map((card) => ({
+        card,
+        priority: getDailyReviewPriority({
+          nextReviewAt: card.next_review_at,
+          status: card.status,
+          hskLevel: card.hsk_level,
+          incorrectCount: card.srs_incorrect_count,
+          repetitions: card.srs_repetitions,
+          currentHskLevel: currentLevelNumber,
+          currentHskVocabularyScore: currentMastery.vocabularyScore,
+          now,
+        }),
+      }))
+      .sort((a, b) => b.priority.score - a.priority.score);
+    const decision = decideLearningNextStep({
+      masteryScore: currentMastery.overallScore,
+      vocabularyScore: currentMastery.vocabularyScore,
+      grammarScore: currentMastery.grammarScore,
+      quizScore: currentMastery.quizScore,
+      quizAttempts: currentMastery.quizAttempts,
+      weakVocabularyCount: currentMastery.weakVocabularyCount,
+      weakGrammarCount: currentMastery.weakGrammarCount,
+      completionPercent: levelCompletion.completionPercent,
+      currentLevel: currentLevelNumber,
+      dueCardCount: dueCards.length,
+      highPriorityDueCards: rankedDueCards.filter((item) => item.priority.score >= 70).length,
+    });
+
+    if (decision.decision === 'review_srs' && dueCards.length > 0) {
+      recommendations.push({
+        type: 'review_vocabulary',
+        title: `Ôn SRS trước: ${dueCards.length} flashcards đang đến hạn`,
+        description: `${decision.reason} Daily Review sẽ ưu tiên các thẻ yếu, sai nhiều và quá hạn trước.`,
+        targetId: 'flashcards',
+        priority: decision.priority,
+        actionText: 'Ôn ngay',
+        metadata: {
+          levelNumber: currentLevelNumber,
+          score: currentMastery.vocabularyScore,
+          wordCount: dueCards.length,
+        },
+      });
+    }
 
     // HSK progression now requires both curriculum completion and real mastery.
     // A missing quiz is allowed for learners who have not reached assessment yet,
