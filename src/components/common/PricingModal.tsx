@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { UserProfile } from '../../types';
-import { storageService } from '../../services/storageService';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -26,17 +25,10 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleUpgrade = () => {
+    // Payment integration is intentionally deferred.
+    // Never grant Pro locally; entitlement comes from the server-side subscription record.
     setIsProcessing(true);
-    setTimeout(() => {
-      const updated: UserProfile = {
-        ...user,
-        isPremium: true,
-      };
-      storageService.saveUserProfile(updated);
-      onUpgradeSuccess(updated);
-      setIsProcessing(false);
-      onClose();
-    }, 900);
+    window.setTimeout(() => setIsProcessing(false), 400);
   };
 
   return (
@@ -161,15 +153,15 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 {user.isPremium
                   ? 'Gói Pro đang kích hoạt'
                   : isProcessing
-                  ? 'Đang kích hoạt...'
-                  : 'Nâng cấp HanziAI Pro ngay'}
+                  ? 'Tính năng thanh toán đang được chuẩn bị...'
+                  : 'Thanh toán Pro sẽ được tích hợp sau'}
               </span>
             </button>
           </div>
         </div>
 
         <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">
-          Hỗ trợ thanh toán an toàn qua Chuyển khoản QR Momo / Ngân hàng / Thẻ quốc tế. Hủy gia hạn bất cứ lúc nào chỉ với 1 cú click.
+          Thanh toán và quản lý gói Pro sẽ được tích hợp ở giai đoạn tiếp theo.
         </p>
       </div>
     </Modal>
