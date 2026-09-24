@@ -11,6 +11,7 @@ import { ALL_GRAMMAR_POINTS } from './vocabularyAndGrammarData';
 import { buildHskMasteryProfile, getHskMasteryProfile } from './masteryProfile';
 import { flashcardService } from '../services/flashcardService';
 import { getDailyReviewPriority } from './dailyReviewRanking';
+import { decideLearningNextStep } from './learningDecisionEngine';
 
 export class RecommendationService {
   async getNextLessonToStudy(
@@ -67,57 +68,6 @@ export class RecommendationService {
     const recommendations: LearningRecommendation[] = [];
     const nextLesson = await this.getNextLessonToStudy(userId, currentLevelNumber, repo);
     const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo);
-
-    if (nextLesson && levelCompletion.completionPercent < 100) {
-      const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
-      const isResume = userProgress?.status === 'in_progress';
-
-      const isCompletedReview = userProgress?.status === 'completed';
-      recommendations.push({
-        type: isCompletedReview ? 'retry_quiz' : isResume ? 'continue_lesson' : 'next_lesson',
-        title: isCompletedReview
-          ? `Củng cố bài cần ôn: ${nextLesson.title}`
-          : isResume
-            ? `Tiếp tục bài học: ${nextLesson.title}`
-            : `Bài học tiếp theo: ${nextLesson.title}`,
-        description: isCompletedReview
-          ? `Điểm tốt nhất ${userProgress?.score ?? 0}% · ${nextLesson.titleZh}`
-          : `${nextLesson.titleZh} · Dự kiến ${nextLesson.estimatedMinutes} phút`,
-        targetId: nextLesson.id,
-        priority: 3,
-        actionText: isCompletedReview ? 'Ôn lại bài' : isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
-        metadata: {
-          levelNumber: nextLesson.levelNumber,
-          score: userProgress?.score ?? undefined,
-          decision: decision.decision,
-          reason: decision.reason,
-        },
-      });
-    }
-
-    // Prefer a quiz retry when a completed lesson has a weak score.
-    const allLessons = await curriculumRepository.getAllLessons();
-    const levelLessons = allLessons.filter((lesson) => lesson.levelNumber === currentLevelNumber);
-    const progressList = await repo.getProgress(userId);
-    const weakCompleted = levelLessons
-      .map((lesson) => ({ lesson, progress: progressList.find((p) => p.lessonId === lesson.id) }))
-      .filter(({ progress }) => progress?.status === 'completed' && (progress.score ?? 100) < 80)
-      .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100))[0];
-
-    if (weakCompleted) {
-      recommendations.push({
-        type: 'retry_quiz',
-        title: `Ôn lại bài kiểm tra: ${weakCompleted.lesson.title}`,
-        description: `Điểm tốt nhất hiện tại ${weakCompleted.progress?.score ?? 0}%. Hãy luyện lại để củng cố kiến thức.`,
-        targetId: weakCompleted.lesson.id,
-        priority: 2,
-        actionText: 'Luyện lại',
-        metadata: {
-          levelNumber: weakCompleted.lesson.levelNumber,
-          score: weakCompleted.progress?.score ?? 0,
-        },
-      });
-    }
 
     // Mastery profile is the main decision signal. It combines repeated
     // vocabulary/grammar evidence with quiz performance for this HSK level.
@@ -192,6 +142,53 @@ export class RecommendationService {
       dueCardCount: dueCards.length,
       highPriorityDueCards: rankedDueCards.filter((item) => item.priority.score >= 70).length,
     });
+
+    // Route lesson and quiz recommendations only after the unified decision is known.
+    // This prevents lower-priority suggestions from conflicting with SRS/HSK decisions.
+    if (decision.decision === 'learn_lesson' && nextLesson && levelCompletion.completionPercent < 100) {
+      const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
+      const isResume = userProgress?.status === 'in_progress';
+      const isCompletedReview = userProgress?.status === 'completed';
+      recommendations.push({
+        type: isCompletedReview ? 'retry_quiz' : isResume ? 'continue_lesson' : 'next_lesson',
+        title: isCompletedReview
+          ? `Củng cố bài cần ôn: ${nextLesson.title}`
+          : isResume
+            ? `Tiếp tục bài học: ${nextLesson.title}`
+            : `Bài học tiếp theo: ${nextLesson.title}`,
+        description: isCompletedReview
+          ? `Điểm tốt nhất ${userProgress?.score ?? 0}% · ${nextLesson.titleZh}`
+          : `${nextLesson.titleZh} · Dự kiến ${nextLesson.estimatedMinutes} phút`,
+        targetId: nextLesson.id,
+        priority: decision.priority,
+        actionText: isCompletedReview ? 'Ôn lại bài' : isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
+        metadata: {
+          levelNumber: nextLesson.levelNumber,
+          score: userProgress?.score ?? undefined,
+          decision: decision.decision,
+          reason: decision.reason,
+        },
+      });
+    }
+
+    // Only surface a weak completed-quiz retry when the decision engine explicitly
+    // chooses quiz reinforcement; otherwise SRS or lesson progression remains the single route.
+    if (decision.decision === 'review_quiz' && weakCompleted) {
+      recommendations.push({
+        type: 'retry_quiz',
+        title: `Ôn lại bài kiểm tra: ${weakCompleted.lesson.title}`,
+        description: `Điểm tốt nhất hiện tại ${weakCompleted.progress?.score ?? 0}%. Hãy luyện lại để củng cố kiến thức.`,
+        targetId: weakCompleted.lesson.id,
+        priority: decision.priority,
+        actionText: 'Luyện lại',
+        metadata: {
+          levelNumber: weakCompleted.lesson.levelNumber,
+          score: weakCompleted.progress?.score ?? 0,
+          decision: decision.decision,
+          reason: decision.reason,
+        },
+      });
+    }
 
     if (decision.decision === 'review_srs' && dueCards.length > 0) {
       recommendations.push({
