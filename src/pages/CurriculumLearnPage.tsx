@@ -19,6 +19,7 @@ import { useCurriculum } from '../hooks/useCurriculum';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useSubscription } from '../hooks/useSubscription';
+import { getAuthHeaders } from '../services/flashcardService';
 
 interface CurriculumLearnPageProps {
   onSelectLesson: (lessonId: string) => void;
@@ -33,6 +34,9 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   const { isPremium } = useSubscription();
   const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [generatedLesson, setGeneratedLesson] = useState<any | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   React.useEffect(() => {
     const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
@@ -114,6 +118,106 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       {!isPremium && (
         <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200">
           Tài khoản Free học theo lộ trình HSK 1–2. Nâng cấp PRO để mở HSK 3–6 và lộ trình cá nhân hóa đầy đủ.
+        </div>
+      )}
+
+      {profile && (
+        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
+            <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">
+              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · ${isPremium ? 'PRO cá nhân hóa' : 'Free'}
+            </h3>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
+              Từ vựng đã lưu sẽ được Lina dùng để tạo bài học phù hợp với tài khoản này.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={async () => {
+              if (!isPremium && selectedLevel >= 3) {
+                onNavigate?.('pricing');
+                return;
+              }
+              setIsGenerating(true);
+              setGenerationError(null);
+              try {
+                const headers = await getAuthHeaders();
+                const response = await fetch('/api/learning/personalized-lesson', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', ...headers },
+                  body: JSON.stringify({ hskLevel: selectedLevel }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Không thể tạo bài học cá nhân.');
+                setGeneratedLesson(data.lesson);
+              } catch (error: any) {
+                setGenerationError(error?.message || 'Không thể tạo bài học cá nhân.');
+              } finally {
+                setIsGenerating(false);
+              }
+            }}
+            className="px-5 py-3 rounded-2xl bg-[#E86F51] text-white text-sm font-bold hover:bg-[#D35B3E] transition-colors disabled:opacity-50"
+          >
+            {isGenerating ? 'Lina đang soạn bài…' : 'Tạo bài học cá nhân'}
+          </button>
+        </div>
+      )}
+
+      {generationError && (
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-800 dark:text-red-200">
+          {generationError}
+        </div>
+      )}
+
+      {generatedLesson?.content && (
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
+          <div>
+            <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
+            <h3 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+              {generatedLesson.content.title || generatedLesson.title}
+            </h3>
+            {generatedLesson.content.titleZh && (
+              <p className="font-chinese text-[#E86F51] font-bold mt-1">{generatedLesson.content.titleZh}</p>
+            )}
+          </div>
+          {Array.isArray(generatedLesson.content.objectives) && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {generatedLesson.content.objectives.map((item: string, index: number) => (
+                <div key={index} className="p-3 rounded-2xl bg-white/80 dark:bg-[#181412] text-xs text-[#716761] dark:text-[#A89E97]">
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
+          {Array.isArray(generatedLesson.content.vocabulary) && generatedLesson.content.vocabulary.length > 0 && (
+            <div>
+              <h4 className="font-bold text-[#211A17] dark:text-white mb-2">Từ vựng trọng tâm</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {generatedLesson.content.vocabulary.slice(0, 8).map((item: any, index: number) => (
+                  <div key={index} className="p-3 rounded-2xl bg-white dark:bg-[#181412] border border-[#E86F51]/10">
+                    <div className="font-chinese font-bold">{item.hanzi} · {item.pinyin}</div>
+                    <div className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{item.meaning}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {Array.isArray(generatedLesson.content.dialogue) && generatedLesson.content.dialogue.length > 0 && (
+            <div>
+              <h4 className="font-bold text-[#211A17] dark:text-white mb-2">Hội thoại</h4>
+              <div className="space-y-2">
+                {generatedLesson.content.dialogue.slice(0, 6).map((line: any, index: number) => (
+                  <div key={index} className="p-3 rounded-2xl bg-white dark:bg-[#181412] text-sm">
+                    <span className="font-bold">{line.speaker}: </span>
+                    <span className="font-chinese">{line.chinese}</span>
+                    <span className="text-xs text-[#716761] dark:text-[#A89E97]"> · {line.translation}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
