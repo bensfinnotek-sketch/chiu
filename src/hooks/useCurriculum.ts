@@ -8,6 +8,7 @@ import {
   Vocabulary,
   GrammarPoint,
   QuizQuestion,
+  QuizAttempt,
   UserLessonProgress,
   LearningRecommendation,
   HSKLevelCompletion,
@@ -226,6 +227,39 @@ export function useLesson(lessonId: string) {
     };
   };
 
+  const completeQuiz = async (attempt: QuizAttempt) => {
+    if (!lesson || attempt.lessonId !== lessonId) return null;
+
+    // Persist the quiz as the source event for the learning loop.
+    await repo.saveQuizAttempt(attempt);
+
+    // Feed answer-level evidence back into vocabulary and grammar mastery.
+    // The lesson completion itself remains the aggregate progress event.
+    const questionMap = new Map(quizQuestions.map((question) => [question.id, question]));
+    await Promise.all(
+      attempt.answers.flatMap((answer) => {
+        const question = questionMap.get(answer.questionId);
+        if (!question) return [];
+
+        const vocabularyUpdates = (question.vocabularyIds || []).map((vocabularyId) =>
+          repo.updateVocabularyStatus(
+            userId,
+            vocabularyId,
+            answer.isCorrect ? 'known' : 'learning',
+            answer.isCorrect
+          )
+        );
+        const grammarUpdates = (question.grammarPointIds || []).map((grammarPointId) =>
+          repo.updateGrammarScore(userId, grammarPointId, answer.isCorrect)
+        );
+
+        return [...vocabularyUpdates, ...grammarUpdates];
+      })
+    );
+
+    return completeLesson(attempt.score);
+  };
+
   return {
     lesson,
     sections,
@@ -236,6 +270,7 @@ export function useLesson(lessonId: string) {
     isLoading,
     saveSectionProgress,
     completeLesson,
+    completeQuiz,
     reload: loadLesson,
   };
 }
