@@ -26,7 +26,7 @@ function parseGuestSpeakingCookie(req: any): number | null {
   const raw = pair.slice(GUEST_SPEAKING_COOKIE.length + 1);
   const [timestampText, signature] = raw.split(".");
   const timestamp = Number(timestampText);
-  if (!Number.isFinite(timestamp) || !signature || !/^\\d+$/.test(timestampText)) return null;
+  if (!Number.isFinite(timestamp) || !signature || !/^\d+$/.test(timestampText)) return null;
   const expected = signGuestSpeakingStart(timestamp);
   try {
     const valid = timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
