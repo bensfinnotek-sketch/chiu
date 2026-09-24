@@ -19,6 +19,7 @@ import {
   handleUpdateFlashcard,
   handleDeleteFlashcard,
   handleGetUserProfile,
+  handleReviewFlashcard,
 } from "../../api/_lib/flashcardHandlers.ts";
 
 export {
@@ -37,6 +38,7 @@ export {
   handleUpdateFlashcard,
   handleDeleteFlashcard,
   handleGetUserProfile,
+  handleReviewFlashcard,
   getAI,
   generateContentSafely,
 };
@@ -91,6 +93,7 @@ export function createApiRouter(): Router {
   // Flashcards CRUD endpoints (Protected)
   router.get("/flashcards", handleGetFlashcards);
   router.post("/flashcards", handleCreateFlashcard);
+  router.post("/flashcards/:id/review", (req, res) => handleReviewFlashcard(req, res, req.params.id));
   router.patch("/flashcards/:id", (req, res) => handleUpdateFlashcard(req, res, req.params.id));
   router.put("/flashcards/:id", (req, res) => handleUpdateFlashcard(req, res, req.params.id));
   router.delete("/flashcards/:id", (req, res) => handleDeleteFlashcard(req, res, req.params.id));
