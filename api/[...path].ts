@@ -19,6 +19,7 @@ import {
   handleUpdateFlashcard,
   handleDeleteFlashcard,
   handleGetUserProfile,
+  handleReviewFlashcard,
 } from "./_lib/flashcardHandlers.ts";
 
 export default async function handler(req: any, res: any) {
@@ -89,6 +90,7 @@ export default async function handler(req: any, res: any) {
   }
   if (fullSubPath.startsWith("flashcards/")) {
     const cardId = segments[1];
+    if (segments[2] === "review" && req.method === "POST") return handleReviewFlashcard(req, res, cardId);
     if (req.method === "PATCH" || req.method === "PUT") return handleUpdateFlashcard(req, res, cardId);
     if (req.method === "DELETE") return handleDeleteFlashcard(req, res, cardId);
   }
