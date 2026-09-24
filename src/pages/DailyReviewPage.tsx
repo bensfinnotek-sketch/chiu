@@ -36,11 +36,23 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
       .then((allCards) => {
         if (!mounted) return;
 
-        // Prioritize cards that still need learning, then recently added cards.
+        // Review cards that are due first. New/learning cards remain eligible,
+        // while learned cards re-enter the queue once their scheduled review time is due.
+        const now = Date.now();
         const reviewable = allCards
-          .filter((card) => card.status !== 'learned')
+          .filter((card) => {
+            if (card.status !== 'learned') return true;
+            if (!card.next_review_at) return false;
+            const dueAt = Date.parse(card.next_review_at);
+            return Number.isFinite(dueAt) && dueAt <= now;
+          })
           .sort((a, b) => {
-            const statusRank = (status: Flashcard['status']) => (status === 'learning' ? 0 : 1);
+            const aDue = a.next_review_at ? Date.parse(a.next_review_at) : Number.POSITIVE_INFINITY;
+            const bDue = b.next_review_at ? Date.parse(b.next_review_at) : Number.POSITIVE_INFINITY;
+            const aIsDue = Number.isFinite(aDue) && aDue <= now;
+            const bIsDue = Number.isFinite(bDue) && bDue <= now;
+            if (aIsDue !== bIsDue) return aIsDue ? -1 : 1;
+            const statusRank = (status: Flashcard['status']) => (status === 'learning' ? 0 : status === 'new' ? 1 : 2);
             return statusRank(a.status) - statusRank(b.status) || a.created_at.localeCompare(b.created_at);
           })
           .slice(0, 10);
