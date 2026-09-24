@@ -7,6 +7,7 @@ import {
   HSKLevelNumber,
   LessonProgressStatus,
 } from '../types/curriculum';
+import { calculateVocabularyMasteryScore } from './vocabularyMastery';
 import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 
 const LOCAL_LESSON_PROGRESS_KEY = 'hanziai_curriculum_lesson_progress';
@@ -183,6 +184,7 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       if (isCorrect === false) item.incorrectCount += 1;
       item.lastSeenAt = now;
       if (status === 'mastered' && !item.masteredAt) item.masteredAt = now;
+      item.masteryScore = calculateVocabularyMasteryScore(item, new Date());
       item.updatedAt = now;
       list[idx] = item;
     } else {
@@ -193,6 +195,7 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
         exposureCount: 1,
         correctCount: isCorrect === true ? 1 : 0,
         incorrectCount: isCorrect === false ? 1 : 0,
+        masteryScore: calculateVocabularyMasteryScore({ exposureCount: 1, correctCount: isCorrect === true ? 1 : 0, incorrectCount: isCorrect === false ? 1 : 0, status }),
         lastSeenAt: now,
         masteredAt: status === 'mastered' ? now : null,
         createdAt: now,
@@ -224,6 +227,7 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       if (isCorrect) item.correctCount += 1;
       else item.incorrectCount += 1;
       item.lastSeenAt = now;
+      item.masteryScore = calculateVocabularyMasteryScore(item, new Date());
       if (item.status === 'mastered' && !item.masteredAt) item.masteredAt = now;
       item.updatedAt = now;
       list[idx] = item;
@@ -235,6 +239,7 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
         exposureCount: 1,
         correctCount: isCorrect ? 1 : 0,
         incorrectCount: isCorrect ? 0 : 1,
+        masteryScore: calculateVocabularyMasteryScore({ exposureCount: 1, correctCount: isCorrect ? 1 : 0, incorrectCount: isCorrect ? 0 : 1, status: nextStatus }, new Date()),
         lastSeenAt: now,
         masteredAt: null,
         createdAt: now,
@@ -571,6 +576,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
       exposureCount: d.exposure_count,
       correctCount: d.correct_count,
       incorrectCount: d.incorrect_count,
+      masteryScore: Number(d.mastery_score ?? 0),
       lastSeenAt: d.last_seen_at,
       masteredAt: d.mastered_at,
       createdAt: d.created_at,
@@ -598,14 +604,20 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     }
 
     const now = new Date().toISOString();
+    const exposureCount = (existing?.exposure_count || 0) + 1;
+    const correctCount = (existing?.correct_count || 0) + (isCorrect === true ? 1 : 0);
+    const incorrectCount = (existing?.incorrect_count || 0) + (isCorrect === false ? 1 : 0);
+    const masteryScore = calculateVocabularyMasteryScore({ exposureCount, correctCount, incorrectCount, lastSeenAt: now, status });
+
     const { error } = await supabase.from('user_vocabulary_progress').upsert(
       {
         user_id: userId,
         vocabulary_id: vocabularyId,
         status,
-        exposure_count: (existing?.exposure_count || 0) + 1,
-        correct_count: (existing?.correct_count || 0) + (isCorrect === true ? 1 : 0),
-        incorrect_count: (existing?.incorrect_count || 0) + (isCorrect === false ? 1 : 0),
+        exposure_count: exposureCount,
+        correct_count: correctCount,
+        incorrect_count: incorrectCount,
+        mastery_score: masteryScore,
         last_seen_at: now,
         mastered_at: status === 'mastered' ? existing?.mastered_at || now : existing?.mastered_at || null,
         created_at: existing?.created_at || now,
