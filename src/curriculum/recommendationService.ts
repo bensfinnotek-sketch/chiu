@@ -7,6 +7,7 @@ import {
 } from '../types/curriculum';
 import { curriculumRepository } from './curriculumRepository';
 import { LessonProgressRepository } from './lessonProgressRepository';
+import { ALL_GRAMMAR_POINTS } from './vocabularyAndGrammarData';
 import { buildHskMasteryProfile, getHskMasteryProfile } from './masteryProfile';
 
 export class RecommendationService {
@@ -101,7 +102,7 @@ export class RecommendationService {
           ? `Điểm tốt nhất ${userProgress?.score ?? 0}% · ${nextLesson.titleZh}`
           : `${nextLesson.titleZh} · Dự kiến ${nextLesson.estimatedMinutes} phút`,
         targetId: nextLesson.id,
-        priority: 1,
+        priority: 3,
         actionText: isCompletedReview ? 'Ôn lại bài' : isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
         metadata: { levelNumber: nextLesson.levelNumber, score: userProgress?.score ?? undefined },
       });
@@ -141,7 +142,7 @@ export class RecommendationService {
 
     const [allVocabulary, allGrammar, allLessons] = await Promise.all([
       curriculumRepository.getAllVocabulary(),
-      Promise.resolve(curriculumRepository.getAllGrammarPoints()),
+      Promise.resolve(ALL_GRAMMAR_POINTS),
       curriculumRepository.getAllLessons(),
     ]);
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
