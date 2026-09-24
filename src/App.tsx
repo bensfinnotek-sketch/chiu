@@ -42,6 +42,7 @@ function AppContent() {
   const { user: authUser, isAuthenticated } = useAuth();
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [selectedLessonId, setSelectedLessonId] = useState<string>('hsk1-l1');
+  const [requestedHskLevel, setRequestedHskLevel] = useState<number | undefined>(undefined);
   const [selectedSessionId, setSelectedSessionId] = useState<string | undefined>(undefined);
   const [user, setUser] = useState<UserProfile>(storageService.getUserProfile());
   const [language, setLanguage] = useState<SupportedLanguage>(storageService.getLanguage());
@@ -95,6 +96,12 @@ function AppContent() {
   };
 
   const handleNavigate = (route: string, param?: string) => {
+    if (route === 'learn' && param?.startsWith('level:')) {
+      const level = Number(param.slice('level:'.length));
+      if (Number.isInteger(level) && level >= 1 && level <= 6) {
+        setRequestedHskLevel(level);
+      }
+    }
     if (route === 'learn-detail' && param) {
       setSelectedLessonId(param);
     }
@@ -204,6 +211,7 @@ function AppContent() {
 
           {currentRoute === 'learn' && (
             <CurriculumLearnPage
+              initialLevel={requestedHskLevel}
               onSelectLesson={(id) => handleNavigate('learn-detail', id)}
               onNavigate={handleNavigate}
             />
