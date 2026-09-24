@@ -246,7 +246,8 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
     let learnerFlashcards: any[] = [];
     if (authenticatedUser) {
       try {
-        const userCards = await getFlashcardsForUser(authenticatedUser.id);
+        const accessToken = extractBearerToken(req);
+        const userCards = await getFlashcardsForUser(authenticatedUser.id, accessToken);
         learnerFlashcards = userCards;
         const activeCards = userCards.filter((c) => c.status !== "learned").slice(0, 4);
         if (activeCards.length > 0) {
