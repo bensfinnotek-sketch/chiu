@@ -299,7 +299,6 @@ function AppContent() {
         isOpen={pricingModalOpen}
         onClose={() => setPricingModalOpen(false)}
         user={user}
-        onUpgradeSuccess={setUser}
       />
 
       {/* Guest Data Migration Modal */}
