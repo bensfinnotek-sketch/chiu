@@ -19,14 +19,6 @@ interface RecommendationDataSnapshot {
 }
 
 export class RecommendationService {
-  private async getRecommendationData(userId: string): Promise<RecommendationDataSnapshot> {
-    const [allLessons, userProgressList] = await Promise.all([
-      curriculumRepository.getAllLessons(),
-      new LessonProgressRepository().getProgress(userId),
-    ]);
-    return { allLessons, userProgressList };
-  }
-
   private findNextLesson(
     currentLevelNumber: HSKLevelNumber,
     allLessons: Lesson[],
@@ -94,7 +86,7 @@ export class RecommendationService {
       repo.getGrammarProgress(userId),
     ]);
 
-    const [allVocabulary, allGrammar, allLessons] = await Promise.all([
+    const [allVocabulary, allGrammar] = await Promise.all([
       curriculumRepository.getAllVocabulary(),
       Promise.resolve(ALL_GRAMMAR_POINTS),
     ]);
