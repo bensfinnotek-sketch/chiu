@@ -421,12 +421,12 @@ export function decideLearningNextStep(input: RecommendationDecisionInput): Reco
     input.weakVocabularyCount <= 5 &&
     input.weakGrammarCount <= 2;
 
-  if (masteryReady && input.currentLevel < 6) {
-    return { decision: 'advance_hsk', priority: 0, reason: 'HSK hiện tại đã đủ completion và mastery để chuyển cấp.' };
-  }
-
   if (input.highPriorityDueCards > 0 || input.dueCardCount > 0) {
     return { decision: 'review_srs', priority: 1, reason: 'Có flashcards đến hạn hoặc đang có mức ưu tiên ôn cao.' };
+  }
+
+  if (masteryReady && input.currentLevel < 6) {
+    return { decision: 'advance_hsk', priority: 0, reason: 'Không còn SRS cần ưu tiên và HSK hiện tại đã đủ completion + mastery để chuyển cấp.' };
   }
 
   if (
