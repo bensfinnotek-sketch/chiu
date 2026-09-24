@@ -12,14 +12,12 @@ interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: UserProfile;
-  onUpgradeSuccess: (updated: UserProfile) => void;
 }
 
 export const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
   user,
-  onUpgradeSuccess,
 }) => {
   const [isAnnual, setIsAnnual] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
