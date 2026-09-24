@@ -424,7 +424,11 @@ Format output strictly as JSON with this exact schema:
         startOfDay.setHours(0, 0, 0, 0);
         let newCardsSavedToday = learnerFlashcards.filter((card) => {
           const createdAt = new Date(card.created_at).getTime();
-          return Number.isFinite(createdAt) && createdAt >= startOfDay.getTime();
+          return (
+            card.auto_saved === true &&
+            Number.isFinite(createdAt) &&
+            createdAt >= startOfDay.getTime()
+          );
         }).length;
 
         for (const item of validVocabulary) {
@@ -440,7 +444,7 @@ Format output strictly as JSON with this exact schema:
           const parsedItemHsk =
             typeof item.hsk === "string" ? Number(item.hsk.match(/\d+/)?.[0]) : NaN;
           const itemHskLevel = Number.isFinite(parsedItemHsk)
-            ? Math.min(6, Math.max(1, parsedItemHsk))
+            ? Math.min(sessionHskLevel, Math.max(1, parsedItemHsk))
             : sessionHskLevel;
 
           const saved = await upsertFlashcardForUser(authenticatedUser.id, {
@@ -450,6 +454,7 @@ Format output strictly as JSON with this exact schema:
             example_sentence: item.example || actualUserText,
             topic,
             hsk_level: itemHskLevel,
+            auto_saved: true,
           });
 
           if (saved && !isExisting) {
