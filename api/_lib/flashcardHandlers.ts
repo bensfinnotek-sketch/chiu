@@ -205,10 +205,11 @@ export async function updateFlashcardForUser(
     status?: "new" | "learning" | "learned";
     review_count?: number;
     example_sentence?: string;
-  }
+  },
+  accessToken?: string | null
 ): Promise<FlashcardItem | null> {
   const now = new Date().toISOString();
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(accessToken);
 
   if (supabase) {
     const payload: any = { updated_at: now };
@@ -250,8 +251,8 @@ export async function updateFlashcardForUser(
  * Delete a flashcard for an authenticated user.
  * STRICT: Checks both cardId AND userId.
  */
-export async function deleteFlashcardForUser(userId: string, cardId: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient();
+export async function deleteFlashcardForUser(userId: string, cardId: string, accessToken?: string | null): Promise<boolean> {
+  const supabase = getSupabaseServerClient(accessToken);
 
   if (supabase) {
     const { error, count } = await supabase
@@ -288,7 +289,7 @@ export async function handleGetFlashcards(req: any, res: any) {
   const user = await requireAuth(req, res, sendJson);
   if (!user) return; // 401 already sent
 
-  const cards = await getFlashcardsForUser(user.id);
+  const cards = await getFlashcardsForUser(user.id, extractBearerToken(req));
   return sendJson(res, 200, {
     flashcards: cards,
     count: cards.length,
@@ -305,6 +306,7 @@ export async function handleCreateFlashcard(req: any, res: any) {
   if (!user) return;
 
   const body = parseBody(req);
+  const accessToken = extractBearerToken(req);
 
   // Support batch creation when `cards` array is provided
   if (Array.isArray(body?.cards)) {
@@ -322,7 +324,7 @@ export async function handleCreateFlashcard(req: any, res: any) {
         example_sentence: item.example_sentence || item.exampleSentence || item.exampleChinese || "",
         topic: item.topic || "lesson",
         hsk_level: item.hsk_level || item.hskLevel || 1,
-      });
+      }, accessToken);
 
       if (card) {
         upsertedCards.push(card);
@@ -350,7 +352,7 @@ export async function handleCreateFlashcard(req: any, res: any) {
     example_sentence: example_sentence || exampleSentence || "",
     topic: topic || "general",
     hsk_level: hsk_level || hskLevel || 1,
-  });
+  }, accessToken);
 
   return sendJson(res, 201, {
     flashcard: card,
@@ -376,7 +378,7 @@ export async function handleUpdateFlashcard(req: any, res: any, cardId?: string)
     status: body.status,
     review_count: body.review_count,
     example_sentence: body.example_sentence || body.exampleSentence,
-  });
+  }, extractBearerToken(req));
 
   if (!updated) {
     // 404: Not found or not owned by authenticated user (IDOR protection)
@@ -402,7 +404,7 @@ export async function handleDeleteFlashcard(req: any, res: any, cardId?: string)
     return sendJson(res, 400, { error: "Flashcard id is required" });
   }
 
-  const success = await deleteFlashcardForUser(user.id, id);
+  const success = await deleteFlashcardForUser(user.id, id, extractBearerToken(req));
   if (!success) {
     return sendJson(res, 404, { error: "Flashcard not found or unauthorized" });
   }
