@@ -8,6 +8,7 @@ import {
   LessonProgressStatus,
 } from '../types/curriculum';
 import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
+import { ALL_VOCABULARY } from './vocabularyAndGrammarData';
 
 const LOCAL_LESSON_PROGRESS_KEY = 'hanziai_curriculum_lesson_progress';
 const LOCAL_VOCAB_PROGRESS_KEY = 'hanziai_curriculum_vocab_progress';
