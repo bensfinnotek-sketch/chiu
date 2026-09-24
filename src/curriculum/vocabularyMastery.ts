@@ -1,3 +1,5 @@
+import { UserVocabularyProgress } from '../types/curriculum';
+
 export function calculateVocabularyMasteryScore(input: {
   exposureCount: number;
   correctCount: number;
