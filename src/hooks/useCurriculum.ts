@@ -195,14 +195,9 @@ export function useLesson(lessonId: string) {
       }
     }
 
-    // Completing a lesson records vocabulary exposure. Individual quiz
-    // correctness can still refine these records when quiz answers are saved.
-    await Promise.all(
-      vocabulary.map((item) =>
-        repo.updateVocabularyStatus(userId, item.id, 'learning')
-      )
-    );
-
+    // Vocabulary mastery is already updated answer-by-answer by completeQuiz().
+    // Do not overwrite known words here; doing so would downgrade successful quiz
+    // answers back to "learning".
     // Skill progress now follows the actual quiz result instead of a fixed
     // amount for every lesson.
     const skillDelta = Math.max(5, Math.round(normalizedScore * 0.15));
