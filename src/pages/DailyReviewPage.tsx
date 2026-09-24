@@ -5,6 +5,7 @@ import { LinaAvatar } from '../components/common/LinaAvatar';
 import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
+import { calculateSrsSchedule } from '../services/flashcardSrs';
 
 export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
   onComplete,
@@ -36,13 +37,12 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
       .then((allCards) => {
         if (!mounted) return;
 
-        // Review cards that are due first. New/learning cards remain eligible,
-        // while learned cards re-enter the queue once their scheduled review time is due.
+        // SRS controls eligibility for every card: unscheduled cards are new;
+        // scheduled cards return only when their next_review_at has arrived.
         const now = Date.now();
         const reviewable = allCards
           .filter((card) => {
-            if (card.status !== 'learned') return true;
-            if (!card.next_review_at) return false;
+            if (!card.next_review_at) return true;
             const dueAt = Date.parse(card.next_review_at);
             return Number.isFinite(dueAt) && dueAt <= now;
           })
@@ -97,9 +97,12 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
 
     try {
       if (user && current.id) {
+        const schedule = calculateSrsSchedule(current, correct ? 'correct' : 'incorrect');
         await flashcardService.updateFlashcard(current.id, {
-          status: correct ? 'learned' : 'learning',
-          review_count: (current.review_count || 0) + 1,
+          status: schedule.status,
+          review_count: schedule.reviewCount,
+          last_reviewed_at: schedule.lastReviewedAt,
+          next_review_at: schedule.nextReviewAt,
         });
       }
     } catch (error) {
