@@ -159,6 +159,8 @@ export const flashcardService = {
       status?: 'new' | 'learning' | 'learned';
       review_count?: number;
       example_sentence?: string;
+      last_reviewed_at?: string;
+      next_review_at?: string;
     }
   ): Promise<Flashcard> {
     const token = await getAccessToken();
