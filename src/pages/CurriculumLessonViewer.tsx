@@ -620,7 +620,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                           return;
                         }
                         if (next.targetId.startsWith('level:')) {
-                          onNavigate?.('learn');
+                          onNavigate?.('learn', next.targetId);
                           return;
                         }
                         onNavigate?.('learn-detail', next.targetId);
