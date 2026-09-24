@@ -17,7 +17,7 @@ import {
   Send,
 } from 'lucide-react';
 import { useLesson } from '../hooks/useCurriculum';
-import { QuizQuestion, DialogueLine } from '../types/curriculum';
+import { QuizAnswer, QuizAttempt, QuizQuestion, DialogueLine } from '../types/curriculum';
 import { LinaChatModal } from '../components/LinaChatModal';
 import { voiceService } from '../services/voiceService';
 
@@ -42,6 +42,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     isLoading,
     saveSectionProgress,
     completeLesson,
+    completeQuiz,
   } = useLesson(lessonId);
 
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -89,22 +90,55 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionId }));
   };
 
-  const handleSubmitQuiz = () => {
-    if (quizSubmitted) return;
-    let correctCount = 0;
-    quizQuestions.forEach((q) => {
-      const ans = selectedAnswers[q.id];
-      if (ans === q.correctAnswer) {
-        correctCount += 1;
-      }
+  const handleSubmitQuiz = async () => {
+    if (quizSubmitted || quizQuestions.length === 0) return;
+
+    const completedAt = new Date().toISOString();
+    const startedAt = userProgress?.lastAccessedAt || new Date().toISOString();
+    const answers: QuizAnswer[] = quizQuestions.map((q) => {
+      const answer = selectedAnswers[q.id];
+      const correct = Array.isArray(q.correctAnswer)
+        ? JSON.stringify(answer) === JSON.stringify(q.correctAnswer)
+        : answer === q.correctAnswer;
+      return {
+        questionId: q.id,
+        answer,
+        isCorrect: correct,
+        pointsEarned: correct ? q.points : 0,
+      };
     });
 
-    const score = Math.round((correctCount / Math.max(quizQuestions.length, 1)) * 100);
+    const totalPoints = quizQuestions.reduce((sum, q) => sum + q.points, 0);
+    const earnedPoints = answers.reduce((sum, answer) => sum + answer.pointsEarned, 0);
+    const correctCount = answers.filter((answer) => answer.isCorrect).length;
+    const score = totalPoints > 0
+      ? Math.round((earnedPoints / totalPoints) * 100)
+      : Math.round((correctCount / quizQuestions.length) * 100);
+
+    const attempt: QuizAttempt = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `quiz-${lesson.id}-${Date.now()}`,
+      userId: userProgress?.userId || 'guest_user',
+      lessonId: lesson.id,
+      score,
+      totalPoints,
+      earnedPoints,
+      correctAnswers: correctCount,
+      totalQuestions: quizQuestions.length,
+      passed: score >= lesson.passingScore,
+      answers,
+      startedAt,
+      completedAt,
+    };
+
     setQuizScore(score);
     setQuizSubmitted(true);
 
-    if (score >= lesson.passingScore) {
-      completeLesson(score);
+    try {
+      await completeQuiz(attempt);
+    } catch (error) {
+      console.error('Failed to persist quiz learning loop:', error);
     }
   };
 
@@ -542,6 +576,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                   onClick={() => {
                     setQuizSubmitted(false);
                     setSelectedAnswers({});
+                    setQuizScore(0);
                   }}
                   className="px-5 py-2.5 rounded-2xl border border-[#E86F51] text-[#E86F51] text-xs font-bold hover:bg-[#FFF0EB] transition-all cursor-pointer flex items-center gap-1.5"
                 >
