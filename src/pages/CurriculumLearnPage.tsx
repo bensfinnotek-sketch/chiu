@@ -32,7 +32,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   onSelectLesson,
   onNavigate,
 }) => {
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const { isPremium } = useSubscription();
   const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +62,30 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   } = useCurriculum(selectedLevel);
 
   const activeLevelInfo = levels.find((l) => l.level === selectedLevel) || levels[0];
+
+  // Progress the learner's target HSK automatically only after the current
+  // level is fully completed with a passing average. Free accounts stop at
+  // HSK 2; premium accounts can progress through HSK 6.
+  React.useEffect(() => {
+    const currentProfileLevel = Number(profile?.hskLevel || 1);
+    const completedLevel = levelCompletion?.completionPercent === 100;
+    const passedAverage = (levelCompletion?.averageQuizScore || 0) >= 80;
+    const canAdvance = selectedLevel < 6 && (isPremium || selectedLevel < 2);
+
+    if (!profile || !completedLevel || !passedAverage || !canAdvance) return;
+    if (currentProfileLevel !== selectedLevel) return;
+
+    updateProfile({ hskLevel: selectedLevel + 1 }).catch((error) => {
+      console.warn('Could not advance HSK profile:', error);
+    });
+  }, [
+    profile,
+    selectedLevel,
+    isPremium,
+    levelCompletion?.completionPercent,
+    levelCompletion?.averageQuizScore,
+    updateProfile,
+  ]);
 
   // Search filter
   const filteredLessons = lessons.filter((l) => {
