@@ -283,15 +283,18 @@ export class RecommendationService {
     }
 
     if (decision.decision === 'review_quiz' && weakestComponent.key === 'quiz' && currentMastery.quizAttempts > 0 && currentMastery.quizScore < 80) {
+      const levelLessons = allLessons
+        .filter((lesson) => lesson.levelNumber === currentLevelNumber)
+        .sort((a, b) => a.order - b.order);
       const weakQuiz = levelLessons
-        .map((lesson) => ({
+        .map((lesson: Lesson) => ({
           lesson,
           score: quizAttempts
             .filter((attempt) => attempt.lessonId === lesson.id)
             .reduce((best, attempt) => Math.max(best, attempt.score), 0),
         }))
-        .filter((item) => item.score > 0 && item.score < 80)
-        .sort((a, b) => a.score - b.score)[0];
+        .filter((item: { lesson: Lesson; score: number }) => item.score > 0 && item.score < 80)
+        .sort((a: { score: number }, b: { score: number }) => a.score - b.score)[0];
 
       if (weakQuiz) {
         recommendations.push({
