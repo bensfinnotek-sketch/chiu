@@ -35,6 +35,12 @@ export interface LessonProgressRepository {
     status: 'new' | 'learning' | 'known' | 'mastered',
     isCorrect?: boolean
   ): Promise<void>;
+  recordVocabularyReview(
+    userId: string,
+    hanzi: string,
+    hskLevel: HSKLevelNumber | undefined,
+    isCorrect: boolean
+  ): Promise<void>;
   getGrammarProgress(userId: string): Promise<UserGrammarProgress[]>;
   updateGrammarScore(userId: string, grammarPointId: string, isCorrect: boolean): Promise<void>;
   getSkillProgress(userId: string): Promise<UserSkillProgress[]>;
@@ -194,6 +200,53 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       });
     }
     this.setLocalList(LOCAL_VOCAB_PROGRESS_KEY, list);
+  }
+
+  async recordVocabularyReview(
+    userId: string,
+    hanzi: string,
+    hskLevel: HSKLevelNumber | undefined,
+    isCorrect: boolean
+  ): Promise<void> {
+    const normalizedHanzi = hanzi.trim();
+    if (!normalizedHanzi) return;
+
+    const list = this.getLocalList<UserVocabularyProgress>(LOCAL_VOCAB_PROGRESS_KEY);
+    const vocabularyId = `hanzi:${normalizedHanzi}`;
+    const idx = list.findIndex((v) => v.userId === userId && v.vocabularyId === vocabularyId);
+    const now = new Date().toISOString();
+    const nextStatus: UserVocabularyProgress['status'] = isCorrect ? 'known' : 'learning';
+
+    if (idx >= 0) {
+      const item = list[idx];
+      item.status = nextStatus;
+      item.exposureCount += 1;
+      if (isCorrect) item.correctCount += 1;
+      else item.incorrectCount += 1;
+      item.lastSeenAt = now;
+      if (item.status === 'mastered' && !item.masteredAt) item.masteredAt = now;
+      item.updatedAt = now;
+      list[idx] = item;
+    } else {
+      list.push({
+        userId,
+        vocabularyId,
+        status: nextStatus,
+        exposureCount: 1,
+        correctCount: isCorrect ? 1 : 0,
+        incorrectCount: isCorrect ? 0 : 1,
+        lastSeenAt: now,
+        masteredAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    this.setLocalList(LOCAL_VOCAB_PROGRESS_KEY, list);
+
+    // Keep the local skill profile in sync with review evidence.
+    if (hskLevel) {
+      await this.updateSkillScore(userId, 'vocabulary', hskLevel, isCorrect ? 5 : -7);
+    }
   }
 
   async getGrammarProgress(userId: string): Promise<UserGrammarProgress[]> {
@@ -564,6 +617,44 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     if (error) {
       throw new Error(`Không thể lưu tiến độ từ vựng: ${error.message}`);
     }
+  }
+
+  async recordVocabularyReview(
+    userId: string,
+    hanzi: string,
+    hskLevel: HSKLevelNumber | undefined,
+    isCorrect: boolean
+  ): Promise<void> {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const normalizedHanzi = hanzi.trim();
+    if (!normalizedHanzi) return;
+
+    const { data: vocabulary, error: vocabularyError } = await supabase
+      .from('vocabulary')
+      .select('id,hsk_level')
+      .eq('hanzi', normalizedHanzi)
+      .limit(1)
+      .maybeSingle();
+
+    if (vocabularyError) {
+      throw new Error(`Không thể tìm từ vựng để đồng bộ mastery: ${vocabularyError.message}`);
+    }
+
+    // AI-generated/personal words may not exist in the curriculum vocabulary table.
+    // They still keep their SRS schedule, but only curriculum words contribute to
+    // the HSK vocabulary mastery profile.
+    if (!vocabulary?.id) return;
+
+    await this.updateVocabularyStatus(
+      userId,
+      vocabulary.id,
+      isCorrect ? 'known' : 'learning',
+      isCorrect
+    );
+
+    const level = (hskLevel || vocabulary.hsk_level || 1) as HSKLevelNumber;
+    await this.updateSkillScore(userId, 'vocabulary', level, isCorrect ? 5 : -7);
   }
 
   async getGrammarProgress(userId: string): Promise<UserGrammarProgress[]> {
