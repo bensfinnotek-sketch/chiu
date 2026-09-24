@@ -213,6 +213,7 @@ function AppContent() {
             <CurriculumLessonViewer
               lessonId={selectedLessonId}
               onBack={() => handleNavigate('learn')}
+              onNavigate={handleNavigate}
               onNavigateToSpeaking={(topic) => {
                 const levelMatch = selectedLessonId.match(/^hsk([1-6])-/i);
                 const speakingLevel = levelMatch ? `HSK ${levelMatch[1]}` : 'HSK 1';
