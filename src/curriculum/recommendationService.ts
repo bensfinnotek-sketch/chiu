@@ -62,8 +62,25 @@ export class RecommendationService {
   ): Promise<LearningRecommendation[]> {
     const recommendations: LearningRecommendation[] = [];
     const nextLesson = await this.getNextLessonToStudy(userId, currentLevelNumber, repo);
+    const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo);
 
-    if (nextLesson) {
+    // Once the current HSK level is fully completed, make the next level an
+    // explicit recommendation instead of repeatedly recommending old lessons.
+    // The UI decides whether the next level is available on the user's plan.
+    if (levelCompletion.completionPercent >= 100 && currentLevelNumber < 6) {
+      const nextLevel = (currentLevelNumber + 1) as HSKLevelNumber;
+      recommendations.push({
+        type: 'next_lesson',
+        title: `Đã hoàn thành HSK ${currentLevelNumber} · sẵn sàng lên HSK ${nextLevel}`,
+        description: 'Bạn đã hoàn thành toàn bộ bài bắt buộc của cấp độ hiện tại. Tiếp tục sang cấp độ kế tiếp để duy trì đà học.',
+        targetId: `level:${nextLevel}`,
+        priority: 0,
+        actionText: `Học HSK ${nextLevel}`,
+        metadata: { levelNumber: nextLevel },
+      });
+    }
+
+    if (nextLesson && levelCompletion.completionPercent < 100) {
       const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
       const isResume = userProgress?.status === 'in_progress';
 
