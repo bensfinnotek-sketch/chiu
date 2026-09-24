@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (newUser) {
         setIsGuest(false);
         localStorage.removeItem('hanzi_ai_is_guest');
+        localStorage.removeItem('hanzi_guest_speaking_started_at');
       }
       setIsLoading(false);
     });
@@ -72,6 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(authed);
       setIsGuest(false);
       localStorage.removeItem('hanzi_ai_is_guest');
+      localStorage.removeItem('hanzi_guest_speaking_started_at');
       return authed;
     } finally {
       setIsLoading(false);
@@ -109,6 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await authService.signOut();
       setUser(null);
+      localStorage.removeItem('hanzi_guest_speaking_started_at');
       setIsGuest(true);
       localStorage.setItem('hanzi_ai_is_guest', 'true');
     } finally {
@@ -126,6 +129,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const continueAsGuest = useCallback(() => {
     setUser(null);
+    localStorage.removeItem('hanzi_guest_speaking_started_at');
     setIsGuest(true);
     localStorage.setItem('hanzi_ai_is_guest', 'true');
   }, []);
