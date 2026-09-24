@@ -45,8 +45,14 @@ export class RecommendationService {
       }
     }
 
-    // Rule 3: If all completed, return first lesson or next level
-    return levelLessons[0] || null;
+    // Rule 3: If every lesson is complete, revisit the lowest-scoring lesson
+    // instead of looping back to the first lesson without context.
+    const completed = levelLessons
+      .map((lesson) => ({ lesson, progress: progressMap.get(lesson.id) }))
+      .filter(({ progress }) => progress?.status === 'completed')
+      .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100));
+
+    return completed[0]?.lesson || levelLessons[0] || null;
   }
 
   async getRecommendations(
@@ -69,6 +75,28 @@ export class RecommendationService {
         priority: 1,
         actionText: isResume ? 'Học tiếp ngay' : 'Bắt đầu học',
         metadata: { levelNumber: nextLesson.levelNumber },
+      });
+    }
+
+    // Prefer a quiz retry when a completed lesson has a weak score.
+    const progressList = await repo.getProgress(userId);
+    const weakCompleted = levelLessons
+      .map((lesson) => ({ lesson, progress: progressList.find((p) => p.lessonId === lesson.id) }))
+      .filter(({ progress }) => progress?.status === 'completed' && (progress.score ?? 100) < 80)
+      .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100))[0];
+
+    if (weakCompleted) {
+      recommendations.push({
+        type: 'retry_quiz',
+        title: `Ôn lại bài kiểm tra: ${weakCompleted.lesson.title}`,
+        description: `Điểm tốt nhất hiện tại ${weakCompleted.progress?.score ?? 0}%. Hãy luyện lại để củng cố kiến thức.`,
+        targetId: weakCompleted.lesson.id,
+        priority: 2,
+        actionText: 'Luyện lại',
+        metadata: {
+          levelNumber: weakCompleted.lesson.levelNumber,
+          score: weakCompleted.progress?.score ?? 0,
+        },
       });
     }
 
