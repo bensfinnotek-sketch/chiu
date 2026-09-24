@@ -103,6 +103,8 @@ export class RecommendationService {
     }
 
     // Prefer a quiz retry when a completed lesson has a weak score.
+    const allLessons = await curriculumRepository.getAllLessons();
+    const levelLessons = allLessons.filter((lesson) => lesson.levelNumber === currentLevelNumber);
     const progressList = await repo.getProgress(userId);
     const weakCompleted = levelLessons
       .map((lesson) => ({ lesson, progress: progressList.find((p) => p.lessonId === lesson.id) }))
