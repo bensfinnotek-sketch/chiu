@@ -12,6 +12,9 @@ export interface Flashcard {
   hsk_level?: number;
   status: 'new' | 'learning' | 'learned';
   review_count: number;
+  srs_repetitions: number;
+  srs_correct_count: number;
+  srs_incorrect_count: number;
   last_reviewed_at?: string;
   next_review_at?: string;
   created_at: string;
@@ -158,6 +161,9 @@ export const flashcardService = {
     updates: {
       status?: 'new' | 'learning' | 'learned';
       review_count?: number;
+      srs_repetitions?: number;
+      srs_correct_count?: number;
+      srs_incorrect_count?: number;
       example_sentence?: string;
       last_reviewed_at?: string;
       next_review_at?: string;
