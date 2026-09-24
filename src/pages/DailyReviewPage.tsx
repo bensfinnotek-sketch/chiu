@@ -1,209 +1,266 @@
-import React, { useState } from 'react';
-import {
-  Sparkles,
-  Trophy,
-  CheckCircle2,
-  XCircle,
-  Volume2,
-  Mic,
-  RotateCcw,
-  ArrowRight,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Trophy, RotateCcw, CheckCircle2, XCircle, LogIn } from 'lucide-react';
 import { AudioButton } from '../components/common/AudioButton';
-import { MicrophoneButton } from '../components/common/MicrophoneButton';
 import { LinaAvatar } from '../components/common/LinaAvatar';
-import { voiceService } from '../services/voiceService';
+import { flashcardService, Flashcard } from '../services/flashcardService';
+import { useAuth } from '../hooks/useAuth';
+import { getProgressRepository } from '../services/repositories/repositoryFactory';
 
-export const DailyReviewPage: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-  const [step, setStep] = useState<number>(0);
+export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
+  onComplete,
+  onNavigate,
+}) => {
+  const { user } = useAuth();
+  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
   const [isDone, setIsDone] = useState(false);
-  const [micActive, setMicActive] = useState(false);
-  const [spokenText, setSpokenText] = useState('');
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const reviewItems = [
-    {
-      type: 'vocab',
-      title: 'Nhớ lại nghĩa của từ',
-      chinese: '谢谢',
-      pinyin: 'xièxie',
-      question: '"谢谢" có nghĩa là gì?',
-      options: ['Tạm biệt', 'Cảm ơn', 'Xin lỗi', 'Không có chi'],
-      correct: 1,
-    },
-    {
-      type: 'listening',
-      title: 'Luyện nghe phản xạ',
-      chinese: '我不喝咖啡，我想喝茶。',
-      pinyin: 'Wǒ bù hē kāfēi, wǒ xiǎng hē chá.',
-      question: 'Người nói muốn uống gì?',
-      options: ['Cà phê', 'Trà', 'Nước ngọt', 'Bia'],
-      correct: 1,
-    },
-    {
-      type: 'vocab',
-      title: 'Chọn phiên âm đúng',
-      chinese: '中国',
-      question: 'Phiên âm của từ "中国" (Trung Quốc) là gì?',
-      options: ['zhōng guó', 'zhōng wén', 'běi jīng', 'shàng hǎi'],
-      correct: 0,
-    },
-    {
-      type: 'speaking',
-      title: 'Luyện nói câu giao tiếp',
-      chinese: '明天见！',
-      pinyin: 'Míngtiān jiàn!',
-      translationVi: 'Ngày mai gặp lại nhé!',
-      options: [],
-      correct: 0,
-    },
-  ];
+  useEffect(() => {
+    let mounted = true;
 
-  const current = reviewItems[step];
-
-  const handleSelectOption = (idx: number) => {
-    if (idx === current.correct) {
-      setScore((s) => s + 25);
-    }
-    advanceStep();
-  };
-
-  const advanceStep = () => {
-    if (step < reviewItems.length - 1) {
-      setStep(step + 1);
-      setSpokenText('');
-    } else {
-      setIsDone(true);
-    }
-  };
-
-  const handleSpeak = () => {
-    if (micActive) {
-      voiceService.stopListening();
-      setMicActive(false);
+    if (!user) {
+      setCards([]);
+      setIsLoading(false);
       return;
     }
-    setMicActive(true);
-    voiceService.startListening({
-      onResult: (transcript: string) => {
-        setMicActive(false);
-        setSpokenText(transcript);
-        setScore((s) => s + 25);
-        setTimeout(() => advanceStep(), 1200);
-      },
-      onError: () => {
-        setMicActive(false);
-      },
-    });
+
+    setIsLoading(true);
+    setLoadError(null);
+
+    flashcardService
+      .getFlashcards()
+      .then((allCards) => {
+        if (!mounted) return;
+
+        // Prioritize cards that still need learning, then recently added cards.
+        const reviewable = allCards
+          .filter((card) => card.status !== 'learned')
+          .sort((a, b) => {
+            const statusRank = (status: Flashcard['status']) => (status === 'learning' ? 0 : 1);
+            return statusRank(a.status) - statusRank(b.status) || a.created_at.localeCompare(b.created_at);
+          })
+          .slice(0, 10);
+
+        setCards(reviewable);
+      })
+      .catch((error) => {
+        if (mounted) {
+          setLoadError(error instanceof Error ? error.message : 'Không thể tải flashcards.');
+        }
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
+  const current = cards[step] || null;
+
+  const options = useMemo(() => {
+    if (!current) return [];
+
+    const distractors = cards
+      .filter((card) => card.id !== current.id && card.meaning !== current.meaning)
+      .map((card) => card.meaning)
+      .filter(Boolean)
+      .slice(0, 3);
+
+    return [...distractors, current.meaning].sort(() => Math.random() - 0.5);
+  }, [current, cards]);
+
+  const handleSelectOption = async (index: number) => {
+    if (!current || selectedAnswer !== null) return;
+
+    setSelectedAnswer(index);
+    const correct = options[index] === current.meaning;
+
+    if (correct) setScore((value) => value + Math.round(100 / cards.length));
+
+    try {
+      if (user && current.id) {
+        await flashcardService.updateFlashcard(current.id, {
+          status: correct ? 'learned' : 'learning',
+          review_count: (current.review_count || 0) + 1,
+        });
+      }
+    } catch (error) {
+      console.warn('Could not update daily review card:', error);
+    }
+
+    window.setTimeout(() => {
+      setSelectedAnswer(null);
+      if (step < cards.length - 1) {
+        setStep((value) => value + 1);
+      } else {
+        setIsDone(true);
+        if (user) {
+          getProgressRepository(user).recordStudyActivity(user.id, {
+            type: 'review',
+            durationMinutes: Math.max(1, Math.ceil(cards.length * 1.5)),
+            wordsLearnedDelta: cards.length,
+          }).catch((error) => console.warn('Could not record review activity:', error));
+        }
+      }
+    }, 500);
   };
+
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-8 text-center border border-[#E86F51]/15 shadow-xl space-y-5">
+          <RotateCcw size={40} className="mx-auto text-[#E86F51]" />
+          <h1 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Ôn tập cá nhân</h1>
+          <p className="text-sm text-[#716761] dark:text-[#A89E97]">
+            Đăng nhập để ôn lại chính những từ bạn đã lưu và đồng bộ kết quả học tập.
+          </p>
+          <button
+            type="button"
+            onClick={() => onNavigate?.('login')}
+            className="px-5 py-3 rounded-2xl bg-[#E86F51] text-white text-sm font-bold inline-flex items-center gap-2"
+          >
+            <LogIn size={16} /> Đăng nhập
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center text-sm text-[#716761]">
+        Lina đang chuẩn bị bộ ôn tập cá nhân của bạn…
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="p-5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-sm text-red-800 dark:text-red-200">
+          Không thể tải bộ ôn tập. {loadError}
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-8 text-center border border-[#E86F51]/15 shadow-xl space-y-5">
+          <RotateCcw size={40} className="mx-auto text-[#E86F51]" />
+          <h1 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Chưa có thẻ cần ôn</h1>
+          <p className="text-sm text-[#716761] dark:text-[#A89E97]">
+            Hãy học một bài HSK hoặc trò chuyện với Lina để tạo thêm flashcards cá nhân.
+          </p>
+          <button
+            type="button"
+            onClick={() => onNavigate?.('learn')}
+            className="px-5 py-3 rounded-2xl bg-[#E86F51] text-white text-sm font-bold"
+          >
+            Tiếp tục học
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="text-center space-y-2">
         <span className="px-3.5 py-1.5 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E86F51] text-xs font-bold inline-flex items-center gap-1.5">
-          <RotateCcw size={14} />
-          <span>Ôn tập 10 phút hàng ngày</span>
+          <RotateCcw size={14} /> Ôn tập 10 phút hàng ngày
         </span>
-        <h1 className="text-3xl font-extrabold text-[#211A17] dark:text-white">
-          Duy trì phản xạ ngôn ngữ
-        </h1>
+        <h1 className="text-3xl font-extrabold text-[#211A17] dark:text-white">Ôn đúng những gì bạn đang yếu</h1>
+        <p className="text-sm text-[#716761] dark:text-[#A89E97]">
+          Bộ ôn tập lấy trực tiếp từ flashcards cá nhân của bạn.
+        </p>
       </div>
 
-      {!isDone ? (
+      {!isDone && current ? (
         <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-xl space-y-6">
-          {/* Progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
-              <span>Câu hỏi {step + 1} / {reviewItems.length}</span>
-              <span className="text-[#E86F51]">{score} điểm</span>
-            </div>
-            <div className="w-full h-2.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#E86F51] transition-all duration-300"
-                style={{ width: `${((step + 1) / reviewItems.length) * 100}%` }}
-              />
-            </div>
+          <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
+            <span>Câu {step + 1} / {cards.length}</span>
+            <span className="text-[#E86F51]">{Math.round(score)} điểm</span>
           </div>
 
-          <div className="text-center space-y-3 py-2">
-            <span className="text-xs font-bold text-[#E86F51] uppercase">{current.title}</span>
-            <p className="font-chinese text-4xl sm:text-5xl font-black text-[#211A17] dark:text-white">
-              {current.chinese}
-            </p>
-            {current.pinyin && (
-              <p className="text-sm font-bold text-[#E86F51]">{current.pinyin}</p>
-            )}
-            <div className="flex justify-center">
-              <AudioButton text={current.chinese} size="md" />
-            </div>
-            {current.question && (
-              <p className="text-base font-bold text-[#211A17] dark:text-white pt-2">
-                {current.question}
-              </p>
-            )}
+          <div className="w-full h-2.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#E86F51] transition-all duration-300"
+              style={{ width: `${((step + 1) / cards.length) * 100}%` }}
+            />
           </div>
 
-          {current.type !== 'speaking' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {current.options.map((opt, i) => (
+          <div className="text-center space-y-4 py-4">
+            <span className="px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">
+              {current.hsk_level ? `HSK ${current.hsk_level}` : 'Flashcard'}
+            </span>
+            <p className="font-chinese text-5xl sm:text-6xl font-black text-[#211A17] dark:text-white">{current.hanzi}</p>
+            <p className="text-sm font-bold text-[#E86F51]">{current.pinyin}</p>
+            <AudioButton text={current.hanzi} size="md" />
+            <p className="text-base font-bold text-[#211A17] dark:text-white pt-2">Từ này có nghĩa là gì?</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {options.map((option, index) => {
+              const isCorrect = option === current.meaning;
+              const isSelected = selectedAnswer === index;
+              const reveal = selectedAnswer !== null;
+
+              return (
                 <button
-                  key={i}
+                  key={`${current.id}-${option}`}
                   type="button"
-                  onClick={() => handleSelectOption(i)}
-                  className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 text-sm font-bold text-[#211A17] dark:text-white hover:border-[#E86F51] hover:bg-[#FFF0EB] transition-all cursor-pointer text-left"
+                  disabled={reveal}
+                  onClick={() => handleSelectOption(index)}
+                  className={`p-4 rounded-2xl border text-sm font-bold text-left transition-all ${
+                    reveal && isCorrect
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700'
+                      : reveal && isSelected
+                        ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-700'
+                        : 'border-[#E86F51]/15 bg-[#FFF9F4] dark:bg-[#181412] hover:border-[#E86F51]'
+                  }`}
                 >
-                  {opt}
+                  <span className="flex items-center gap-2">
+                    {reveal && isCorrect && <CheckCircle2 size={16} />}
+                    {reveal && isSelected && !isCorrect && <XCircle size={16} />}
+                    {option}
+                  </span>
                 </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center space-y-4 py-4">
-              <p className="text-xs text-[#716761]">
-                Nghĩa: "{current.translationVi}"
-              </p>
-              <MicrophoneButton
-                isListening={micActive}
-                onClick={handleSpeak}
-                statusText={micActive ? 'Đang nghe... hãy đọc câu trên' : 'Nhấn mic để nói'}
-              />
-              {spokenText && (
-                <p className="text-xs text-emerald-600 font-bold animate-fade-in">
-                  Bạn đã đọc: "{spokenText}" ✓
-                </p>
-              )}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-8 sm:p-10 border border-[#E86F51]/20 shadow-xl text-center space-y-6">
           <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[#65A873] flex items-center justify-center mx-auto">
             <Trophy size={40} />
           </div>
-
           <div className="space-y-2">
-            <h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">
-              Xuất sắc! Hoàn thành ôn tập hôm nay
-            </h2>
+            <h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Hoàn thành phiên ôn tập</h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97]">
-              Bạn đã đạt <span className="font-bold text-[#E86F51]">{score} / 100 điểm</span> và duy trì chuỗi Streak 7 ngày thành công!
+              Bạn đã ôn {cards.length} từ và đạt <span className="font-bold text-[#E86F51]">{Math.round(score)} / 100 điểm</span>.
             </p>
           </div>
-
           <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 flex items-center gap-3 text-left">
             <LinaAvatar size="md" />
             <div className="text-xs space-y-0.5">
-              <p className="font-bold text-[#211A17] dark:text-white">Lời khen từ Lina:</p>
+              <p className="font-bold text-[#211A17] dark:text-white">Lina:</p>
               <p className="text-[#716761] dark:text-[#A89E97]">
-                "Tiến bộ rất rõ rệt qua từng ngày! Hãy giữ thói quen luyện tập 10 phút này nhé."
+                Phiên ôn tập này đã cập nhật trạng thái các thẻ và tiến độ học của bạn.
               </p>
             </div>
           </div>
-
           <button
             type="button"
             onClick={onComplete}
-            className="w-full py-4 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] transition-all cursor-pointer"
+            className="w-full py-4 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] transition-all"
           >
             Quay lại trang chính
           </button>
