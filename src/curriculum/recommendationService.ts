@@ -67,12 +67,16 @@ export class RecommendationService {
     // Once the current HSK level is fully completed, make the next level an
     // explicit recommendation instead of repeatedly recommending old lessons.
     // The UI decides whether the next level is available on the user's plan.
-    if (levelCompletion.completionPercent >= 100 && currentLevelNumber < 6) {
+    if (
+      levelCompletion.completionPercent >= 100 &&
+      levelCompletion.averageQuizScore >= 80 &&
+      currentLevelNumber < 6
+    ) {
       const nextLevel = (currentLevelNumber + 1) as HSKLevelNumber;
       recommendations.push({
         type: 'next_lesson',
         title: `Đã hoàn thành HSK ${currentLevelNumber} · sẵn sàng lên HSK ${nextLevel}`,
-        description: 'Bạn đã hoàn thành toàn bộ bài bắt buộc của cấp độ hiện tại. Tiếp tục sang cấp độ kế tiếp để duy trì đà học.',
+        description: `Bạn đã hoàn thành toàn bộ bài bắt buộc với điểm quiz trung bình ${levelCompletion.averageQuizScore}/100. Tiếp tục sang cấp độ kế tiếp để duy trì đà học.`,
         targetId: `level:${nextLevel}`,
         priority: 0,
         actionText: `Học HSK ${nextLevel}`,
@@ -162,17 +166,35 @@ export class RecommendationService {
 
     // Check vocabulary review recommendation
     const vocabProgress = await repo.getVocabularyProgress(userId);
-    const weakVocab = vocabProgress.filter((v) => v.status === 'learning' || v.incorrectCount > 1);
+    const weakVocab = vocabProgress
+      .map((vocab) => {
+        const exposure = Math.max(0, vocab.exposureCount || 0);
+        const accuracy = exposure > 0 ? (vocab.correctCount / exposure) * 100 : 0;
+        const recencyPenalty = vocab.lastSeenAt ? 0 : 8;
+        const masteryScore = Math.max(
+          0,
+          Math.min(100, accuracy - (vocab.incorrectCount * 5) + Math.min(10, exposure * 2) - recencyPenalty)
+        );
+        return { vocab, masteryScore };
+      })
+      .filter(({ vocab, masteryScore }) => vocab.status === 'learning' || vocab.incorrectCount > 1 || masteryScore < 60)
+      .sort((a, b) => a.masteryScore - b.masteryScore);
 
     if (weakVocab.length > 0) {
+      const weakestVocabularyScore = Math.round(weakVocab[0].masteryScore);
+      const isVocabularyWeakestSkill = weakestSkill?.skill === 'vocabulary';
       recommendations.push({
         type: 'review_vocabulary',
         title: `Ôn tập ${Math.min(weakVocab.length, 10)} từ vựng cần củng cố`,
-        description: 'Tăng phản xạ từ vựng trước khi chuyển sang bài mới.',
+        description: `Hồ sơ từ vựng yếu nhất hiện khoảng ${weakestVocabularyScore}/100. Daily Review sẽ ưu tiên thẻ sai nhiều, quá hạn và sát HSK hiện tại.`,
         targetId: 'flashcards',
-        priority: 2,
+        priority: isVocabularyWeakestSkill ? 1 : 2,
         actionText: 'Ôn tập ngay',
-        metadata: { wordCount: weakVocab.length },
+        metadata: {
+          wordCount: weakVocab.length,
+          score: weakestVocabularyScore,
+          levelNumber: currentLevelNumber,
+        },
       });
     }
 
