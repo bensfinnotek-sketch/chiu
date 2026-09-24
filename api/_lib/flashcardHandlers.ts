@@ -17,6 +17,7 @@ export interface FlashcardItem {
   next_review_at?: string;
   created_at: string;
   updated_at: string;
+  auto_saved?: boolean;
 }
 
 // In-memory isolated storage fallback for local dev / tests when Supabase env is not configured
@@ -71,6 +72,7 @@ export async function upsertFlashcardForUser(
     source_conversation_id?: string;
     topic?: string;
     hsk_level?: number;
+    auto_saved?: boolean;
   }
 ): Promise<FlashcardItem | null> {
   const cleanHanzi = card.hanzi.trim();
@@ -120,6 +122,7 @@ export async function upsertFlashcardForUser(
           source_conversation_id: card.source_conversation_id || null,
           topic: card.topic || "general",
           hsk_level: card.hsk_level || 1,
+          auto_saved: card.auto_saved === true,
           status: "new",
           review_count: 0,
           created_at: now,
@@ -160,6 +163,7 @@ export async function upsertFlashcardForUser(
     source_conversation_id: card.source_conversation_id,
     topic: card.topic || "general",
     hsk_level: card.hsk_level || 1,
+    auto_saved: card.auto_saved === true,
     status: "new",
     review_count: 0,
     created_at: now,
