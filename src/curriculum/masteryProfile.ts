@@ -53,17 +53,22 @@ function normalizedScore(values: number[], fallback: number): number {
  *
  * Vocabulary/grammar are weighted more heavily than quiz attempts because
  * they represent repeated skill evidence rather than a single assessment.
+ * Legacy aggregate skill scores are used only when there is no level-specific
+ * progress record at all, so an unexposed word/grammar record cannot inherit
+ * an unrelated aggregate score.
  */
 export function buildHskMasteryProfile(input: MasteryProfileInput): HSKMasteryProfile[] {
   const profiles: HSKMasteryProfile[] = [];
 
   for (const level of [1, 2, 3, 4, 5, 6] as HSKLevelNumber[]) {
-    const vocabulary = input.vocabulary.filter(
-      (item) => input.vocabularyLevels.get(item.vocabularyId) === level && item.exposureCount > 0
+    const levelVocabularyProgress = input.vocabulary.filter(
+      (item) => input.vocabularyLevels.get(item.vocabularyId) === level
     );
-    const grammar = input.grammar.filter(
-      (item) => input.grammarLevels.get(item.grammarPointId) === level && item.exposureCount > 0
+    const levelGrammarProgress = input.grammar.filter(
+      (item) => input.grammarLevels.get(item.grammarPointId) === level
     );
+    const vocabulary = levelVocabularyProgress.filter((item) => item.exposureCount > 0);
+    const grammar = levelGrammarProgress.filter((item) => item.exposureCount > 0);
     const quizzes = input.quizAttempts.filter(
       (attempt) => input.lessonLevels.get(attempt.lessonId) === level
     );
@@ -74,11 +79,11 @@ export function buildHskMasteryProfile(input: MasteryProfileInput): HSKMasteryPr
 
     const vocabularyScore = normalizedScore(
       vocabulary.map((item) => item.masteryScore),
-      vocabularySkill?.score ?? 0
+      levelVocabularyProgress.length === 0 ? (vocabularySkill?.score ?? 0) : 0
     );
     const grammarScore = normalizedScore(
       grammar.map((item) => item.masteryScore),
-      grammarSkill?.score ?? 0
+      levelGrammarProgress.length === 0 ? (grammarSkill?.score ?? 0) : 0
     );
     const quizScore = average(quizzes.map((attempt) => attempt.score));
 
