@@ -414,50 +414,62 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     score: number,
     levelNumber: HSKLevelNumber
   ): Promise<{ progress: UserLessonProgress; isFirstCompletion: boolean }> {
-    const existing = await this.getLessonProgress(userId, lessonId);
-    const isFirstCompletion = !existing || existing.status !== 'completed';
-    const now = new Date().toISOString();
-
-    const progress: UserLessonProgress = {
-      userId,
-      lessonId,
-      levelNumber,
-      status: 'completed',
-      progressPercent: 100,
-      score: Math.max(existing?.score || 0, score),
-      attempts: (existing?.attempts || 0) + 1,
-      startedAt: existing?.startedAt || now,
-      completedAt: existing?.completedAt || now,
-      lastAccessedAt: now,
-    };
-
-    await this.saveProgress(progress);
-
-    if (isFirstCompletion && supabase) {
-      const { data: aggregate, error: readError } = await supabase
-        .from('learning_progress')
-        .select('lessons_completed')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (readError) {
-        throw new Error(`Không thể cập nhật tổng số bài đã học: ${readError.message}`);
-      }
-
-      const { error: updateError } = await supabase
-        .from('learning_progress')
-        .upsert({
-          user_id: userId,
-          lessons_completed: (aggregate?.lessons_completed || 0) + 1,
-          updated_at: now,
-        });
-
-      if (updateError) {
-        throw new Error(`Không thể cập nhật tổng số bài đã hoàn thành: ${updateError.message}`);
-      }
+    if (!isSupabaseConfigured || !supabase) {
+      const existing = await this.getLessonProgress(userId, lessonId);
+      const isFirstCompletion = !existing || existing.status !== 'completed';
+      const now = new Date().toISOString();
+      const progress: UserLessonProgress = {
+        userId,
+        lessonId,
+        levelNumber,
+        status: 'completed',
+        progressPercent: 100,
+        score: Math.max(existing?.score || 0, score),
+        attempts: (existing?.attempts || 0) + 1,
+        startedAt: existing?.startedAt || now,
+        completedAt: existing?.completedAt || now,
+        lastAccessedAt: now,
+      };
+      await this.saveProgress(progress);
+      return { progress, isFirstCompletion };
     }
 
-    return { progress, isFirstCompletion };
+    const { data, error } = await supabase.rpc('complete_lesson', {
+      p_user_id: userId,
+      p_lesson_id: lessonId,
+      p_score: score,
+      p_level_number: levelNumber,
+    });
+
+    if (error) {
+      throw new Error(`Không thể hoàn thành bài học: ${error.message}`);
+    }
+
+    const result = data as {
+      progress?: Record<string, any>;
+      is_first_completion?: boolean;
+    };
+    const row = result?.progress;
+    if (!row) {
+      throw new Error('Không nhận được tiến độ bài học sau khi hoàn thành.');
+    }
+
+    return {
+      progress: {
+        userId: row.user_id,
+        lessonId: row.lesson_id,
+        levelNumber: row.level_number || levelNumber,
+        status: row.status as LessonProgressStatus,
+        progressPercent: row.progress_percent || 0,
+        currentSectionId: row.current_section_id,
+        score: row.score,
+        attempts: row.attempts || 1,
+        startedAt: row.started_at,
+        completedAt: row.completed_at,
+        lastAccessedAt: row.last_accessed_at,
+      },
+      isFirstCompletion: Boolean(result.is_first_completion),
+    };
   }
 
   async saveQuizAttempt(attempt: QuizAttempt): Promise<boolean> {
