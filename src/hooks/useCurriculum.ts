@@ -257,8 +257,27 @@ export function useLesson(lessonId: string) {
       })
     );
 
+    if (!attempt.passed) {
+      const recommendations = await recommendationService.getRecommendations(
+        userId,
+        lesson.levelNumber,
+        repo
+      );
+      return {
+        progress: userProgress,
+        isFirstCompletion: false,
+        flashcardsSaved: 0,
+        skillDelta: 0,
+        recommendations,
+        levelCompletion: await recommendationService.calculateLevelCompletion(
+          userId,
+          lesson.levelNumber,
+          repo
+        ),
+      };
+    }
+
     return completeLesson(attempt.score);
-  };
 
   return {
     lesson,
