@@ -16,11 +16,13 @@ import { curriculumRepository } from '../curriculum/curriculumRepository';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { recommendationService } from '../curriculum/recommendationService';
 import { useAuth } from './useAuth';
+import { getProgressRepository } from '../services/repositories/repositoryFactory';
 
 export function useCurriculum(levelNumber: HSKLevelNumber = 1) {
   const { user } = useAuth();
   const userId = user?.id || 'guest_user';
   const repo = useMemo(() => getLessonProgressRepository(user ? user.id : null), [user]);
+  const progressRepo = useMemo(() => getProgressRepository(user), [user]);
 
   const [levels, setLevels] = useState<HSKLevelInfo[]>([]);
   const [units, setUnits] = useState<CurriculumUnit[]>([]);
@@ -150,18 +152,31 @@ export function useLesson(lessonId: string) {
 
   const completeLesson = async (score: number) => {
     if (!lesson) return;
-    const { progress } = await repo.markLessonCompleted(
+    const { progress, isFirstCompletion } = await repo.markLessonCompleted(
       userId,
       lessonId,
       score,
       lesson.levelNumber
     );
     setUserProgress(progress);
-    // Also record vocabulary exposure
+
+    // Keep the global learning dashboard in sync with curriculum completion.
+    // Count a lesson and its vocabulary only on the first successful completion
+    // so reopening/retrying a lesson does not inflate aggregate progress.
+    if (isFirstCompletion) {
+      await progressRepo.recordStudyActivity(userId, {
+        type: 'lesson',
+        durationMinutes: lesson.estimatedMinutes,
+        wordsLearnedDelta: vocabulary.length,
+      });
+    }
+
+    // Also record vocabulary exposure.
     for (const item of vocabulary) {
       await repo.updateVocabularyStatus(userId, item.id, 'learning', true);
     }
-    // Update skill scores
+
+    // Update skill scores.
     await repo.updateSkillScore(userId, 'vocabulary', lesson.levelNumber, 10);
     await repo.updateSkillScore(userId, 'grammar', lesson.levelNumber, 10);
   };
