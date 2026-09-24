@@ -8,6 +8,7 @@ import { getProgressRepository } from '../services/repositories/repositoryFactor
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { calculateSrsSchedule } from '../services/flashcardSrs';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { getDailyReviewPriority } from '../curriculum/dailyReviewRanking';
 
 export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
   onComplete,
@@ -36,12 +37,19 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     setIsLoading(true);
     setLoadError(null);
 
-    Promise.all([flashcardService.getFlashcards(), lessonProgressRepository.getSkillProgress(user.id)])
-      .then(([allCards, skills]) => {
+    Promise.all([
+      flashcardService.getFlashcards(),
+      lessonProgressRepository.getSkillProgress(user.id),
+      lessonProgressRepository.getVocabularyProgress(user.id),
+    ])
+      .then(([allCards, skills, vocabularyProgress]) => {
         const vocabularyScores: Record<number, number> = {};
         skills.filter((skill) => skill.skill === 'vocabulary').forEach((skill) => {
           vocabularyScores[skill.level] = skill.score;
         });
+        const masteryByVocabularyId = new Map(
+          vocabularyProgress.map((item) => [item.vocabularyId, item.masteryScore])
+        );
         if (!mounted) return;
 
         // SRS controls eligibility for every card: unscheduled cards are new;
@@ -54,20 +62,25 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
             return Number.isFinite(dueAt) && dueAt <= now;
           })
           .sort((a, b) => {
-            const score = (card: Flashcard) => {
-              const dueAt = card.next_review_at ? Date.parse(card.next_review_at) : Number.NaN;
-              const overdueHours = Number.isFinite(dueAt) ? Math.max(0, (now - dueAt) / 3_600_000) : 0;
+            const priority = (card: Flashcard) => {
               const hsk = Number(card.hsk_level || 0);
-              const skillScore = hsk >= 1 && hsk <= 6 ? (vocabularyScores[hsk] ?? 50) : 50;
-              const weakness = Math.max(0, 100 - skillScore);
-              const incorrectHistory = Math.min(40, (card.srs_incorrect_count || 0) * 8);
-              const repetitionPenalty = Math.max(0, 6 - (card.srs_repetitions || 0)) * 2;
-              const newCardBoost = !card.next_review_at ? 12 : 0;
-              const learningBoost = card.status === 'learning' ? 10 : card.status === 'new' ? 6 : 0;
-              const hskMatch = profile?.hskLevel && hsk === Number(profile.hskLevel) ? 8 : 0;
-              return overdueHours * 3 + weakness * 1.2 + incorrectHistory + repetitionPenalty + newCardBoost + learningBoost + hskMatch;
+              const masteryScore = card.hanzi
+                ? vocabularyProgress.find((item) => item.vocabularyId === card.hanzi)?.masteryScore
+                : undefined;
+              return getDailyReviewPriority({
+                nextReviewAt: card.next_review_at,
+                status: card.status,
+                hskLevel: hsk,
+                masteryScore,
+                incorrectCount: card.srs_incorrect_count,
+                repetitions: card.srs_repetitions,
+                createdAt: card.created_at,
+                now,
+                currentHskLevel: profile?.hskLevel ? Number(profile.hskLevel) : null,
+                currentHskVocabularyScore: hsk >= 1 && hsk <= 6 ? (vocabularyScores[hsk] ?? 50) : null,
+              });
             };
-            return score(b) - score(a) || a.created_at.localeCompare(b.created_at);
+            return priority(b).score - priority(a).score || a.created_at.localeCompare(b.created_at);
           })
           .slice(0, 10);
 
