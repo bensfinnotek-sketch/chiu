@@ -205,6 +205,8 @@ export async function updateFlashcardForUser(
     status?: "new" | "learning" | "learned";
     review_count?: number;
     example_sentence?: string;
+    last_reviewed_at?: string;
+    next_review_at?: string;
   },
   accessToken?: string | null
 ): Promise<FlashcardItem | null> {
@@ -216,7 +218,9 @@ export async function updateFlashcardForUser(
     if (updates.status) payload.status = updates.status;
     if (typeof updates.review_count === "number") payload.review_count = updates.review_count;
     if (updates.example_sentence) payload.example_sentence = updates.example_sentence;
-    payload.last_reviewed_at = now;
+    if (updates.last_reviewed_at) payload.last_reviewed_at = updates.last_reviewed_at;
+    else payload.last_reviewed_at = now;
+    if (updates.next_review_at) payload.next_review_at = updates.next_review_at;
 
     const { data, error } = await supabase
       .from("user_vocabulary")
@@ -239,7 +243,8 @@ export async function updateFlashcardForUser(
       if (updates.status) item.status = updates.status;
       if (typeof updates.review_count === "number") item.review_count = updates.review_count;
       if (updates.example_sentence) item.example_sentence = updates.example_sentence;
-      item.last_reviewed_at = now;
+      item.last_reviewed_at = updates.last_reviewed_at || now;
+      if (updates.next_review_at) item.next_review_at = updates.next_review_at;
       item.updated_at = now;
       return item;
     }
@@ -378,6 +383,8 @@ export async function handleUpdateFlashcard(req: any, res: any, cardId?: string)
     status: body.status,
     review_count: body.review_count,
     example_sentence: body.example_sentence || body.exampleSentence,
+    last_reviewed_at: body.last_reviewed_at,
+    next_review_at: body.next_review_at,
   }, extractBearerToken(req));
 
   if (!updated) {
