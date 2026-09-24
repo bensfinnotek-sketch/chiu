@@ -43,6 +43,13 @@ export async function handleGeneratePersonalizedLesson(req: any, res: any) {
     });
   }
 
+  if (!entitlement.personalizedCurriculum) {
+    return sendJson(res, 403, {
+      error: "Personalized curriculum is not available on this plan.",
+      code: "PERSONALIZED_CURRICULUM_REQUIRED",
+    });
+  }
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
