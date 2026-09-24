@@ -1,3 +1,5 @@
+import { HSKLevelNumber } from '../types/curriculum';
+
 export type RecommendationDecision = 'review_srs' | 'review_quiz' | 'learn_lesson' | 'advance_hsk';
 
 export interface RecommendationDecisionInput {
