@@ -301,10 +301,10 @@ export function useLesson(lessonId: string) {
     }
 
     const vocabularyDelta = vocabularyQuestions > 0
-      ? Math.max(3, Math.round((vocabularyCorrect / vocabularyQuestions) * 15))
+      ? Math.round((vocabularyCorrect / vocabularyQuestions) * 15)
       : 0;
     const grammarDelta = grammarQuestions > 0
-      ? Math.max(3, Math.round((grammarCorrect / grammarQuestions) * 15))
+      ? Math.round((grammarCorrect / grammarQuestions) * 15)
       : 0;
 
     return completeLesson(attempt.score, {
