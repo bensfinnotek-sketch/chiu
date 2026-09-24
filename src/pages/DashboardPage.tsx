@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { UserProfile, SupportedLanguage } from '../types';
 import { LinaAvatar } from '../components/common/LinaAvatar';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useDashboardData } from '../hooks/useDashboardData';
 
 interface DashboardPageProps {
   user: UserProfile;
@@ -36,7 +38,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <span>Kế hoạch học cá nhân hóa</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#211A17] dark:text-white tracking-tight">
-            你好, {user.name} 👋
+            你好, {displayName} 👋
           </h1>
           <p className="text-base text-[#716761] dark:text-[#A89E97]">
             Ready for today's Chinese practice? Hãy cùng Lina luyện nói 10 phút nhé!
@@ -67,7 +69,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <Flame size={22} className="fill-orange-500" />
           </div>
           <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{user.streakDays} ngày</p>
+            <p className="text-2xl font-black text-[#211A17] dark:text-white">{streakDays} ngày</p>
             <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Chuỗi học liên tiếp (Streak)</p>
           </div>
         </div>
@@ -78,7 +80,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <BookOpen size={22} />
           </div>
           <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{user.wordsLearned}</p>
+            <p className="text-2xl font-black text-[#211A17] dark:text-white">{wordsLearned}</p>
             <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Từ vựng đã nắm vững</p>
           </div>
         </div>
@@ -100,7 +102,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <Clock size={22} />
           </div>
           <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{user.minutesLearnedToday} phút</p>
+            <p className="text-2xl font-black text-[#211A17] dark:text-white">{minutesLearnedToday} phút</p>
             <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Thời gian hôm nay (Mục tiêu {user.dailyMinutes}m)</p>
           </div>
         </div>
