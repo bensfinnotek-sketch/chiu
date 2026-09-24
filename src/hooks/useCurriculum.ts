@@ -88,6 +88,7 @@ export function useLesson(lessonId: string) {
   const { user } = useAuth();
   const userId = user?.id || 'guest_user';
   const repo = useMemo(() => getLessonProgressRepository(user ? user.id : null), [user]);
+  const progressRepo = useMemo(() => getProgressRepository(user), [user]);
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [sections, setSections] = useState<LessonSection[]>([]);
