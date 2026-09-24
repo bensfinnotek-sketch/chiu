@@ -143,15 +143,21 @@ export class RecommendationService {
         writing: 'viết',
       };
       const label = skillLabels[weakestSkill.skill] || weakestSkill.skill;
-      recommendations.push({
-        type: weakestSkill.skill === 'vocabulary' ? 'review_vocabulary' : 'review_grammar',
-        title: `Củng cố kỹ năng ${label}`,
-        description: `Hồ sơ kỹ năng HSK ${currentLevelNumber} hiện ở ${weakestSkill.score}/100. Ưu tiên luyện ${label} trước khi học thêm nội dung mới.`,
-        targetId: weakestSkill.skill === 'vocabulary' ? 'flashcards' : 'grammar',
-        priority: 2,
-        actionText: weakestSkill.skill === 'vocabulary' ? 'Ôn flashcards' : 'Ôn ngữ pháp',
-        metadata: { levelNumber: currentLevelNumber, score: weakestSkill.score },
-      });
+
+      // Only emit an actionable recommendation for skills that currently have
+      // a supported destination in the learning UI. Do not mislabel listening,
+      // speaking, reading, or writing weakness as grammar weakness.
+      if (weakestSkill.skill === 'vocabulary' || weakestSkill.skill === 'grammar') {
+        recommendations.push({
+          type: weakestSkill.skill === 'vocabulary' ? 'review_vocabulary' : 'review_grammar',
+          title: `Củng cố kỹ năng ${label}`,
+          description: `Hồ sơ kỹ năng HSK ${currentLevelNumber} hiện ở ${weakestSkill.score}/100. Ưu tiên luyện ${label} trước khi học thêm nội dung mới.`,
+          targetId: weakestSkill.skill === 'vocabulary' ? 'flashcards' : 'grammar',
+          priority: 2,
+          actionText: weakestSkill.skill === 'vocabulary' ? 'Ôn flashcards' : 'Ôn ngữ pháp',
+          metadata: { levelNumber: currentLevelNumber, score: weakestSkill.score },
+        });
+      }
     }
 
     // Check vocabulary review recommendation
