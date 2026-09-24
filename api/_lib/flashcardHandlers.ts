@@ -417,6 +417,81 @@ export async function handleUpdateFlashcard(req: any, res: any, cardId?: string)
 }
 
 /**
+ * POST /api/flashcards/:id/review
+ * Records a review atomically in Supabase so concurrent reviews cannot
+ * overwrite each other's counters or SRS state.
+ */
+export async function handleReviewFlashcard(req: any, res: any, cardId?: string) {
+  const user = await requireAuth(req, res, sendJson);
+  if (!user) return;
+
+  const id = cardId || req.query?.id || parseBody(req)?.id;
+  if (!id) {
+    return sendJson(res, 400, { error: "Flashcard id is required" });
+  }
+
+  const body = parseBody(req);
+  const rating = body?.rating;
+  if (rating !== "correct" && rating !== "incorrect") {
+    return sendJson(res, 400, { error: "rating must be 'correct' or 'incorrect'" });
+  }
+
+  const accessToken = extractBearerToken(req);
+  const supabase = getSupabaseServerClient(accessToken);
+
+  if (!supabase) {
+    const userMap = getMemoryUserMap(user.id);
+    for (const item of userMap.values()) {
+      if (item.id === id && item.user_id === user.id) {
+        const now = new Date();
+        item.review_count = Math.max(0, item.review_count || 0) + 1;
+        if (rating === "incorrect") {
+          item.srs_repetitions = 0;
+          item.srs_incorrect_count = Math.max(0, item.srs_incorrect_count || 0) + 1;
+          item.status = "learning";
+          const count = item.srs_incorrect_count;
+          item.next_review_at = new Date(now.getTime() + (count <= 1 ? 10 : count <= 3 ? 20 : 30) * 60000).toISOString();
+        } else {
+          item.srs_repetitions = Math.max(0, item.srs_repetitions || 0) + 1;
+          item.srs_correct_count = Math.max(0, item.srs_correct_count || 0) + 1;
+          item.status = "learned";
+          const intervals = [1440, 4320, 10080, 20160, 43200, 86400];
+          const minutes = intervals[Math.min(item.srs_repetitions, 6) - 1] || 86400;
+          item.next_review_at = new Date(now.getTime() + minutes * 60000).toISOString();
+        }
+        item.last_reviewed_at = now.toISOString();
+        item.updated_at = now.toISOString();
+        return sendJson(res, 200, { flashcard: item });
+      }
+    }
+    return sendJson(res, 404, { error: "Flashcard not found or unauthorized" });
+  }
+
+  const { data, error } = await supabase.rpc("review_flashcard", {
+    p_user_id: user.id,
+    p_card_id: id,
+    p_rating: rating,
+  });
+
+  if (error) {
+    console.error("[Flashcards] Atomic review error:", error);
+    const message = error.message || "";
+    if (message.toLowerCase().includes("not found")) {
+      return sendJson(res, 404, { error: "Flashcard not found or unauthorized" });
+    }
+    if (message.toLowerCase().includes("invalid rating")) {
+      return sendJson(res, 400, { error: "Invalid rating" });
+    }
+    return sendJson(res, 500, { error: "Could not record flashcard review" });
+  }
+
+  return sendJson(res, 200, {
+    flashcard: data,
+    message: "Flashcard review recorded successfully",
+  });
+}
+
+/**
  * DELETE /api/flashcards/:id (or /api/flashcards?id=...)
  * Deletes a flashcard belonging to authenticated user.
  */
