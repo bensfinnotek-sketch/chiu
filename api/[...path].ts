@@ -11,6 +11,7 @@ import {
   handleQuiz,
   sendJson,
 } from "./_lib/geminiHandlers.ts";
+import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.ts";
 import {
   handleGetFlashcards,
   handleCreateFlashcard,
@@ -68,6 +69,11 @@ export default async function handler(req: any, res: any) {
   }
   if (fullSubPath === "gemini/quiz") {
     return handleQuiz(req, res);
+  }
+
+  // Personalized learning plan endpoint (Protected)
+  if (fullSubPath === "learning/plan" && req.method === "GET") {
+    return handleGetLearningPlan(req, res);
   }
 
   // Flashcards CRUD endpoints (Protected)
