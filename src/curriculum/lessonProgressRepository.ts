@@ -27,7 +27,7 @@ export interface LessonProgressRepository {
     score: number,
     levelNumber: HSKLevelNumber
   ): Promise<{ progress: UserLessonProgress; isFirstCompletion: boolean }>;
-  saveQuizAttempt(attempt: QuizAttempt): Promise<void>;
+  saveQuizAttempt(attempt: QuizAttempt): Promise<boolean>;
   getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]>;
   getVocabularyProgress(userId: string): Promise<UserVocabularyProgress[]>;
   updateVocabularyStatus(
@@ -150,10 +150,12 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
     return { progress: prog, isFirstCompletion: isFirst };
   }
 
-  async saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
+  async saveQuizAttempt(attempt: QuizAttempt): Promise<boolean> {
     const list = this.getLocalList<QuizAttempt>(LOCAL_QUIZ_ATTEMPTS_KEY);
+    if (list.some((item) => item.userId === attempt.userId && item.id === attempt.id)) return false;
     list.push(attempt);
     this.setLocalList(LOCAL_QUIZ_ATTEMPTS_KEY, list);
+    return true;
   }
 
   async getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]> {
@@ -504,10 +506,10 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return { progress, isFirstCompletion };
   }
 
-  async saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) return;
+  async saveQuizAttempt(attempt: QuizAttempt): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
 
-    const { error } = await supabase.from('quiz_attempts').insert({
+    const { data, error } = await supabase.from('quiz_attempts').upsert({
       id: attempt.id,
       user_id: attempt.userId,
       lesson_id: attempt.lessonId,
@@ -520,11 +522,12 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
       answers: attempt.answers,
       started_at: attempt.startedAt,
       completed_at: attempt.completedAt,
-    });
+    }, { onConflict: 'id', ignoreDuplicates: true });
 
     if (error) {
       throw new Error(`Không thể lưu kết quả bài kiểm tra: ${error.message}`);
     }
+    return Array.isArray(data) && data.length > 0;
   }
 
   async getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]> {
