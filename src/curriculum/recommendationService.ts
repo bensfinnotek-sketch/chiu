@@ -171,25 +171,6 @@ export class RecommendationService {
       });
     }
 
-    // Only surface a weak completed-quiz retry when the decision engine explicitly
-    // chooses quiz reinforcement; otherwise SRS or lesson progression remains the single route.
-    if (decision.decision === 'review_quiz' && weakCompleted) {
-      recommendations.push({
-        type: 'retry_quiz',
-        title: `Ôn lại bài kiểm tra: ${weakCompleted.lesson.title}`,
-        description: `Điểm tốt nhất hiện tại ${weakCompleted.progress?.score ?? 0}%. Hãy luyện lại để củng cố kiến thức.`,
-        targetId: weakCompleted.lesson.id,
-        priority: decision.priority,
-        actionText: 'Luyện lại',
-        metadata: {
-          levelNumber: weakCompleted.lesson.levelNumber,
-          score: weakCompleted.progress?.score ?? 0,
-          decision: decision.decision,
-          reason: decision.reason,
-        },
-      });
-    }
-
     if (decision.decision === 'review_srs' && dueCards.length > 0) {
       recommendations.push({
         type: 'review_vocabulary',
@@ -415,7 +396,5 @@ export class RecommendationService {
     };
   }
 }
-
-import { decideLearningNextStep } from './learningDecisionEngine';
 
 export const recommendationService = new RecommendationService();
