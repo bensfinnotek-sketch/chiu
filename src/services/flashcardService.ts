@@ -192,6 +192,19 @@ export const flashcardService = {
     return data.flashcard;
   },
 
+  /** Records an SRS review atomically; concurrent reviews cannot overwrite each other. */
+  async reviewFlashcard(id: string, rating: 'correct' | 'incorrect'): Promise<Flashcard> {
+    const token = await getAccessToken();
+    if (!token) throw new Error('Authentication required to review flashcards');
+    const response = await fetch(`/api/flashcards/${id}/review`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ rating }),
+    });
+    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.error || `Failed to review flashcard (${response.status})`); }
+    const data = await response.json();
+    return data.flashcard;
+  },
+
   /**
    * Deletes a flashcard owned by the authenticated user.
    */
