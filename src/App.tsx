@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, SupportedLanguage } from './types';
+import { HSKLevelNumber } from './types/curriculum';
 import { storageService } from './services/storageService';
 import { Navbar } from './components/common/Navbar';
 import { BottomNav } from './components/common/BottomNav';
@@ -42,7 +43,7 @@ function AppContent() {
   const { user: authUser, isAuthenticated } = useAuth();
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [selectedLessonId, setSelectedLessonId] = useState<string>('hsk1-l1');
-  const [requestedHskLevel, setRequestedHskLevel] = useState<number | undefined>(undefined);
+  const [requestedHskLevel, setRequestedHskLevel] = useState<HSKLevelNumber | undefined>(undefined);
   const [selectedSessionId, setSelectedSessionId] = useState<string | undefined>(undefined);
   const [user, setUser] = useState<UserProfile>(storageService.getUserProfile());
   const [language, setLanguage] = useState<SupportedLanguage>(storageService.getLanguage());
@@ -99,7 +100,7 @@ function AppContent() {
     if (route === 'learn' && param?.startsWith('level:')) {
       const level = Number(param.slice('level:'.length));
       if (Number.isInteger(level) && level >= 1 && level <= 6) {
-        setRequestedHskLevel(level);
+        setRequestedHskLevel(level as HSKLevelNumber);
       }
     }
     if (route === 'learn-detail' && param) {
