@@ -49,8 +49,17 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
         skills.filter((skill) => skill.skill === 'vocabulary').forEach((skill) => {
           vocabularyScores[skill.level] = skill.score;
         });
+        const masteryByVocabularyKey = new Map(
+          curriculumVocabulary.map((item) => [
+            `${item.hanzi}::${item.hskLevel}`,
+            vocabularyProgress.find((progress) => progress.vocabularyId === item.id)?.masteryScore,
+          ])
+        );
         const masteryByHanzi = new Map(
-          curriculumVocabulary.map((item) => [item.hanzi, vocabularyProgress.find((progress) => progress.vocabularyId === item.id)?.masteryScore])
+          curriculumVocabulary.map((item) => [
+            item.hanzi,
+            vocabularyProgress.find((progress) => progress.vocabularyId === item.id)?.masteryScore,
+          ])
         );
         if (!mounted) return;
 
@@ -66,7 +75,9 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           .sort((a, b) => {
             const priority = (card: Flashcard) => {
               const hsk = Number(card.hsk_level || 0);
-              const masteryScore = masteryByHanzi.get(card.hanzi);
+              const masteryScore =
+                masteryByVocabularyKey.get(`${card.hanzi}::${hsk}`) ??
+                masteryByHanzi.get(card.hanzi);
               return getDailyReviewPriority({
                 nextReviewAt: card.next_review_at,
                 status: card.status,
