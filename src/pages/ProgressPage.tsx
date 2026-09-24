@@ -10,6 +10,7 @@ import {
   RotateCcw,
   TrendingUp,
   Loader2,
+  BrainCircuit,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { ALL_HSK_LEVELS } from '../data/hskData';
@@ -17,11 +18,16 @@ import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository, getVocabularyRepository } from '../services/repositories/repositoryFactory';
 import { LearningProgress } from '../types/progress';
 import { UserVocabulary } from '../types/vocabulary';
+import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
+import { curriculumRepository } from '../curriculum/curriculumRepository';
+import { ALL_GRAMMAR_POINTS } from '../curriculum/vocabularyAndGrammarData';
+import { buildHskMasteryProfile, getMasteryLabelVi, HSKMasteryProfile } from '../curriculum/masteryProfile';
 
 export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
   const { user: authUser } = useAuth();
   const [progress, setProgress] = useState<LearningProgress | null>(null);
   const [vocabulary, setVocabulary] = useState<UserVocabulary[]>([]);
+  const [masteryProfiles, setMasteryProfiles] = useState<HSKMasteryProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -31,14 +37,37 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
       setIsLoading(true);
       try {
         const userId = authUser?.id || 'guest_user';
-        const [nextProgress, nextVocabulary] = await Promise.all([
+        const progressRepo = getLessonProgressRepository(authUser?.id || null);
+        const [nextProgress, nextVocabulary, vocabProgress, grammarProgress, skillProgress, lessons, allCurriculumVocabulary] = await Promise.all([
           getProgressRepository(authUser).getProgress(userId),
           getVocabularyRepository(authUser).getUserVocabulary(userId),
+          progressRepo.getVocabularyProgress(userId),
+          progressRepo.getGrammarProgress(userId),
+          progressRepo.getSkillProgress(userId),
+          curriculumRepository.getAllLessons(),
+          curriculumRepository.getAllVocabulary(),
         ]);
+
+        const lessonLevels = new Map(lessons.map((lesson) => [lesson.id, lesson.levelNumber]));
+        const vocabularyLevels = new Map(allCurriculumVocabulary.map((item) => [item.id, item.hskLevel]));
+        const grammarLevels = new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
+        const quizAttempts = (
+          await Promise.all(lessons.map((lesson) => progressRepo.getQuizAttempts(userId, lesson.id)))
+        ).flat();
+        const profiles = buildHskMasteryProfile({
+          vocabulary: vocabProgress,
+          grammar: grammarProgress,
+          quizAttempts,
+          skillProgress,
+          vocabularyLevels,
+          grammarLevels,
+          lessonLevels,
+        });
 
         if (!cancelled) {
           setProgress(nextProgress);
           setVocabulary(nextVocabulary);
+          setMasteryProfiles(profiles);
         }
       } catch (error) {
         console.warn('[Progress] Failed to load progress:', error);
@@ -222,6 +251,55 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
               </div>
               <p className="mt-1 text-[10px] text-[#8A7F78]">
                 {item.discovered} từ đã xuất hiện trong flashcard · {item.learning} từ đang học
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-[#211A17] dark:text-white">Mastery Profile theo HSK</h3>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+              Tổng hợp Vocabulary + Grammar + Quiz từ dữ liệu học thật của tài khoản.
+            </p>
+          </div>
+          <BrainCircuit size={22} className="text-[#E86F51]" />
+        </div>
+
+        <div className="grid gap-3">
+          {masteryProfiles.map((profile) => (
+            <div key={profile.level} className="rounded-2xl border border-[#E86F51]/10 bg-[#FFF9F4] dark:bg-[#181412] p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="font-extrabold text-[#211A17] dark:text-white">
+                    HSK {profile.level}: {profile.overallScore}/100 → {getMasteryLabelVi(profile.label)}
+                  </p>
+                  <p className="text-[10px] text-[#8A7F78] mt-0.5">
+                    {profile.evidenceCount > 0 ? profile.evidenceCount + ' dữ liệu đã ghi nhận' : 'Chưa có đủ dữ liệu'}
+                  </p>
+                </div>
+                <span className="text-xs font-black text-[#E86F51]">{profile.overallScore}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-xl bg-white dark:bg-[#241F1C] p-3">
+                  <p className="text-[#8A7F78]">Vocabulary</p>
+                  <p className="font-extrabold text-[#211A17] dark:text-white">{profile.vocabularyScore}</p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-[#241F1C] p-3">
+                  <p className="text-[#8A7F78]">Grammar</p>
+                  <p className="font-extrabold text-[#211A17] dark:text-white">{profile.grammarScore}</p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-[#241F1C] p-3">
+                  <p className="text-[#8A7F78]">Quiz</p>
+                  <p className="font-extrabold text-[#211A17] dark:text-white">
+                    {profile.quizAttempts > 0 ? profile.quizScore : '—'}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 text-[10px] text-[#716761] dark:text-[#A89E97]">
+                Weak areas: {profile.weakVocabularyCount} từ + {profile.weakGrammarCount} grammar points
               </p>
             </div>
           ))}
