@@ -41,7 +41,7 @@ function ensureGuestSpeakingTime(req: any, res: any): { allowed: boolean; remain
   if (startedAt === null) {
     res.setHeader(
       "Set-Cookie",
-      `${GUEST_SPEAKING_COOKIE}=${now}.${signGuestSpeakingStart(now)}; Path=/; HttpOnly; SameSite=Lax`
+      `${GUEST_SPEAKING_COOKIE}=${now}.${signGuestSpeakingStart(now)}; Path=/; HttpOnly; SameSite=Lax${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
     );
     return { allowed: true, remainingMs: GUEST_SPEAKING_LIMIT_MS };
   }
