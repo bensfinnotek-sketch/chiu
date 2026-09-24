@@ -6,6 +6,7 @@ import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
+import { curriculumRepository } from '../curriculum/curriculumRepository';
 import { calculateSrsSchedule } from '../services/flashcardSrs';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getDailyReviewPriority } from '../curriculum/dailyReviewRanking';
@@ -41,14 +42,15 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
       flashcardService.getFlashcards(),
       lessonProgressRepository.getSkillProgress(user.id),
       lessonProgressRepository.getVocabularyProgress(user.id),
+      curriculumRepository.getAllVocabulary(),
     ])
-      .then(([allCards, skills, vocabularyProgress]) => {
+      .then(([allCards, skills, vocabularyProgress, curriculumVocabulary]) => {
         const vocabularyScores: Record<number, number> = {};
         skills.filter((skill) => skill.skill === 'vocabulary').forEach((skill) => {
           vocabularyScores[skill.level] = skill.score;
         });
-        const masteryByVocabularyId = new Map(
-          vocabularyProgress.map((item) => [item.vocabularyId, item.masteryScore])
+        const masteryByHanzi = new Map(
+          curriculumVocabulary.map((item) => [item.hanzi, vocabularyProgress.find((progress) => progress.vocabularyId === item.id)?.masteryScore])
         );
         if (!mounted) return;
 
@@ -64,9 +66,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           .sort((a, b) => {
             const priority = (card: Flashcard) => {
               const hsk = Number(card.hsk_level || 0);
-              const masteryScore = card.hanzi
-                ? vocabularyProgress.find((item) => item.vocabularyId === card.hanzi)?.masteryScore
-                : undefined;
+              const masteryScore = masteryByHanzi.get(card.hanzi);
               return getDailyReviewPriority({
                 nextReviewAt: card.next_review_at,
                 status: card.status,
