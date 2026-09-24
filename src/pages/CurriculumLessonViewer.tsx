@@ -41,7 +41,6 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     userProgress,
     isLoading,
     saveSectionProgress,
-    completeLesson,
     completeQuiz,
   } = useLesson(lessonId);
 
