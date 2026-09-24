@@ -1,7 +1,55 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { parseBody, sendJson } from "./httpUtils.ts";
 import { getAuthenticatedUser } from "./authMiddleware.ts";
 import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers.ts";
+
+
+const GUEST_SPEAKING_LIMIT_MS = 5 * 60 * 1000;
+const GUEST_SPEAKING_COOKIE = "hanzi_guest_speaking";
+const GUEST_SPEAKING_LIMIT_CODE = "GUEST_SPEAKING_LIMIT";
+
+function getGuestSpeakingSecret(): string {
+  return process.env.GUEST_SPEAKING_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim() || "hanzi-ai-guest-speaking";
+}
+
+function signGuestSpeakingStart(timestamp: number): string {
+  return createHmac("sha256", getGuestSpeakingSecret()).update(String(timestamp)).digest("hex");
+}
+
+function parseGuestSpeakingCookie(req: any): number | null {
+  const cookieHeader = req.headers?.cookie;
+  if (!cookieHeader || typeof cookieHeader !== "string") return null;
+  const pair = cookieHeader.split(";").map((part: string) => part.trim()).find((part: string) => part.startsWith(`${GUEST_SPEAKING_COOKIE}=`));
+  if (!pair) return null;
+  const raw = pair.slice(GUEST_SPEAKING_COOKIE.length + 1);
+  const [timestampText, signature] = raw.split(".");
+  const timestamp = Number(timestampText);
+  if (!Number.isFinite(timestamp) || !signature || !/^\\d+$/.test(timestampText)) return null;
+  const expected = signGuestSpeakingStart(timestamp);
+  try {
+    const valid = timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    return valid ? timestamp : null;
+  } catch {
+    return null;
+  }
+}
+
+function ensureGuestSpeakingTime(req: any, res: any): { allowed: boolean; remainingMs: number } {
+  const now = Date.now();
+  const startedAt = parseGuestSpeakingCookie(req);
+  if (startedAt === null) {
+    res.setHeader(
+      "Set-Cookie",
+      `${GUEST_SPEAKING_COOKIE}=${now}.${signGuestSpeakingStart(now)}; Path=/; HttpOnly; SameSite=Lax`
+    );
+    return { allowed: true, remainingMs: GUEST_SPEAKING_LIMIT_MS };
+  }
+
+  const elapsed = Math.max(0, now - startedAt);
+  const remainingMs = Math.max(0, GUEST_SPEAKING_LIMIT_MS - elapsed);
+  return { allowed: remainingMs > 0, remainingMs };
+}
 
 const MODEL_CANDIDATES = Array.from(
   new Set([process.env.GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"].filter(Boolean) as string[])
@@ -178,6 +226,19 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
     // Authenticate user from Bearer token (returns null for Guest or invalid token)
     // NEVER trusts client-sent userId
     const authenticatedUser = await getAuthenticatedUser(req);
+
+    // Guests get a server-enforced 5-minute speaking window.
+    // Authenticated users are unlimited and bypass this check.
+    if (!authenticatedUser) {
+      const guestWindow = ensureGuestSpeakingTime(req, res);
+      if (!guestWindow.allowed) {
+        return sendJson(res, 429, {
+          error: "Guest AI Speaking limit reached. Continue with Google to keep practicing.",
+          code: GUEST_SPEAKING_LIMIT_CODE,
+          remainingSeconds: 0,
+        });
+      }
+    }
 
     // If authenticated, fetch user's active flashcards to provide natural practice context
     let flashcardsPrompt = "";
