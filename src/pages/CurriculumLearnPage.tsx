@@ -22,11 +22,13 @@ import { useSubscription } from '../hooks/useSubscription';
 import { getAuthHeaders } from '../services/flashcardService';
 
 interface CurriculumLearnPageProps {
+  initialLevel?: HSKLevelNumber;
   onSelectLesson: (lessonId: string) => void;
   onNavigate?: (route: string, param?: string) => void;
 }
 
 export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
+  initialLevel,
   onSelectLesson,
   onNavigate,
 }) => {
@@ -42,8 +44,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
 
   React.useEffect(() => {
     const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
-    setSelectedLevel(isPremium ? profileLevel : Math.min(profileLevel, 2) as HSKLevelNumber);
-  }, [profile?.hskLevel, isPremium]);
+    const requestedLevel = initialLevel
+      ? Math.min(6, Math.max(1, Number(initialLevel))) as HSKLevelNumber
+      : null;
+    const nextLevel = requestedLevel ?? profileLevel;
+    setSelectedLevel(isPremium ? nextLevel : Math.min(nextLevel, 2) as HSKLevelNumber);
+  }, [profile?.hskLevel, isPremium, initialLevel]);
 
   const {
     levels,
