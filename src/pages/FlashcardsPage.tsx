@@ -261,6 +261,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button
               type="button"
               onClick={() => handleRating('hard')}
+              disabled={isReviewing}
               className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900 font-bold text-xs hover:bg-amber-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
             >
               <span>Khó (Hard)</span>
@@ -270,6 +271,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button
               type="button"
               onClick={() => handleRating('good')}
+              disabled={isReviewing}
               className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 font-bold text-xs hover:bg-blue-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
             >
               <span>Tốt (Good)</span>
@@ -279,6 +281,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button
               type="button"
               onClick={() => handleRating('easy')}
+              disabled={isReviewing}
               className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 font-bold text-xs hover:bg-emerald-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
             >
               <span>Dễ (Easy)</span>
