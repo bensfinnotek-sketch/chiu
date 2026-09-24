@@ -152,7 +152,10 @@ export function useLesson(lessonId: string) {
     setUserProgress(updated);
   };
 
-  const completeLesson = async (score: number) => {
+  const completeLesson = async (
+    score: number,
+    skillDeltas?: { vocabulary: number; grammar: number }
+  ) => {
     if (!lesson) return null;
 
     const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
@@ -200,10 +203,21 @@ export function useLesson(lessonId: string) {
     // answers back to "learning".
     // Skill progress now follows the actual quiz result instead of a fixed
     // amount for every lesson.
-    const skillDelta = Math.max(5, Math.round(normalizedScore * 0.15));
+    // Attribute skill growth to the evidence actually collected by the quiz.
+    // If the caller does not provide per-skill evidence, keep the previous
+    // balanced fallback so lesson completion remains backwards compatible.
+    const fallbackDelta = Math.max(5, Math.round(normalizedScore * 0.15));
+    const vocabularyDelta = skillDeltas?.vocabulary ?? fallbackDelta;
+    const grammarDelta = skillDeltas?.grammar ?? fallbackDelta;
+    const skillDelta = vocabularyDelta + grammarDelta;
+
     await Promise.all([
-      repo.updateSkillScore(userId, 'vocabulary', lesson.levelNumber, skillDelta),
-      repo.updateSkillScore(userId, 'grammar', lesson.levelNumber, skillDelta),
+      vocabularyDelta > 0
+        ? repo.updateSkillScore(userId, 'vocabulary', lesson.levelNumber, vocabularyDelta)
+        : Promise.resolve(),
+      grammarDelta > 0
+        ? repo.updateSkillScore(userId, 'grammar', lesson.levelNumber, grammarDelta)
+        : Promise.resolve(),
     ]);
 
     // Recompute the next action immediately: review, next lesson, or next HSK.
@@ -229,12 +243,26 @@ export function useLesson(lessonId: string) {
     await repo.saveQuizAttempt(attempt);
 
     // Feed answer-level evidence back into vocabulary and grammar mastery.
-    // The lesson completion itself remains the aggregate progress event.
+    // The same answer can contribute to both skill dimensions when a quiz
+    // question tests vocabulary inside a grammar structure.
     const questionMap = new Map(quizQuestions.map((question) => [question.id, question]));
+    let vocabularyQuestions = 0;
+    let vocabularyCorrect = 0;
+    let grammarQuestions = 0;
+    let grammarCorrect = 0;
     await Promise.all(
       attempt.answers.flatMap((answer) => {
         const question = questionMap.get(answer.questionId);
         if (!question) return [];
+
+        if ((question.vocabularyIds || []).length > 0) {
+          vocabularyQuestions += 1;
+          if (answer.isCorrect) vocabularyCorrect += 1;
+        }
+        if ((question.grammarPointIds || []).length > 0) {
+          grammarQuestions += 1;
+          if (answer.isCorrect) grammarCorrect += 1;
+        }
 
         const vocabularyUpdates = (question.vocabularyIds || []).map((vocabularyId) =>
           repo.updateVocabularyStatus(
@@ -272,7 +300,17 @@ export function useLesson(lessonId: string) {
       };
     }
 
-    return completeLesson(attempt.score);
+    const vocabularyDelta = vocabularyQuestions > 0
+      ? Math.max(3, Math.round((vocabularyCorrect / vocabularyQuestions) * 15))
+      : 0;
+    const grammarDelta = grammarQuestions > 0
+      ? Math.max(3, Math.round((grammarCorrect / grammarQuestions) * 15))
+      : 0;
+
+    return completeLesson(attempt.score, {
+      vocabulary: vocabularyDelta,
+      grammar: grammarDelta,
+    });
 
   return {
     lesson,
