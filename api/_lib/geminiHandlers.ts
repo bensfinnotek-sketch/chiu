@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 import { parseBody, sendJson } from "./httpUtils.ts";
-import { getAuthenticatedUser } from "./authMiddleware.ts";
+import { getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
+import { PLAN_ENTITLEMENTS, normalizePlan } from "../../src/config/planEntitlements.ts";
 import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers.ts";
 
 
@@ -242,9 +243,11 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
 
     // If authenticated, fetch user's active flashcards to provide natural practice context
     let flashcardsPrompt = "";
+    let learnerFlashcards: any[] = [];
     if (authenticatedUser) {
       try {
         const userCards = await getFlashcardsForUser(authenticatedUser.id);
+        learnerFlashcards = userCards;
         const activeCards = userCards.filter((c) => c.status !== "learned").slice(0, 4);
         if (activeCards.length > 0) {
           const list = activeCards.map((c) => `${c.hanzi} (${c.pinyin} - ${c.meaning})`).join(", ");
@@ -387,29 +390,72 @@ Format output strictly as JSON with this exact schema:
     }
     data.vocabulary = validVocabulary;
 
-    // If user is authenticated, securely upsert extracted vocabulary into their flashcards
-    // (Preserves progress, updates example sentence and updated_at, enforces UNIQUE(user_id, hanzi))
+    // Authenticated learners automatically build a private flashcard deck.
+    // Free accounts have a daily cap on NEW cards; existing cards are always updated safely.
     if (authenticatedUser && validVocabulary.length > 0) {
       try {
         let sessionHskLevel = 1;
-        if (typeof actualLevel === 'number') {
+        if (typeof actualLevel === "number") {
           sessionHskLevel = actualLevel;
-        } else if (typeof actualLevel === 'string') {
+        } else if (typeof actualLevel === "string") {
           const match = actualLevel.match(/\d+/);
-          if (match) {
-            sessionHskLevel = parseInt(match[0], 10);
-          }
+          if (match) sessionHskLevel = parseInt(match[0], 10);
+        }
+        sessionHskLevel = Math.min(6, Math.max(1, sessionHskLevel));
+
+        const supabase = getSupabaseServerClient();
+        let plan: "free" | "premium" = "free";
+        if (supabase) {
+          const { data: subscription } = await supabase
+            .from("subscriptions")
+            .select("plan, status")
+            .eq("user_id", authenticatedUser.id)
+            .maybeSingle();
+          plan = normalizePlan(
+            subscription?.status === "active" || subscription?.status === "trialing"
+              ? subscription?.plan
+              : "free"
+          );
         }
 
+        const entitlement = PLAN_ENTITLEMENTS[plan];
+        const knownHanzi = new Set(learnerFlashcards.map((card) => card.hanzi));
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        let newCardsSavedToday = learnerFlashcards.filter((card) => {
+          const createdAt = new Date(card.created_at).getTime();
+          return Number.isFinite(createdAt) && createdAt >= startOfDay.getTime();
+        }).length;
+
         for (const item of validVocabulary) {
-          await upsertFlashcardForUser(authenticatedUser.id, {
+          const isExisting = knownHanzi.has(item.hanzi);
+          if (
+            !isExisting &&
+            entitlement.dailyAutoFlashcardLimit !== null &&
+            newCardsSavedToday >= entitlement.dailyAutoFlashcardLimit
+          ) {
+            continue;
+          }
+
+          const parsedItemHsk =
+            typeof item.hsk === "string" ? Number(item.hsk.match(/\d+/)?.[0]) : NaN;
+          const itemHskLevel = Number.isFinite(parsedItemHsk)
+            ? Math.min(6, Math.max(1, parsedItemHsk))
+            : sessionHskLevel;
+
+          const saved = await upsertFlashcardForUser(authenticatedUser.id, {
             hanzi: item.hanzi,
             pinyin: item.pinyin,
             meaning: item.meaning,
             example_sentence: item.example || actualUserText,
             topic,
-            hsk_level: sessionHskLevel,
+            hsk_level: itemHskLevel,
           });
+
+          if (saved && !isExisting) {
+            knownHanzi.add(item.hanzi);
+            newCardsSavedToday += 1;
+          }
         }
       } catch (err) {
         console.warn("[Speaking] Error saving user flashcards:", err);
