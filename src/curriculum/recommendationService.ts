@@ -217,6 +217,7 @@ export class RecommendationService {
       currentMastery.weakGrammarCount <= 2;
 
     if (
+      decision.decision === 'advance_hsk' &&
       levelCompletion.completionPercent >= 100 &&
       masteryReady &&
       currentLevelNumber < 6
