@@ -28,6 +28,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
   const [reviewedCount, setReviewedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isReviewing, setIsReviewing] = useState(false);
 
   // Load user flashcards from Supabase if authenticated
   useEffect(() => {
@@ -79,17 +80,27 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
   };
 
   const handleRating = async (rating: 'again' | 'hard' | 'good' | 'easy') => {
+    if (isReviewing) return;
     setIsFlipped(false);
-    setReviewedCount((prev) => prev + 1);
 
     if (currentCard && user && currentCard.id) {
-      const newStatus = rating === 'easy' ? 'learned' : 'learning';
-      flashcardService
-        .updateFlashcard(currentCard.id, {
-          status: newStatus,
-          review_count: (currentCard.reviewCount || 0) + 1,
-        })
-        .catch((err) => console.warn('Could not update card progress:', err));
+      setIsReviewing(true);
+      // All four UI ratings currently map to the server's correct/incorrect SRS evidence.
+      const atomicRating = rating === 'again' ? 'incorrect' : 'correct';
+      try {
+        const updated = await flashcardService.reviewFlashcard(currentCard.id, atomicRating);
+        setCards((prev) => prev.map((card) => card.id === currentCard.id ? {
+          ...card,
+          status: updated.status,
+          reviewCount: updated.review_count,
+        } : card));
+        setReviewedCount((prev) => prev + 1);
+      } catch (err) {
+        console.warn('Could not update card progress:', err);
+        return;
+      } finally {
+        setIsReviewing(false);
+      }
     }
 
     if (currentIndex < filteredCards.length - 1) {
@@ -241,7 +252,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button
               type="button"
               onClick={() => handleRating('again')}
-              className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-bold text-xs hover:bg-rose-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
+              disabled={isReviewing}\n              className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-bold text-xs hover:bg-rose-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
             >
               <span>Lặp lại (Again)</span>
               <span className="text-[10px] opacity-70">&lt; 1 phút</span>
