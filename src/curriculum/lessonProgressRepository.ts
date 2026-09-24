@@ -460,8 +460,8 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return { progress, isFirstCompletion };
   }
 
-  async saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) return;
+  async saveQuizAttempt(attempt: QuizAttempt): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
 
     const { error } = await supabase.from('quiz_attempts').insert({
       id: attempt.id,
