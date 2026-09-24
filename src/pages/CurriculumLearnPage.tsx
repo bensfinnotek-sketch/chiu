@@ -17,6 +17,8 @@ import {
 import { HSKLevelNumber } from '../types/curriculum';
 import { useCurriculum } from '../hooks/useCurriculum';
 import { useAuth } from '../hooks/useAuth';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface CurriculumLearnPageProps {
   onSelectLesson: (lessonId: string) => void;
@@ -27,8 +29,15 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   onSelectLesson,
   onNavigate,
 }) => {
+  const { profile } = useUserProfile();
+  const { isPremium } = useSubscription();
   const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
   const [searchQuery, setSearchQuery] = useState('');
+
+  React.useEffect(() => {
+    const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
+    setSelectedLevel(isPremium ? profileLevel : Math.min(profileLevel, 2) as HSKLevelNumber);
+  }, [profile?.hskLevel, isPremium]);
 
   const {
     levels,
@@ -76,23 +85,37 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
           {[1, 2, 3, 4, 5, 6].map((lvl) => {
             const isSelected = selectedLevel === lvl;
+            const locked = !isPremium && lvl >= 3;
             return (
               <button
                 key={lvl}
                 type="button"
-                onClick={() => setSelectedLevel(lvl as HSKLevelNumber)}
+                onClick={() => {
+                  if (locked) {
+                    onNavigate?.('pricing');
+                    return;
+                  }
+                  setSelectedLevel(lvl as HSKLevelNumber);
+                }}
                 className={`px-4 py-2.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   isSelected
                     ? 'bg-[#E86F51] text-white shadow-md shadow-[#E86F51]/25 scale-102'
                     : 'bg-white dark:bg-[#241F1C] text-[#716761] dark:text-[#A89E97] border border-[#E86F51]/15 hover:border-[#E86F51]'
                 }`}
+                title={locked ? 'HSK 3–6 dành cho tài khoản PRO' : undefined}
               >
-                <span>HSK {lvl}</span>
+                <span>HSK {lvl}{locked ? ' 🔒' : ''}</span>
               </button>
             );
           })}
         </div>
       </div>
+
+      {!isPremium && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200">
+          Tài khoản Free học theo lộ trình HSK 1–2. Nâng cấp PRO để mở HSK 3–6 và lộ trình cá nhân hóa đầy đủ.
+        </div>
+      )}
 
       {/* Recommended Next Action / In-progress Widget */}
       {recommendations.length > 0 && (
