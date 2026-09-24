@@ -66,26 +66,6 @@ export class RecommendationService {
     const nextLesson = await this.getNextLessonToStudy(userId, currentLevelNumber, repo);
     const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo);
 
-    // Once the current HSK level is fully completed, make the next level an
-    // explicit recommendation instead of repeatedly recommending old lessons.
-    // The UI decides whether the next level is available on the user's plan.
-    if (
-      levelCompletion.completionPercent >= 100 &&
-      levelCompletion.averageQuizScore >= 80 &&
-      currentLevelNumber < 6
-    ) {
-      const nextLevel = (currentLevelNumber + 1) as HSKLevelNumber;
-      recommendations.push({
-        type: 'next_lesson',
-        title: `Đã hoàn thành HSK ${currentLevelNumber} · sẵn sàng lên HSK ${nextLevel}`,
-        description: `Bạn đã hoàn thành toàn bộ bài bắt buộc với điểm quiz trung bình ${levelCompletion.averageQuizScore}/100. Tiếp tục sang cấp độ kế tiếp để duy trì đà học.`,
-        targetId: `level:${nextLevel}`,
-        priority: 0,
-        actionText: `Học HSK ${nextLevel}`,
-        metadata: { levelNumber: nextLevel },
-      });
-    }
-
     if (nextLesson && levelCompletion.completionPercent < 100) {
       const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
       const isResume = userProgress?.status === 'in_progress';
@@ -167,6 +147,35 @@ export class RecommendationService {
       lessonLevels,
     });
     const currentMastery = getHskMasteryProfile(masteryProfiles, currentLevelNumber);
+
+    // HSK progression now requires both curriculum completion and real mastery.
+    // A missing quiz is allowed for learners who have not reached assessment yet,
+    // but once quizzes exist they must also meet the assessment threshold.
+    const quizReady = currentMastery.quizAttempts === 0 || currentMastery.quizScore >= 80;
+    const masteryReady =
+      currentMastery.overallScore >= 80 &&
+      currentMastery.vocabularyScore >= 70 &&
+      currentMastery.grammarScore >= 70 &&
+      quizReady &&
+      currentMastery.weakVocabularyCount <= 5 &&
+      currentMastery.weakGrammarCount <= 2;
+
+    if (
+      levelCompletion.completionPercent >= 100 &&
+      masteryReady &&
+      currentLevelNumber < 6
+    ) {
+      const nextLevel = (currentLevelNumber + 1) as HSKLevelNumber;
+      recommendations.push({
+        type: 'next_lesson',
+        title: `Đã hoàn thành HSK ${currentLevelNumber} · sẵn sàng lên HSK ${nextLevel}`,
+        description: `Mastery ${currentMastery.overallScore}/100 · Vocabulary ${currentMastery.vocabularyScore} · Grammar ${currentMastery.grammarScore}${currentMastery.quizAttempts > 0 ? ` · Quiz ${currentMastery.quizScore}` : ''}. Đủ điều kiện chuyển cấp.`,
+        targetId: `level:${nextLevel}`,
+        priority: 0,
+        actionText: `Học HSK ${nextLevel}`,
+        metadata: { levelNumber: nextLevel, score: currentMastery.overallScore },
+      });
+    }
 
     // Weakest component of the current HSK has priority over generic
     // "learn something new" suggestions.
@@ -281,6 +290,31 @@ export class RecommendationService {
     const percent = Math.min(100, Math.round((completedCount / totalRequired) * 100));
     const avgScore = scoredLessonsCount > 0 ? Math.round(totalScore / scoredLessonsCount) : 0;
 
+    const [vocabProgress, grammarProgress, skillProgress] = await Promise.all([
+      repo.getVocabularyProgress(userId),
+      repo.getGrammarProgress(userId),
+      repo.getSkillProgress(userId),
+    ]);
+    const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
+    const allVocabulary = await curriculumRepository.getAllVocabulary();
+    const vocabularyLevels = new Map(allVocabulary.map((item) => [item.id, item.hskLevel]));
+    const grammarLevels = new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
+    const quizAttempts = (
+      await Promise.all(levelLessons.map((lesson) => repo.getQuizAttempts(userId, lesson.id)))
+    ).flat();
+    const profile = getHskMasteryProfile(
+      buildHskMasteryProfile({
+        vocabulary: vocabProgress,
+        grammar: grammarProgress,
+        quizAttempts,
+        skillProgress,
+        vocabularyLevels,
+        grammarLevels,
+        lessonLevels,
+      }),
+      levelNumber
+    );
+
     return {
       userId,
       level: levelNumber,
@@ -288,6 +322,12 @@ export class RecommendationService {
       completedLessons: completedCount,
       totalRequiredLessons: totalRequired,
       averageQuizScore: avgScore,
+      masteryScore: profile.overallScore,
+      vocabularyMastery: profile.vocabularyScore,
+      grammarMastery: profile.grammarScore,
+      quizMastery: profile.quizScore,
+      weakVocabularyCount: profile.weakVocabularyCount,
+      weakGrammarCount: profile.weakGrammarCount,
       completedAt: percent >= 100 ? new Date().toISOString() : null,
     };
   }
