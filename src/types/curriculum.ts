@@ -238,6 +238,7 @@ export interface UserVocabularyProgress {
   exposureCount: number;
   correctCount: number;
   incorrectCount: number;
+  masteryScore: number;
   lastSeenAt: string | null;
   masteredAt: string | null;
   createdAt: string;
