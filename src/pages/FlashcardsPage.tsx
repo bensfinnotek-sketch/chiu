@@ -252,7 +252,8 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button
               type="button"
               onClick={() => handleRating('again')}
-              disabled={isReviewing}\n              className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-bold text-xs hover:bg-rose-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
+              disabled={isReviewing}
+              className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-bold text-xs hover:bg-rose-100 transition-colors cursor-pointer flex flex-col items-center gap-1"
             >
               <span>Lặp lại (Again)</span>
               <span className="text-[10px] opacity-70">&lt; 1 phút</span>
