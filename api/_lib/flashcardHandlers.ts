@@ -73,13 +73,33 @@ export async function upsertFlashcardForUser(
     topic?: string;
     hsk_level?: number;
     auto_saved?: boolean;
-  }
+  },
+  accessToken?: string | null,
+  autoFlashcardDailyLimit?: number | null
 ): Promise<FlashcardItem | null> {
   const cleanHanzi = card.hanzi.trim();
   if (!cleanHanzi) return null;
 
   const now = new Date().toISOString();
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(accessToken);
+
+  if (supabase && card.auto_saved === true && accessToken) {
+    const { data, error } = await supabase.rpc("upsert_auto_flashcard", {
+      p_user_id: userId,
+      p_hanzi: cleanHanzi,
+      p_pinyin: card.pinyin || "",
+      p_meaning: card.meaning || "",
+      p_example_sentence: card.example_sentence || null,
+      p_topic: card.topic || "general",
+      p_hsk_level: card.hsk_level || 1,
+      p_daily_limit: autoFlashcardDailyLimit ?? null,
+    });
+    if (error) {
+      console.error("[Flashcards] Atomic auto-save error:", error);
+      return null;
+    }
+    return data || null;
+  }
 
   if (supabase) {
     // Check if word already exists to preserve progress
