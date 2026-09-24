@@ -165,7 +165,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <div>
             <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
             <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">
-              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · ${isPremium ? 'PRO cá nhân hóa' : 'Free'}
+              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · {isPremium ? 'PRO cá nhân hóa' : 'Free'}
             </h3>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
               Từ vựng đã lưu sẽ được Lina dùng để tạo bài học phù hợp với tài khoản này.
@@ -294,7 +294,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       {/* Recommended Next Action / In-progress Widget */}
       {recommendations.length > 0 && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FFF5F1] via-white to-[#FFF9F4] dark:from-[#2A2320] dark:via-[#241F1C] dark:to-[#1E1917] border-2 border-[#E86F51]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase flex items-center gap-1.5">
               <Sparkles size={14} className="animate-pulse" />
               Gợi ý tiếp theo dành cho bạn
@@ -305,6 +305,24 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             <p className="text-xs text-[#716761] dark:text-[#A89E97]">
               {recommendations[0].description}
             </p>
+            {recommendations[0].metadata?.decision && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="px-2.5 py-1 rounded-full bg-white/80 dark:bg-[#181412] border border-[#E86F51]/15 text-[10px] font-bold text-[#E86F51]">
+                  {recommendations[0].metadata.decision === 'review_srs'
+                    ? 'Bước 1 · Ôn SRS'
+                    : recommendations[0].metadata.decision === 'review_quiz'
+                      ? 'Bước 2 · Củng cố quiz/ngữ pháp'
+                      : recommendations[0].metadata.decision === 'learn_lesson'
+                        ? 'Bước 3 · Học bài mới'
+                        : 'Bước 4 · Chuyển HSK'}
+                </span>
+                {recommendations[0].metadata.reason && (
+                  <span className="text-[10px] text-[#716761] dark:text-[#A89E97]">
+                    {recommendations[0].metadata.reason}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             type="button"
