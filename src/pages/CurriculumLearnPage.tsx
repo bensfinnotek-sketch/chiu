@@ -239,11 +239,30 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (recommendations[0].targetId === 'flashcards' && onNavigate) {
+              const targetId = recommendations[0].targetId;
+
+              if (targetId === 'flashcards' && onNavigate) {
                 onNavigate('flashcards');
-              } else {
-                onSelectLesson(recommendations[0].targetId);
+                return;
               }
+
+              if (targetId.startsWith('level:')) {
+                const nextLevel = Number(targetId.slice('level:'.length)) as HSKLevelNumber;
+                if (!Number.isInteger(nextLevel) || nextLevel < 1 || nextLevel > 6) return;
+
+                // Free users should be sent to the upgrade screen rather than
+                // changing the UI into a locked level.
+                if (!isPremium && nextLevel >= 3) {
+                  onNavigate?.('pricing');
+                  return;
+                }
+
+                setSelectedLevel(nextLevel);
+                setSearchQuery('');
+                return;
+              }
+
+              onSelectLesson(targetId);
             }}
             className="px-6 py-3.5 rounded-2xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-sm font-bold shadow-md shadow-[#E86F51]/25 transition-all flex items-center justify-center gap-2 cursor-pointer self-start md:self-center"
           >
