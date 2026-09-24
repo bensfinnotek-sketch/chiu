@@ -214,8 +214,10 @@ function AppContent() {
               lessonId={selectedLessonId}
               onBack={() => handleNavigate('learn')}
               onNavigateToSpeaking={(topic) => {
+                const levelMatch = selectedLessonId.match(/^hsk([1-6])-/i);
+                const speakingLevel = levelMatch ? `HSK ${levelMatch[1]}` : 'HSK 1';
                 sessionStorage.setItem('selected_speaking_topic', topic);
-                sessionStorage.setItem('selected_speaking_level', 'HSK 1');
+                sessionStorage.setItem('selected_speaking_level', speakingLevel);
                 setSelectedSessionId(undefined);
                 handleNavigate('practice-conversation');
               }}
