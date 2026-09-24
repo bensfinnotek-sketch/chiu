@@ -522,7 +522,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
       answers: attempt.answers,
       started_at: attempt.startedAt,
       completed_at: attempt.completedAt,
-    }, { onConflict: 'id', ignoreDuplicates: true });
+    }, { onConflict: 'id', ignoreDuplicates: true }).select('id');
 
     if (error) {
       throw new Error(`Không thể lưu kết quả bài kiểm tra: ${error.message}`);
