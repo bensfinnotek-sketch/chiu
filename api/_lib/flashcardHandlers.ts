@@ -35,8 +35,8 @@ function getMemoryUserMap(userId: string): Map<string, FlashcardItem> {
  * Fetch flashcards for a specific authenticated user.
  * STRICT: Only queries by userId = authenticatedUser.id.
  */
-export async function getFlashcardsForUser(userId: string): Promise<FlashcardItem[]> {
-  const supabase = getSupabaseServerClient();
+export async function getFlashcardsForUser(userId: string, accessToken?: string | null): Promise<FlashcardItem[]> {
+  const supabase = getSupabaseServerClient(accessToken);
   if (supabase) {
     const { data, error } = await supabase
       .from("user_vocabulary")
