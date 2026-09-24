@@ -7,7 +7,6 @@ import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { curriculumRepository } from '../curriculum/curriculumRepository';
-import { calculateSrsSchedule } from '../services/flashcardSrs';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getDailyReviewPriority } from '../curriculum/dailyReviewRanking';
 
@@ -138,16 +137,10 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
 
     try {
       if (user && current.id) {
-        const schedule = calculateSrsSchedule(current, correct ? 'correct' : 'incorrect');
-        await flashcardService.updateFlashcard(current.id, {
-          status: schedule.status,
-          review_count: schedule.reviewCount,
-          srs_repetitions: schedule.repetitions,
-          srs_correct_count: schedule.correctCount,
-          srs_incorrect_count: schedule.incorrectCount,
-          last_reviewed_at: schedule.lastReviewedAt,
-          next_review_at: schedule.nextReviewAt,
-        });
+        await flashcardService.reviewFlashcard(
+          current.id,
+          correct ? 'correct' : 'incorrect'
+        );
 
         // Feed the same answer evidence into curriculum vocabulary mastery and
         // the HSK vocabulary skill profile when this card maps to a curriculum word.
