@@ -102,7 +102,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
         setIsDone(true);
         if (user) {
           getProgressRepository(user).recordStudyActivity(user.id, {
-            type: 'review',
+            type: 'flashcards',
             durationMinutes: Math.max(1, Math.ceil(cards.length * 1.5)),
             wordsLearnedDelta: cards.length,
           }).catch((error) => console.warn('Could not record review activity:', error));
