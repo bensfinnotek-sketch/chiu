@@ -104,7 +104,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           getProgressRepository(user).recordStudyActivity(user.id, {
             type: 'flashcards',
             durationMinutes: Math.max(1, Math.ceil(cards.length * 1.5)),
-            wordsLearnedDelta: cards.length,
+            // A review session is study activity, not proof that every reviewed word was newly learned.
           }).catch((error) => console.warn('Could not record review activity:', error));
         }
       }
