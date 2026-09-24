@@ -37,6 +37,8 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   const [generatedLesson, setGeneratedLesson] = useState<any | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isSavingGeneratedVocabulary, setIsSavingGeneratedVocabulary] = useState(false);
+  const [generatedVocabularySaved, setGeneratedVocabularySaved] = useState(false);
 
   React.useEffect(() => {
     const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
@@ -193,7 +195,38 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           )}
           {Array.isArray(generatedLesson.content.vocabulary) && generatedLesson.content.vocabulary.length > 0 && (
             <div>
-              <h4 className="font-bold text-[#211A17] dark:text-white mb-2">Từ vựng trọng tâm</h4>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <h4 className="font-bold text-[#211A17] dark:text-white">Từ vựng trọng tâm</h4>
+                <button
+                  type="button"
+                  disabled={isSavingGeneratedVocabulary || generatedVocabularySaved}
+                  onClick={async () => {
+                    setIsSavingGeneratedVocabulary(true);
+                    try {
+                      const cards = generatedLesson.content.vocabulary
+                        .filter((item: any) => item?.hanzi)
+                        .slice(0, 20)
+                        .map((item: any) => ({
+                          hanzi: String(item.hanzi).trim(),
+                          pinyin: String(item.pinyin || '').trim(),
+                          meaning: String(item.meaning || item.meaningVi || '').trim(),
+                          example_sentence: item.example_sentence || item.exampleSentence || '',
+                          topic: 'personalized-lesson',
+                          hsk_level: Number(generatedLesson.hsk_level || selectedLevel),
+                        }));
+                      await (await import('../services/flashcardService')).flashcardService.upsertBatchFlashcards(cards);
+                      setGeneratedVocabularySaved(true);
+                    } catch (error: any) {
+                      setGenerationError(error?.message || 'Không thể lưu từ vựng vào flashcards.');
+                    } finally {
+                      setIsSavingGeneratedVocabulary(false);
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl border border-[#E86F51]/20 text-[#E86F51] text-xs font-bold hover:bg-[#FFF5F1] disabled:opacity-50"
+                >
+                  {generatedVocabularySaved ? '✓ Đã lưu flashcards' : isSavingGeneratedVocabulary ? 'Đang lưu…' : 'Lưu vào flashcards'}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {generatedLesson.content.vocabulary.slice(0, 8).map((item: any, index: number) => (
                   <div key={index} className="p-3 rounded-2xl bg-white dark:bg-[#181412] border border-[#E86F51]/10">
