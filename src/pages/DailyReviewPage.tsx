@@ -5,6 +5,7 @@ import { LinaAvatar } from '../components/common/LinaAvatar';
 import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
+import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { calculateSrsSchedule } from '../services/flashcardSrs';
 
 export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
@@ -19,6 +20,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const lessonProgressRepository = useMemo(() => getLessonProgressRepository(user?.id || null), [user?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -104,6 +106,17 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           last_reviewed_at: schedule.lastReviewedAt,
           next_review_at: schedule.nextReviewAt,
         });
+
+        // Feed the same answer evidence into curriculum vocabulary mastery and
+        // the HSK vocabulary skill profile when this card maps to a curriculum word.
+        await lessonProgressRepository.recordVocabularyReview(
+          user.id,
+          current.hanzi,
+          current.hsk_level && current.hsk_level >= 1 && current.hsk_level <= 6
+            ? current.hsk_level as 1 | 2 | 3 | 4 | 5 | 6
+            : undefined,
+          correct
+        );
       }
     } catch (error) {
       console.warn('Could not update daily review card:', error);
