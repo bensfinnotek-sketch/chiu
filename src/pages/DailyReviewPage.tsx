@@ -7,12 +7,14 @@ import { useAuth } from '../hooks/useAuth';
 import { getProgressRepository } from '../services/repositories/repositoryFactory';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { calculateSrsSchedule } from '../services/flashcardSrs';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
   onComplete,
   onNavigate,
 }) => {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [step, setStep] = useState(0);
   const [score, setScore] = useState(0);
@@ -20,6 +22,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [skillScores, setSkillScores] = useState<Record<number, number>>({});
   const lessonProgressRepository = useMemo(() => getLessonProgressRepository(user?.id || null), [user?.id]);
 
   useEffect(() => {
@@ -34,9 +37,12 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     setIsLoading(true);
     setLoadError(null);
 
-    flashcardService
-      .getFlashcards()
-      .then((allCards) => {
+    Promise.all([flashcardService.getFlashcards(), lessonProgressRepository.getSkillProgress(user.id)])
+      .then(([allCards, skills]) => {
+        const vocabularyScores: Record<number, number> = {};
+        skills.filter((skill) => skill.skill === 'vocabulary').forEach((skill) => {
+          vocabularyScores[skill.level] = skill.score;
+        });
         if (!mounted) return;
 
         // SRS controls eligibility for every card: unscheduled cards are new;
@@ -49,15 +55,24 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
             return Number.isFinite(dueAt) && dueAt <= now;
           })
           .sort((a, b) => {
-            const aDue = a.next_review_at ? Date.parse(a.next_review_at) : Number.POSITIVE_INFINITY;
-            const bDue = b.next_review_at ? Date.parse(b.next_review_at) : Number.POSITIVE_INFINITY;
-            const aIsDue = Number.isFinite(aDue) && aDue <= now;
-            const bIsDue = Number.isFinite(bDue) && bDue <= now;
-            if (aIsDue !== bIsDue) return aIsDue ? -1 : 1;
-            const statusRank = (status: Flashcard['status']) => (status === 'learning' ? 0 : status === 'new' ? 1 : 2);
-            return statusRank(a.status) - statusRank(b.status) || a.created_at.localeCompare(b.created_at);
+            const score = (card: Flashcard) => {
+              const dueAt = card.next_review_at ? Date.parse(card.next_review_at) : Number.NaN;
+              const overdueHours = Number.isFinite(dueAt) ? Math.max(0, (now - dueAt) / 3_600_000) : 0;
+              const hsk = Number(card.hsk_level || 0);
+              const skillScore = hsk >= 1 && hsk <= 6 ? (vocabularyScores[hsk] ?? 50) : 50;
+              const weakness = Math.max(0, 100 - skillScore);
+              const incorrectHistory = Math.min(40, (card.srs_incorrect_count || 0) * 8);
+              const repetitionPenalty = Math.max(0, 6 - (card.srs_repetitions || 0)) * 2;
+              const newCardBoost = !card.next_review_at ? 12 : 0;
+              const learningBoost = card.status === 'learning' ? 10 : card.status === 'new' ? 6 : 0;
+              const hskMatch = profile?.hskLevel && hsk === Number(profile.hskLevel) ? 8 : 0;
+              return overdueHours * 3 + weakness * 1.2 + incorrectHistory + repetitionPenalty + newCardBoost + learningBoost + hskMatch;
+            };
+            return score(b) - score(a) || a.created_at.localeCompare(b.created_at);
           })
           .slice(0, 10);
+
+        setSkillScores(vocabularyScores);
 
         setCards(reviewable);
       })
@@ -73,7 +88,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user, lessonProgressRepository, profile]);
 
   const current = cards[step] || null;
 
@@ -103,6 +118,9 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
         await flashcardService.updateFlashcard(current.id, {
           status: schedule.status,
           review_count: schedule.reviewCount,
+          srs_repetitions: schedule.repetitions,
+          srs_correct_count: schedule.correctCount,
+          srs_incorrect_count: schedule.incorrectCount,
           last_reviewed_at: schedule.lastReviewedAt,
           next_review_at: schedule.nextReviewAt,
         });
