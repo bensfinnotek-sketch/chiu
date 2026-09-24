@@ -13,6 +13,9 @@ export interface FlashcardItem {
   hsk_level?: number;
   status: "new" | "learning" | "learned";
   review_count: number;
+  srs_repetitions: number;
+  srs_correct_count: number;
+  srs_incorrect_count: number;
   last_reviewed_at?: string;
   next_review_at?: string;
   created_at: string;
@@ -145,6 +148,9 @@ export async function upsertFlashcardForUser(
           auto_saved: card.auto_saved === true,
           status: "new",
           review_count: 0,
+          srs_repetitions: 0,
+          srs_correct_count: 0,
+          srs_incorrect_count: 0,
           created_at: now,
           updated_at: now,
         })
@@ -186,6 +192,9 @@ export async function upsertFlashcardForUser(
     auto_saved: card.auto_saved === true,
     status: "new",
     review_count: 0,
+    srs_repetitions: 0,
+    srs_correct_count: 0,
+    srs_incorrect_count: 0,
     created_at: now,
     updated_at: now,
   };
@@ -204,6 +213,9 @@ export async function updateFlashcardForUser(
   updates: {
     status?: "new" | "learning" | "learned";
     review_count?: number;
+    srs_repetitions?: number;
+    srs_correct_count?: number;
+    srs_incorrect_count?: number;
     example_sentence?: string;
     last_reviewed_at?: string;
     next_review_at?: string;
@@ -217,6 +229,9 @@ export async function updateFlashcardForUser(
     const payload: any = { updated_at: now };
     if (updates.status) payload.status = updates.status;
     if (typeof updates.review_count === "number") payload.review_count = updates.review_count;
+    if (typeof updates.srs_repetitions === "number") payload.srs_repetitions = updates.srs_repetitions;
+    if (typeof updates.srs_correct_count === "number") payload.srs_correct_count = updates.srs_correct_count;
+    if (typeof updates.srs_incorrect_count === "number") payload.srs_incorrect_count = updates.srs_incorrect_count;
     if (updates.example_sentence) payload.example_sentence = updates.example_sentence;
     if (updates.last_reviewed_at) payload.last_reviewed_at = updates.last_reviewed_at;
     else payload.last_reviewed_at = now;
@@ -382,6 +397,9 @@ export async function handleUpdateFlashcard(req: any, res: any, cardId?: string)
   const updated = await updateFlashcardForUser(user.id, id, {
     status: body.status,
     review_count: body.review_count,
+    srs_repetitions: body.srs_repetitions,
+    srs_correct_count: body.srs_correct_count,
+    srs_incorrect_count: body.srs_incorrect_count,
     example_sentence: body.example_sentence || body.exampleSentence,
     last_reviewed_at: body.last_reviewed_at,
     next_review_at: body.next_review_at,
