@@ -16,13 +16,15 @@ import { storageService } from '../services/storageService';
 import { AudioButton } from '../components/common/AudioButton';
 import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
+import { useSubscription } from '../hooks/useSubscription';
 
 export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { isPremium } = useSubscription();
   const [cards, setCards] = useState<any[]>(() => storageService.getSavedWords());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'HSK 1' | 'HSK 2'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'HSK 1' | 'HSK 2' | 'HSK 3' | 'HSK 4' | 'HSK 5' | 'HSK 6'>('all');
   const [reviewedCount, setReviewedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -112,24 +114,33 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-[#716761]">Cấp độ:</span>
-          {(['all', 'HSK 1', 'HSK 2'] as const).map((lvl) => (
-            <button
-              key={lvl}
-              type="button"
-              onClick={() => {
-                setActiveFilter(lvl);
-                setCurrentIndex(0);
-                setIsFlipped(false);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === lvl
-                  ? 'bg-[#E86F51] text-white shadow-xs'
-                  : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761]'
-              }`}
-            >
-              {lvl === 'all' ? 'Tất cả' : lvl}
-            </button>
-          ))}
+          {(['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'] as const).map((lvl) => {
+            const requiresPremium = lvl !== 'all' && Number(lvl.replace('HSK ', '')) >= 3;
+            const locked = requiresPremium && !isPremium;
+            return (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => {
+                  if (locked) {
+                    onNavigate?.('pricing');
+                    return;
+                  }
+                  setActiveFilter(lvl);
+                  setCurrentIndex(0);
+                  setIsFlipped(false);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeFilter === lvl
+                    ? 'bg-[#E86F51] text-white shadow-xs'
+                    : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761]'
+                }`}
+                title={locked ? 'HSK 3–6 dành cho tài khoản PRO' : undefined}
+              >
+                {lvl === 'all' ? 'Tất cả' : lvl}{locked ? ' 🔒' : ''}
+              </button>
+            );
+          })}
         </div>
       </div>
 
