@@ -419,11 +419,6 @@ export class RecommendationService {
   }
 }
 
-import {
-  RecommendationDecision,
-  RecommendationDecisionInput,
-  RecommendationDecisionResult,
-  decideLearningNextStep,
-} from './learningDecisionEngine';
+import { decideLearningNextStep } from './learningDecisionEngine';
 
 export const recommendationService = new RecommendationService();
