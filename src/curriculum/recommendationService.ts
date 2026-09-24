@@ -13,51 +13,61 @@ import { flashcardService } from '../services/flashcardService';
 import { getDailyReviewPriority } from './dailyReviewRanking';
 import { decideLearningNextStep } from './learningDecisionEngine';
 
+interface RecommendationDataSnapshot {
+  allLessons: Lesson[];
+  userProgressList: UserLessonProgress[];
+}
+
 export class RecommendationService {
-  async getNextLessonToStudy(
-    userId: string,
+  private async getRecommendationData(userId: string): Promise<RecommendationDataSnapshot> {
+    const [allLessons, userProgressList] = await Promise.all([
+      curriculumRepository.getAllLessons(),
+      new LessonProgressRepository().getProgress(userId),
+    ]);
+    return { allLessons, userProgressList };
+  }
+
+  private findNextLesson(
     currentLevelNumber: HSKLevelNumber,
-    repo: LessonProgressRepository
-  ): Promise<Lesson | null> {
-    const allLessons = await curriculumRepository.getAllLessons();
+    allLessons: Lesson[],
+    userProgressList: UserLessonProgress[]
+  ): Lesson | null {
     const levelLessons = allLessons
       .filter((l) => l.levelNumber === currentLevelNumber)
       .sort((a, b) => a.order - b.order);
-
-    const userProgressList = await repo.getProgress(userId);
     const progressMap = new Map<string, UserLessonProgress>();
     userProgressList.forEach((p) => progressMap.set(p.lessonId, p));
 
-    // Rule 1: First check if any lesson is currently 'in_progress'
-    const inProgress = levelLessons.find((l) => {
-      const p = progressMap.get(l.id);
-      return p?.status === 'in_progress';
-    });
+    const inProgress = levelLessons.find((l) => progressMap.get(l.id)?.status === 'in_progress');
     if (inProgress) return inProgress;
 
-    // Rule 2: First available incomplete lesson
     for (const lesson of levelLessons) {
       const p = progressMap.get(lesson.id);
       if (!p || p.status !== 'completed') {
-        // Check prerequisite
-        if (!lesson.prerequisiteLessonId) {
-          return lesson;
-        }
-        const prereqProgress = progressMap.get(lesson.prerequisiteLessonId);
-        if (prereqProgress && prereqProgress.status === 'completed') {
+        if (!lesson.prerequisiteLessonId || progressMap.get(lesson.prerequisiteLessonId)?.status === 'completed') {
           return lesson;
         }
       }
     }
 
-    // Rule 3: If every lesson is complete, revisit the lowest-scoring lesson
-    // instead of looping back to the first lesson without context.
-    const completed = levelLessons
+    return levelLessons
       .map((lesson) => ({ lesson, progress: progressMap.get(lesson.id) }))
       .filter(({ progress }) => progress?.status === 'completed')
-      .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100));
+      .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100))[0]?.lesson
+      || levelLessons[0]
+      || null;
+  }
 
-    return completed[0]?.lesson || levelLessons[0] || null;
+  async getNextLessonToStudy(
+    userId: string,
+    currentLevelNumber: HSKLevelNumber,
+    repo: LessonProgressRepository
+  ): Promise<Lesson | null> {
+    const [allLessons, userProgressList] = await Promise.all([
+      curriculumRepository.getAllLessons(),
+      repo.getProgress(userId),
+    ]);
+    return this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
   }
 
   async getRecommendations(
@@ -66,8 +76,15 @@ export class RecommendationService {
     repo: LessonProgressRepository
   ): Promise<LearningRecommendation[]> {
     const recommendations: LearningRecommendation[] = [];
-    const nextLesson = await this.getNextLessonToStudy(userId, currentLevelNumber, repo);
-    const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo);
+    const [allLessons, userProgressList] = await Promise.all([
+      curriculumRepository.getAllLessons(),
+      repo.getProgress(userId),
+    ]);
+    const nextLesson = this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
+    const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo, {
+      allLessons,
+      userProgressList,
+    });
 
     // Mastery profile is the main decision signal. It combines repeated
     // vocabulary/grammar evidence with quiz performance for this HSK level.
@@ -80,7 +97,6 @@ export class RecommendationService {
     const [allVocabulary, allGrammar, allLessons] = await Promise.all([
       curriculumRepository.getAllVocabulary(),
       Promise.resolve(ALL_GRAMMAR_POINTS),
-      curriculumRepository.getAllLessons(),
     ]);
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const vocabularyLevels = new Map(allVocabulary.map((vocab) => [vocab.id, vocab.hskLevel]));
@@ -325,13 +341,14 @@ export class RecommendationService {
   async calculateLevelCompletion(
     userId: string,
     levelNumber: HSKLevelNumber,
-    repo: LessonProgressRepository
+    repo: LessonProgressRepository,
+    snapshot?: RecommendationDataSnapshot
   ): Promise<HSKLevelCompletion> {
-    const allLessons = await curriculumRepository.getAllLessons();
+    const allLessons = snapshot?.allLessons ?? await curriculumRepository.getAllLessons();
     const levelLessons = allLessons.filter((l) => l.levelNumber === levelNumber);
     const requiredLessons = levelLessons.filter((l) => l.isRequired);
 
-    const userProgressList = await repo.getProgress(userId);
+    const userProgressList = snapshot?.userProgressList ?? await repo.getProgress(userId);
     const progressMap = new Map<string, UserLessonProgress>();
     userProgressList.forEach((p) => progressMap.set(p.lessonId, p));
 
