@@ -642,10 +642,16 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     const normalizedHanzi = hanzi.trim();
     if (!normalizedHanzi) return;
 
-    const { data: vocabulary, error: vocabularyError } = await supabase
+    let vocabularyQuery = supabase
       .from('vocabulary')
       .select('id,hsk_level')
-      .eq('hanzi', normalizedHanzi)
+      .eq('hanzi', normalizedHanzi);
+
+    if (hskLevel) {
+      vocabularyQuery = vocabularyQuery.eq('hsk_level', hskLevel);
+    }
+
+    const { data: vocabulary, error: vocabularyError } = await vocabularyQuery
       .limit(1)
       .maybeSingle();
 
