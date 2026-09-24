@@ -126,6 +126,34 @@ export class RecommendationService {
       });
     }
 
+    // Skill profile signal: use the weakest measured skill to shape the next action.
+    const skillProgress = await repo.getSkillProgress(userId);
+    const currentLevelSkills = skillProgress
+      .filter((skill) => skill.level === currentLevelNumber)
+      .sort((a, b) => a.score - b.score);
+    const weakestSkill = currentLevelSkills[0];
+
+    if (weakestSkill && weakestSkill.score < 60) {
+      const skillLabels: Record<string, string> = {
+        vocabulary: 'từ vựng',
+        grammar: 'ngữ pháp',
+        listening: 'nghe',
+        speaking: 'nói',
+        reading: 'đọc',
+        writing: 'viết',
+      };
+      const label = skillLabels[weakestSkill.skill] || weakestSkill.skill;
+      recommendations.push({
+        type: weakestSkill.skill === 'vocabulary' ? 'review_vocabulary' : 'review_grammar',
+        title: `Củng cố kỹ năng ${label}`,
+        description: `Hồ sơ kỹ năng HSK ${currentLevelNumber} hiện ở ${weakestSkill.score}/100. Ưu tiên luyện ${label} trước khi học thêm nội dung mới.`,
+        targetId: weakestSkill.skill === 'vocabulary' ? 'flashcards' : 'grammar',
+        priority: 2,
+        actionText: weakestSkill.skill === 'vocabulary' ? 'Ôn flashcards' : 'Ôn ngữ pháp',
+        metadata: { levelNumber: currentLevelNumber, score: weakestSkill.score },
+      });
+    }
+
     // Check vocabulary review recommendation
     const vocabProgress = await repo.getVocabularyProgress(userId);
     const weakVocab = vocabProgress.filter((v) => v.status === 'learning' || v.incorrectCount > 1);
