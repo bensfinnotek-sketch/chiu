@@ -303,5 +303,7 @@ export interface LearningRecommendation {
     levelNumber?: HSKLevelNumber;
     score?: number;
     wordCount?: number;
+    decision?: 'review_srs' | 'review_quiz' | 'learn_lesson' | 'advance_hsk';
+    reason?: string;
   };
 }
