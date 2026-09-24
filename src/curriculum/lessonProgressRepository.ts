@@ -26,7 +26,7 @@ export interface LessonProgressRepository {
     score: number,
     levelNumber: HSKLevelNumber
   ): Promise<{ progress: UserLessonProgress; isFirstCompletion: boolean }>;
-  saveQuizAttempt(attempt: QuizAttempt): Promise<void>;
+  saveQuizAttempt(attempt: QuizAttempt): Promise<boolean>;
   getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]>;
   getVocabularyProgress(userId: string): Promise<UserVocabularyProgress[]>;
   updateVocabularyStatus(
@@ -35,6 +35,7 @@ export interface LessonProgressRepository {
     status: 'new' | 'learning' | 'known' | 'mastered',
     isCorrect?: boolean
   ): Promise<void>;
+  recordVocabularyReview(userId: string, hanzi: string, level?: HSKLevelNumber, isCorrect?: boolean): Promise<void>;
   getGrammarProgress(userId: string): Promise<UserGrammarProgress[]>;
   updateGrammarScore(userId: string, grammarPointId: string, isCorrect: boolean): Promise<void>;
   getSkillProgress(userId: string): Promise<UserSkillProgress[]>;
@@ -143,10 +144,12 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
     return { progress: prog, isFirstCompletion: isFirst };
   }
 
-  async saveQuizAttempt(attempt: QuizAttempt): Promise<void> {
+  async saveQuizAttempt(attempt: QuizAttempt): Promise<boolean> {
     const list = this.getLocalList<QuizAttempt>(LOCAL_QUIZ_ATTEMPTS_KEY);
+    if (list.some((item) => item.id === attempt.id && item.userId === attempt.userId)) return false;
     list.push(attempt);
     this.setLocalList(LOCAL_QUIZ_ATTEMPTS_KEY, list);
+    return true;
   }
 
   async getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]> {
@@ -189,11 +192,21 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
         incorrectCount: isCorrect === false ? 1 : 0,
         lastSeenAt: now,
         masteredAt: status === 'mastered' ? now : null,
+        masteryScore: isCorrect === true ? 25 : 10,
         createdAt: now,
         updatedAt: now,
       });
     }
     this.setLocalList(LOCAL_VOCAB_PROGRESS_KEY, list);
+  }
+
+  async recordVocabularyReview(userId: string, hanzi: string, level?: HSKLevelNumber, isCorrect?: boolean): Promise<void> {
+    const normalized = hanzi.trim();
+    const vocabulary = ALL_VOCABULARY.find(
+      (item) => item.hanzi === normalized && (!level || item.hskLevel === level)
+    );
+    if (!vocabulary) return;
+    await this.updateVocabularyStatus(userId, vocabulary.id, isCorrect ? 'mastered' : 'learning', isCorrect);
   }
 
   async getGrammarProgress(userId: string): Promise<UserGrammarProgress[]> {
@@ -465,8 +478,10 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     });
 
     if (error) {
+      if (error.code === '23505') return false;
       throw new Error(`Không thể lưu kết quả bài kiểm tra: ${error.message}`);
     }
+    return true;
   }
 
   async getQuizAttempts(userId: string, lessonId: string): Promise<QuizAttempt[]> {
@@ -522,6 +537,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
       masteredAt: d.mastered_at,
       createdAt: d.created_at,
       updatedAt: d.updated_at,
+      masteryScore: d.mastery_score ?? 0,
     }));
   }
 
@@ -556,6 +572,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
         last_seen_at: now,
         mastered_at: status === 'mastered' ? existing?.mastered_at || now : existing?.mastered_at || null,
         created_at: existing?.created_at || now,
+        mastery_score: Math.max(0, Math.min(100, (existing?.mastery_score || 0) + (isCorrect === true ? 15 : isCorrect === false ? -10 : 0))),
         updated_at: now,
       },
       { onConflict: 'user_id,vocabulary_id' }
