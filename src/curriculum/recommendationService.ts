@@ -16,6 +16,12 @@ import { decideLearningNextStep } from './learningDecisionEngine';
 interface RecommendationDataSnapshot {
   allLessons: Lesson[];
   userProgressList: UserLessonProgress[];
+  vocabularyLevels?: Map<string, HSKLevelNumber>;
+  grammarLevels?: Map<string, HSKLevelNumber>;
+  vocabularyProgress?: Awaited<ReturnType<LessonProgressRepository['getVocabularyProgress']>>;
+  grammarProgress?: Awaited<ReturnType<LessonProgressRepository['getGrammarProgress']>>;
+  skillProgress?: Awaited<ReturnType<LessonProgressRepository['getSkillProgress']>>;
+  quizAttempts?: import('../types/curriculum').QuizAttempt[];
 }
 
 export class RecommendationService {
@@ -68,28 +74,20 @@ export class RecommendationService {
     repo: LessonProgressRepository
   ): Promise<LearningRecommendation[]> {
     const recommendations: LearningRecommendation[] = [];
-    const [allLessons, userProgressList] = await Promise.all([
+    const [allLessons, userProgressList, skillProgress, vocabProgress, grammarProgress, allVocabulary] = await Promise.all([
       curriculumRepository.getAllLessons(),
       repo.getProgress(userId),
-    ]);
-    const nextLesson = this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
-    const levelCompletion = await this.calculateLevelCompletion(userId, currentLevelNumber, repo, {
-      allLessons,
-      userProgressList,
-    });
-
-    // Mastery profile is the main decision signal. It combines repeated
-    // vocabulary/grammar evidence with quiz performance for this HSK level.
-    const [skillProgress, vocabProgress, grammarProgress] = await Promise.all([
       repo.getSkillProgress(userId),
       repo.getVocabularyProgress(userId),
       repo.getGrammarProgress(userId),
-    ]);
-
-    const [allVocabulary, allGrammar] = await Promise.all([
       curriculumRepository.getAllVocabulary(),
-      Promise.resolve(ALL_GRAMMAR_POINTS),
     ]);
+    const allGrammar = ALL_GRAMMAR_POINTS;
+    const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
+    const nextLesson = this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
+
+    // Mastery profile is the main decision signal. It combines repeated
+    // vocabulary/grammar evidence with quiz performance for this HSK level.
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const vocabularyLevels = new Map(allVocabulary.map((vocab) => [vocab.id, vocab.hskLevel]));
     const grammarLevels = new Map(allGrammar.map((grammar) => [grammar.id, grammar.level]));
@@ -363,15 +361,12 @@ export class RecommendationService {
     const percent = Math.min(100, Math.round((completedCount / totalRequired) * 100));
     const avgScore = scoredLessonsCount > 0 ? Math.round(totalScore / scoredLessonsCount) : 0;
 
-    const [vocabProgress, grammarProgress, skillProgress] = await Promise.all([
-      repo.getVocabularyProgress(userId),
-      repo.getGrammarProgress(userId),
-      repo.getSkillProgress(userId),
-    ]);
+    const vocabProgress = snapshot?.vocabularyProgress ?? await repo.getVocabularyProgress(userId);
+    const grammarProgress = snapshot?.grammarProgress ?? await repo.getGrammarProgress(userId);
+    const skillProgress = snapshot?.skillProgress ?? await repo.getSkillProgress(userId);
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
-    const allVocabulary = await curriculumRepository.getAllVocabulary();
-    const vocabularyLevels = new Map(allVocabulary.map((item) => [item.id, item.hskLevel]));
-    const grammarLevels = new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
+    const vocabularyLevels = snapshot?.vocabularyLevels ?? new Map((await curriculumRepository.getAllVocabulary()).map((item) => [item.id, item.hskLevel]));
+    const grammarLevels = snapshot?.grammarLevels ?? new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
     const quizAttempts = (
       await Promise.all(levelLessons.map((lesson) => repo.getQuizAttempts(userId, lesson.id)))
     ).flat();
