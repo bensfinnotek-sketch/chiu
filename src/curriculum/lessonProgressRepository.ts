@@ -584,6 +584,25 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     }
   }
 
+  async recordVocabularyReview(
+    userId: string,
+    hanzi: string,
+    level?: HSKLevelNumber,
+    isCorrect?: boolean
+  ): Promise<void> {
+    const normalized = hanzi.trim();
+    const vocabulary = ALL_VOCABULARY.find(
+      (item) => item.hanzi === normalized && (!level || item.hskLevel === level)
+    );
+    if (!vocabulary) return;
+    await this.updateVocabularyStatus(
+      userId,
+      vocabulary.id,
+      isCorrect ? 'mastered' : 'learning',
+      isCorrect
+    );
+  }
+
   async getGrammarProgress(userId: string): Promise<UserGrammarProgress[]> {
     if (!isSupabaseConfigured || !supabase) return [];
 
