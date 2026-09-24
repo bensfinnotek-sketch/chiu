@@ -49,7 +49,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   useEffect(() => {
     if (profile) {
-      setName(profile.displayName || authUser?.displayName || 'Learner');
+      setName(profile.displayName || 'Learner');
       setHskLevel(profile.hskLevel || 1);
       setGoal(profile.learningGoal || 'conversation');
       setDailyMinutes(profile.dailyMinutes || 15);
