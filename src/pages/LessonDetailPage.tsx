@@ -222,9 +222,9 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
           { id: 'vocabulary', label: '1. Từ vựng mới', icon: BookOpen },
           { id: 'grammar', label: '2. Ngữ pháp trọng tâm', icon: Sparkles },
           { id: 'dialogue', label: '3. Hội thoại thực chiến', icon: MessageSquare },
-          { id: 'speaking', label: '3. Luyện nói cùng Lina', icon: Mic },
-          { id: 'quiz', label: '4. Trắc nghiệm kiểm tra', icon: HelpCircle },
-          { id: 'objectives', label: 'Mục tiêu bài', icon: Sparkles },
+          { id: 'speaking', label: '4. Luyện nói cùng Lina', icon: Mic },
+          { id: 'quiz', label: '5. Trắc nghiệm kiểm tra', icon: HelpCircle },
+          { id: 'objectives', label: '6. Mục tiêu bài', icon: Sparkles },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
