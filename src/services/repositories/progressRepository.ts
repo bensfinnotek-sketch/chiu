@@ -142,7 +142,7 @@ export class SupabaseProgressRepository implements ProgressRepository {
 
     const { data, error } = await supabase
       .from('learning_progress')
-      .upsert(dbUpdates)
+      .upsert(dbUpdates, { onConflict: 'user_id' })
       .select()
       .single();
 
