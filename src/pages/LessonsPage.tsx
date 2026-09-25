@@ -12,7 +12,21 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
   const completedLessonIds = storageService.getCompletedLessons();
 
   const currentLevel = HSK_LEVELS.find((l) => l.id === selectedLevelId) || HSK_LEVELS[0];
-  const levelLessons = ALL_LESSONS.filter((l) => l.hskLevel === currentLevel.title);
+  const levelLessons = ALL_LESSONS
+    .filter((l) => l.hskLevel === currentLevel.title)
+    .sort((a, b) => a.order - b.order);
+
+  const completedInLevel = levelLessons.filter((lesson) => completedLessonIds.includes(lesson.id)).length;
+
+  // Progressive unlock: the first lesson of every level is available immediately;
+  // each following lesson opens after the previous lesson is completed.
+  // This keeps HSK levels independent while still giving learners a clear path.
+  const getLessonLockedState = (lesson: typeof levelLessons[number]) => {
+    if (completedLessonIds.includes(lesson.id)) return false;
+    if (lesson.order === 1) return false;
+    const previousLesson = levelLessons.find((item) => item.order === lesson.order - 1);
+    return !previousLesson || !completedLessonIds.includes(previousLesson.id);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
@@ -66,7 +80,8 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 rounded-2xl bg-white dark:bg-[#181412] border border-[#E86F51]/15 text-center">
             <p className="text-xs text-[#716761] dark:text-[#A89E97]">Tổng bài học</p>
-            <p className="text-lg font-extrabold text-[#211A17] dark:text-white">{currentLevel.totalLessons} bài</p>
+            <p className="text-lg font-extrabold text-[#211A17] dark:text-white">{completedInLevel}/{currentLevel.totalLessons}</p>
+            <p className="text-[10px] text-[#716761] dark:text-[#A89E97]">đã hoàn thành</p>
           </div>
         </div>
       </div>
@@ -78,7 +93,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {levelLessons.map((lesson) => {
             const isCompleted = completedLessonIds.includes(lesson.id);
-            const isLocked = lesson.isLocked && !isCompleted;
+            const isLocked = getLessonLockedState(lesson);
 
             return (
               <div
@@ -103,7 +118,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
                     ) : isLocked ? (
                       <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
                         <Lock size={15} />
-                        <span>Chưa mở</span>
+                        <span>Hoàn thành bài trước</span>
                       </span>
                     ) : (
                       <span className="text-xs font-bold text-[#E86F51] group-hover:translate-x-1 transition-transform flex items-center gap-1">
@@ -131,6 +146,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
                   </span>
                   <span>{lesson.vocabulary.length} từ mới</span>
                   <span>{lesson.dialogue.length} câu hội thoại</span>
+                  <span className="text-[#E86F51] font-bold">{lesson.order === 1 || !getLessonLockedState(lesson) ? 'Sẵn sàng' : 'Theo lộ trình'}</span>
                 </div>
               </div>
             );
