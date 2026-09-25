@@ -104,7 +104,9 @@ export class SupabaseProgressRepository implements ProgressRepository {
     }
 
     if (!data) {
-      return this.updateProgress(userId, this.getDefaultProgress(userId));
+      // Keep reads side-effect free. A missing row is represented in memory;
+      // it will be persisted on the next explicit progress update.
+      return this.getDefaultProgress(userId);
     }
 
     return {
