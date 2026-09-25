@@ -10,6 +10,7 @@ import {
 import { mockGeminiService } from './mockGeminiService';
 import { ConversationMessage, SpeakingFeedback, TranslationResult, DictionaryEntry } from '../types';
 import { getAuthHeaders } from './flashcardService';
+import { PronunciationAssessment, createUnavailablePronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 
 export interface AIService {
   generateConversation(params: any): Promise<any>;
@@ -27,6 +28,7 @@ export interface AIService {
   translateChinese?(text: string, from?: string, to?: string): Promise<any>;
   explainGrammar?(point: string, level?: string): Promise<any>;
   summarizeMemory?(memory: any): Promise<{ summary: string; keyFacts: string[] }>;
+  assessPronunciation?(params: { spokenText: string; targetText?: string; language?: string; audioAvailable?: boolean }): Promise<PronunciationAssessment>;
 }
 
 export class GeminiServiceImpl implements AIService {
@@ -285,6 +287,24 @@ export class GeminiServiceImpl implements AIService {
         naturalAlternatives: [],
       };
     }
+  }
+
+  /**
+   * Acoustic pronunciation assessment is intentionally separate from transcript feedback.
+   * Until an audio-capable provider is wired in, return an explicit unavailable state.
+   */
+  async assessPronunciation(params: {
+    spokenText: string;
+    targetText?: string;
+    language?: string;
+    audioAvailable?: boolean;
+  }): Promise<PronunciationAssessment> {
+    if (!params.audioAvailable) {
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+    // Audio transport/provider integration belongs here; do not infer acoustic quality from text.
+    return createUnavailablePronunciationAssessment(params.language || 'vi');
   }
 
   async evaluateSpeech(targetSentence: string, spokenText: string): Promise<{ accuracyScore: number; feedback: string }> {
