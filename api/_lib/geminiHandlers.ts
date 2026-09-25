@@ -11,7 +11,11 @@ const GUEST_SPEAKING_COOKIE = "hanzi_guest_speaking";
 const GUEST_SPEAKING_LIMIT_CODE = "GUEST_SPEAKING_LIMIT";
 
 function getGuestSpeakingSecret(): string {
-  return process.env.GUEST_SPEAKING_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim() || "hanzi-ai-guest-speaking";
+  const secret = process.env.GUEST_SPEAKING_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim();
+  if (!secret) {
+    throw new Error("Guest speaking signing secret is not configured.");
+  }
+  return secret;
 }
 
 function signGuestSpeakingStart(timestamp: number): string {
