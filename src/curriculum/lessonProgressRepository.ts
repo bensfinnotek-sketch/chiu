@@ -10,6 +10,11 @@ import {
 import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 import { ALL_VOCABULARY } from './vocabularyAndGrammarData';
 
+function normalizeHSKLevel(value: unknown, fallback: HSKLevelNumber = 1): HSKLevelNumber {
+  const level = Number(value);
+  return level >= 1 && level <= 6 && Number.isInteger(level) ? level as HSKLevelNumber : fallback;
+}
+
 const LOCAL_LESSON_PROGRESS_KEY = 'hanziai_curriculum_lesson_progress';
 const LOCAL_VOCAB_PROGRESS_KEY = 'hanziai_curriculum_vocab_progress';
 const LOCAL_GRAMMAR_PROGRESS_KEY = 'hanziai_curriculum_grammar_progress';
@@ -309,7 +314,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return (data || []).map((d: any) => ({
       userId: d.user_id,
       lessonId: d.lesson_id,
-      levelNumber: d.level_number || 1,
+      levelNumber: normalizeHSKLevel(d.level_number),
       status: d.status as LessonProgressStatus,
       progressPercent: d.progress_percent || 0,
       currentSectionId: d.current_section_id,
@@ -340,7 +345,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return {
       userId: data.user_id,
       lessonId: data.lesson_id,
-      levelNumber: data.level_number || 1,
+      levelNumber: normalizeHSKLevel(data.level_number),
       status: data.status as LessonProgressStatus,
       progressPercent: data.progress_percent || 0,
       currentSectionId: data.current_section_id,
@@ -587,7 +592,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
         last_seen_at: now,
         mastered_at: status === 'mastered' ? existing?.mastered_at || now : existing?.mastered_at || null,
         created_at: existing?.created_at || now,
-        mastery_score: Math.max(0, Math.min(100, (existing?.mastery_score || 0) + (isCorrect === true ? 15 : isCorrect === false ? -10 : 0))),
+        mastery_score: Math.max(0, Math.min(100, Number(existing?.mastery_score || 0) + (isCorrect === true ? 15 : isCorrect === false ? -10 : 0))),
         updated_at: now,
       },
       { onConflict: 'user_id,vocabulary_id' }
