@@ -3,6 +3,11 @@
 
 export type PronunciationAssessmentSource = 'acoustic' | 'unavailable';
 
+export interface PronunciationAudioInput {
+  blob: Blob;
+  mimeType: string;
+}
+
 export interface PronunciationAssessment {
   source: PronunciationAssessmentSource;
   accuracyScore: number | null;
