@@ -36,7 +36,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
 }) => {
   const { user } = useAuth();
   const lesson = ALL_LESSONS.find((l) => l.id === lessonId) || ALL_LESSONS[0];
-  const [activeTab, setActiveTab] = useState<'objectives' | 'vocabulary' | 'dialogue' | 'speaking' | 'quiz'>('vocabulary');
+  const [activeTab, setActiveTab] = useState<'objectives' | 'vocabulary' | 'grammar' | 'dialogue' | 'speaking' | 'quiz'>('vocabulary');
 
   // Flashcards saved state
   const [savedWords, setSavedWords] = useState<string[]>(
@@ -220,7 +220,8 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-100 dark:border-white/10 scrollbar-none">
         {[
           { id: 'vocabulary', label: '1. Từ vựng mới', icon: BookOpen },
-          { id: 'dialogue', label: '2. Hội thoại thực chiến', icon: MessageSquare },
+          { id: 'grammar', label: '2. Ngữ pháp trọng tâm', icon: Sparkles },
+          { id: 'dialogue', label: '3. Hội thoại thực chiến', icon: MessageSquare },
           { id: 'speaking', label: '3. Luyện nói cùng Lina', icon: Mic },
           { id: 'quiz', label: '4. Trắc nghiệm kiểm tra', icon: HelpCircle },
           { id: 'objectives', label: 'Mục tiêu bài', icon: Sparkles },
@@ -316,6 +317,64 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             >
               Sang phần Hội thoại thực chiến →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: GRAMMAR */}
+      {activeTab === 'grammar' && (
+        <div className="space-y-5">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#211A17] dark:text-white">Ngữ pháp trọng tâm</h3>
+                <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97] mt-1">Mẫu câu được gắn trực tiếp với nhiệm vụ giao tiếp và luyện thi HSK.</p>
+              </div>
+              <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#FFF1EC] dark:bg-[#3A2721] text-[#E86F51]">HSK-aligned</span>
+            </div>
+          </div>
+
+          {(lesson.grammarPoints || []).map((point, index) => (
+            <div key={index} className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 space-y-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-[#E86F51]">Mẫu {index + 1}</p>
+                <h4 className="text-lg font-bold text-[#211A17] dark:text-white mt-1">{point.title}</h4>
+                <div className="mt-3 px-4 py-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] font-chinese text-base font-bold text-[#211A17] dark:text-white border border-[#E86F51]/10">{point.pattern}</div>
+                <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-3">{point.explanationVi}</p>
+              </div>
+              <div className="space-y-3">
+                {point.examples.map((example, exampleIndex) => (
+                  <div key={exampleIndex} className="p-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-chinese text-lg font-bold text-[#211A17] dark:text-white">{example.chinese}</p>
+                      <AudioButton text={example.chinese} size="sm" />
+                    </div>
+                    <p className="text-xs text-[#E86F51] mt-1">{example.pinyin}</p>
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{example.translationVi}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {lesson.examFocus && (
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#211A17] text-white space-y-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-[#F6B39F]">Nhiệm vụ luyện thi</p>
+                <h4 className="text-lg font-bold mt-1">Kỹ năng cần đạt sau bài này</h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {lesson.examFocus.tasks.map((task, index) => <div key={index} className="text-sm bg-white/10 rounded-xl px-3 py-2">{task}</div>)}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {lesson.examFocus.skills.map((skill) => <span key={skill} className="px-3 py-1 rounded-full bg-[#E86F51] text-xs font-bold uppercase">{skill}</span>)}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 flex justify-between gap-3">
+            <button type="button" onClick={() => setActiveTab('vocabulary')} className="px-5 py-2.5 rounded-2xl border border-gray-200 dark:border-white/10 text-xs font-bold cursor-pointer">← Ôn từ vựng</button>
+            <button type="button" onClick={() => setActiveTab('dialogue')} className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] cursor-pointer">Sang Hội thoại →</button>
           </div>
         </div>
       )}
