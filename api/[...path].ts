@@ -43,33 +43,43 @@ export default async function handler(req: any, res: any) {
   const fullSubPath = segments.join("/");
 
   if (fullSubPath === "health") {
+    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
     return handleHealth(req, res);
   }
   if (fullSubPath === "ai/speaking" || fullSubPath === "gemini/speaking-analyze") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSpeakingAnalyze(req, res);
   }
   if (fullSubPath === "ai/summarize") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSummarize(req, res);
   }
   if (fullSubPath === "gemini/conversation") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleConversation(req, res);
   }
   if (fullSubPath === "gemini/correct") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleCorrect(req, res);
   }
   if (fullSubPath === "gemini/speaking-feedback") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSpeakingFeedback(req, res);
   }
   if (fullSubPath === "gemini/translate") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleTranslate(req, res);
   }
   if (fullSubPath === "gemini/dictionary") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleDictionaryLookup(req, res);
   }
   if (fullSubPath === "gemini/lesson") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleLesson(req, res);
   }
   if (fullSubPath === "gemini/quiz") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleQuiz(req, res);
   }
 
