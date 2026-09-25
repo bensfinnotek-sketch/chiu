@@ -15,11 +15,24 @@ function getMigrationKey(userId: string, guestSessionId: string): string {
   return GUEST_MIGRATION_PREFIX + userId + '_' + guestSessionId;
 }
 
-export async function checkHasGuestData(): Promise<boolean> {
+export async function checkHasGuestData(userId?: string): Promise<boolean> {
   const localConv = new LocalStorageConversationRepository();
   const sessions = await localConv.getUserSessions('guest_user');
-  const rawProgress = localStorage.getItem('hanzi_ai_progress_guest_user');
-  return sessions.length > 0 || Boolean(rawProgress);
+
+  // Only prompt when this account still has guest sessions that have not
+  // already been migrated. Guest data itself stays local so a successful
+  // migration can be retried safely without showing the modal forever.
+  const pendingSessions = userId
+    ? sessions.filter(
+        (session) =>
+          localStorage.getItem(getMigrationKey(userId, session.id)) !== 'completed'
+      )
+    : sessions;
+
+  const hasGuestProgress =
+    localStorage.getItem('hanzi_ai_progress_guest_user') !== null;
+
+  return pendingSessions.length > 0 || hasGuestProgress;
 }
 
 export async function migrateGuestDataToUser(user: AuthUser): Promise<void> {
