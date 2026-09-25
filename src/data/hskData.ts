@@ -1213,5 +1213,7 @@ export const ALL_LESSONS = [...HSK1_LESSONS, ...HSK2_LESSONS].map((l) => ({
     correctAnswer: q.correctIndex,
     explanation: q.explanation,
   })),
+  grammarPoints: l.grammarPoints,
+  examFocus: l.examFocus,
 }));
 
