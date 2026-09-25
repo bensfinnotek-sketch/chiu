@@ -19,8 +19,11 @@ export function calculateNewStreak(
   currentStreak: number,
   longestStreak: number
 ): { currentStreak: number; longestStreak: number; newDate: string } {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  // Progress dates are stored as YYYY-MM-DD. Compare calendar dates directly
+  // instead of mixing UTC timestamps with local calendar days; otherwise a
+  // study session around midnight/time-zone boundaries can incorrectly break
+  // or extend a streak.
+  const today = new Date().toISOString().slice(0, 10);
 
   if (!lastStudyDate) {
     return {
@@ -30,26 +33,60 @@ export function calculateNewStreak(
     };
   }
 
-  const last = new Date(lastStudyDate);
-  const diffTime = Math.abs(now.getTime() - last.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const parseCalendarDate = (value: string): number | null => {
+    const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);
+    if (!match) return null;
 
-  if (lastStudyDate === today) {
-    return { currentStreak, longestStreak, newDate: today };
-  } else if (diffDays === 1) {
-    const nextStreak = currentStreak + 1;
-    return {
-      currentStreak: nextStreak,
-      longestStreak: Math.max(longestStreak, nextStreak),
-      newDate: today,
-    };
-  } else {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const timestamp = Date.UTC(year, month - 1, day);
+
+    // Reject impossible dates such as 2026-02-31.
+    const parsed = new Date(timestamp);
+    if (
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
+    ) {
+      return null;
+    }
+
+    return timestamp;
+  };
+
+  const todayTimestamp = parseCalendarDate(today);
+  const lastTimestamp = parseCalendarDate(lastStudyDate);
+
+  // Invalid or future stored dates should not grant an extra streak day.
+  if (todayTimestamp === null || lastTimestamp === null || lastTimestamp > todayTimestamp) {
     return {
       currentStreak: 1,
       longestStreak: Math.max(longestStreak, 1),
       newDate: today,
     };
   }
+
+  const diffDays = Math.round((todayTimestamp - lastTimestamp) / 86_400_000);
+
+  if (diffDays === 0) {
+    return { currentStreak, longestStreak, newDate: today };
+  }
+
+  if (diffDays === 1) {
+    const nextStreak = currentStreak + 1;
+    return {
+      currentStreak: nextStreak,
+      longestStreak: Math.max(longestStreak, nextStreak),
+      newDate: today,
+    };
+  }
+
+  return {
+    currentStreak: 1,
+    longestStreak: Math.max(longestStreak, 1),
+    newDate: today,
+  };
 }
 
 export class SupabaseProgressRepository implements ProgressRepository {
