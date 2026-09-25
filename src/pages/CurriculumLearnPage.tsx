@@ -96,7 +96,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
     selectedLevel,
     isPremium,
     levelCompletion?.completionPercent,
-    levelCompletion?.averageQuizScore,
+    levelCompletion?.masteryScore,
+    levelCompletion?.vocabularyMastery,
+    levelCompletion?.grammarMastery,
+    levelCompletion?.quizMastery,
+    levelCompletion?.weakVocabularyCount,
+    levelCompletion?.weakGrammarCount,
     updateProfile,
   ]);
 
