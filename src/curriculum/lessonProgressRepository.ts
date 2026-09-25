@@ -99,7 +99,8 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       if (existing.status === 'available' || existing.status === 'locked') {
         existing.status = 'in_progress';
       }
-      existing.attempts += 1;
+      // Opening/resuming a lesson is not a new attempt. Attempts are counted
+      // when the learner submits/completes an assessment, not on every render.
       existing.lastAccessedAt = new Date().toISOString();
       await this.saveProgress(existing);
       return existing;
@@ -389,7 +390,8 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
           ...existing,
           status:
             existing.status === 'completed' ? 'completed' : 'in_progress',
-          attempts: existing.attempts + 1,
+          // Do not increment attempts when the lesson page is merely reopened.
+          attempts: existing.attempts,
           lastAccessedAt: now,
         }
       : {
