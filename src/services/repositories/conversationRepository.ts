@@ -58,7 +58,18 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async getSession(sessionId: string): Promise<ConversationSession | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('conversation_sessions').select('*').eq('id', sessionId).maybeSingle();
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) {
+      throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    const { data, error } = await supabase
+      .from('conversation_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('user_id', auth.data.user.id)
+      .maybeSingle();
+
     if (error) throw new Error(`Không thể tải phiên hội thoại: ${formatSupabaseError(error)}`);
     if (!data) return null;
     return { id: data.id, userId: data.user_id, title: data.title, topic: data.topic, learnerLevel: data.learner_level, summary: data.summary || '', keyFacts: (data.key_facts as any) || [], vocabulary: (data.vocabulary as any) || [], createdAt: data.created_at, updatedAt: data.updated_at };
