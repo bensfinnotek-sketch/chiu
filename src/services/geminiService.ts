@@ -70,15 +70,17 @@ export class GeminiServiceImpl implements AIService {
           userText,
           targetLevel,
           topic,
-          conversationHistory: attempt === 1 ? conversationHistory : conversationHistory.slice(-6),
+          conversationHistory: conversationHistory.slice(-8).map((message) => ({
+            role: message.role,
+            chinese: message.chinese.slice(0, 500),
+          })),
           nativeLanguage,
           difficulty,
           memory: {
             summary: memory?.summary,
             keyFacts: memory?.keyFacts,
           },
-          attempt,
-        };
+                  };
 
         const authHeaders = await getAuthHeaders();
         const headers: Record<string, string> = {
