@@ -153,9 +153,11 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async updateSummary(sessionId: string, summary: string, keyFacts?: string[]): Promise<void> {
     if (!supabase) return;
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
     const updates: Record<string, any> = { summary, updated_at: new Date().toISOString() };
     if (keyFacts) updates.key_facts = keyFacts;
-    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (error) throw new Error(`Không thể cập nhật tóm tắt hội thoại: ${formatSupabaseError(error)}`);
   }
 
