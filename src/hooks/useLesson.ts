@@ -28,6 +28,7 @@ export function useLesson(lessonId: string) {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [userProgress, setUserProgress] = useState<UserLessonProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
 
   const loadLesson = useCallback(async () => {
     setIsLoading(true);
