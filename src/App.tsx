@@ -69,7 +69,7 @@ function AppContent() {
   // Detect if newly logged in user has guest data to migrate
   useEffect(() => {
     if (isAuthenticated && authUser) {
-      checkHasGuestData().then((hasData) => {
+      checkHasGuestData(authUser.id).then((hasData) => {
         if (hasData) {
           setGuestModalOpen(true);
         }
