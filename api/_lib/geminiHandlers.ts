@@ -208,7 +208,7 @@ Format output strictly as JSON with this schema:
   } catch (error: any) {
     console.error("Conversation API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during conversation generation.",
+      error: "Unable to generate the conversation response.",
     });
   }
 }
@@ -509,7 +509,7 @@ Format output strictly as JSON with this exact schema:
   } catch (error: any) {
     console.error("Speaking analysis API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during speaking analysis.",
+      error: "Unable to analyze the speaking response.",
     });
   }
 }
@@ -541,7 +541,7 @@ Return strictly JSON with schema: {"summary": "string", "keyFacts": ["string"]}`
   } catch (err: any) {
     console.error("Summarize API error:", err);
     return sendJson(res, 500, {
-      error: err?.message || "Failed to summarize conversation memory.",
+      error: "Unable to summarize conversation memory.",
     });
   }
 }
@@ -596,7 +596,7 @@ Output strictly as JSON:
   } catch (error: any) {
     console.error("Correction API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during sentence correction.",
+      error: "Unable to correct the sentence.",
     });
   }
 }
@@ -643,7 +643,7 @@ Output JSON:
   } catch (error: any) {
     console.error("Speaking feedback API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during speaking feedback.",
+      error: "Unable to generate speaking feedback.",
     });
   }
 }
@@ -697,7 +697,7 @@ Output JSON:
   } catch (error: any) {
     console.error("Translate API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during translation.",
+      error: "Unable to translate the text.",
     });
   }
 }
@@ -763,7 +763,7 @@ Output JSON:
   } catch (error: any) {
     console.error("Dictionary lookup API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during dictionary lookup.",
+      error: "Unable to complete the dictionary lookup.",
     });
   }
 }
@@ -809,7 +809,7 @@ Output JSON:
   } catch (error: any) {
     console.error("Lesson generation API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during lesson generation.",
+      error: "Unable to generate the lesson.",
     });
   }
 }
@@ -853,7 +853,7 @@ Output JSON:
   } catch (error: any) {
     console.error("Quiz generation API error:", error?.message || error);
     return sendJson(res, 500, {
-      error: error?.message || "Internal server error during quiz generation.",
+      error: "Unable to generate the quiz.",
     });
   }
 }
