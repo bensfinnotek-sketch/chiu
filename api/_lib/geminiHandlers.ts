@@ -135,6 +135,31 @@ export async function handleConversation(req: any, res: any) {
   try {
     const body = parseBody(req);
     const { messages, userLevel = "HSK 1", topic = "General conversation", language = "vi" } = body;
+
+    if (!Array.isArray(messages) || messages.length > 30) {
+      return sendJson(res, 400, { error: "messages must be an array with at most 30 items." });
+    }
+
+    const conversationHistory = messages
+      .slice(-12)
+      .map((m: any) => {
+        const text = typeof m?.text === "string"
+          ? m.text
+          : typeof m?.chinese === "string"
+            ? m.chinese
+            : "";
+        return `${m?.sender === "user" ? "Learner" : "Teacher Lina"}: ${text.slice(0, 1000)}`;
+      })
+      .join("\n");
+
+    if (conversationHistory.length > 12000) {
+      return sendJson(res, 400, { error: "Conversation history is too large." });
+    }
+
+    if (typeof topic !== "string" || topic.length > 100 || typeof userLevel !== "string" || userLevel.length > 30) {
+      return sendJson(res, 400, { error: "Invalid conversation metadata." });
+    }
+
     const ai = getAI();
 
     if (!ai) {
@@ -142,10 +167,6 @@ export async function handleConversation(req: any, res: any) {
         error: "GEMINI_API_KEY is not configured on the server. Please set GEMINI_API_KEY in environment variables.",
       });
     }
-
-    const conversationHistory = (messages || [])
-      .map((m: any) => `${m.sender === "user" ? "Learner" : "Teacher Lina"}: ${m.text || m.chinese || ""}`)
-      .join("\n");
 
     const systemPrompt = `You are Lina, a warm, patient, and encouraging AI Chinese teacher for the platform "HanziAI" (Tagline: Learn Chinese. Speak Naturally).
 The learner's current level is ${userLevel}. Topic: ${topic}.
@@ -216,8 +237,23 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
       memory,
     } = body;
 
-    const actualUserText = (userText || message || "").trim();
+    const actualUserText = typeof (userText || message) === "string"
+      ? (userText || message).trim()
+      : "";
     const actualLevel = targetLevel || learnerLevel || "HSK 1";
+
+    if (!actualUserText) {
+      return sendJson(res, 400, { error: "userText is required." });
+    }
+    if (actualUserText.length > 2000) {
+      return sendJson(res, 400, { error: "userText must be 2000 characters or fewer." });
+    }
+    if (!Array.isArray(conversationHistory) || conversationHistory.length > 30) {
+      return sendJson(res, 400, { error: "conversationHistory must be an array with at most 30 items." });
+    }
+    if (typeof topic !== "string" || topic.length > 100 || typeof difficulty !== "string" || difficulty.length > 30) {
+      return sendJson(res, 400, { error: "Invalid speaking metadata." });
+    }
 
     const ai = getAI();
     const langName = nativeLanguage === "vi" ? "Vietnamese" : nativeLanguage === "zh" ? "Chinese" : "English";
@@ -263,10 +299,21 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
       }
     }
 
-    const historyPrompt = (conversationHistory || [])
+    const historyPrompt = conversationHistory
       .slice(-12)
-      .map((m: any) => `${m.role === "user" ? "Learner" : "Teacher Lina"}: ${m.chinese || m.text || ""}`)
+      .map((m: any) => {
+        const text = typeof m?.chinese === "string"
+          ? m.chinese
+          : typeof m?.text === "string"
+            ? m.text
+            : "";
+        return `${m?.role === "user" ? "Learner" : "Teacher Lina"}: ${text.slice(0, 1000)}`;
+      })
       .join("\n");
+
+    if (historyPrompt.length > 12000) {
+      return sendJson(res, 400, { error: "Conversation history is too large." });
+    }
 
     let memoryContext = "";
     if (memory) {
