@@ -17,6 +17,7 @@ import { UserProfile, SupportedLanguage } from '../types';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useCurriculum } from '../hooks/useCurriculum';
 
 interface DashboardPageProps {
   user: UserProfile;
@@ -34,6 +35,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const streakDays = progress?.currentStreak ?? user.streakDays;
   const wordsLearned = progress?.wordsLearned ?? vocabularyCount;
   const minutesLearnedToday = progress?.totalStudyMinutes ?? user.minutesLearnedToday;
+  const currentHskLevel = Math.min(6, Math.max(1, Number(String(user.chineseLevel).match(/\d+/)?.[0] || 1))) as 1 | 2 | 3 | 4 | 5 | 6;
+  const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
+  const nextRecommendation = recommendations[0];
+
+  const handleLearningRecommendation = () => {
+    if (!nextRecommendation) {
+      onNavigate('learn', `level:${currentHskLevel}`);
+      return;
+    }
+    if (nextRecommendation.targetId === 'flashcards') {
+      onNavigate('flashcards');
+      return;
+    }
+    if (nextRecommendation.targetId.startsWith('level:')) {
+      onNavigate('learn', nextRecommendation.targetId);
+      return;
+    }
+    if (nextRecommendation.targetId !== 'grammar') {
+      onNavigate('learn-detail', nextRecommendation.targetId);
+      return;
+    }
+    onNavigate('learn', `level:${currentHskLevel}`);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
@@ -115,55 +139,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* 3. Continue Learning Card */}
+      {/* 3. Learning Core recommendation */}
       <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">
-              Tiếp tục bài học dở dang
-            </span>
+            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">Bước học tiếp theo</span>
             <h2 className="text-2xl font-bold text-[#211A17] dark:text-white mt-1">
-              HSK 1 · Lesson 5: Ordering Food at a Restaurant
+              {curriculumLoading ? 'Đang phân tích tiến độ của bạn...' : nextRecommendation?.title || `Tiếp tục lộ trình HSK ${currentHskLevel}`}
             </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              {nextRecommendation?.description || 'Lộ trình sẽ được chọn từ dữ liệu tiến độ, quiz, từ vựng và ngữ pháp đã ghi nhận.'}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('learn')}
-            className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <span>Lộ trình bài học</span>
+          <button type="button" onClick={handleLearningRecommendation} disabled={curriculumLoading}
+            className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-2 cursor-pointer">
+            <span>{nextRecommendation?.actionText || 'Mở lộ trình'}</span>
             <ArrowRight size={16} />
           </button>
         </div>
-
-        {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
-            <span>Tiến độ bài học: 3 / 8 phần</span>
-            <span className="text-[#E86F51]">HSK 2 — 42% tổng lộ trình</span>
+            <span>Tiến độ HSK {currentHskLevel}</span>
+            <span className="text-[#E86F51]">{levelCompletion?.completionPercent ?? 0}%</span>
           </div>
           <div className="w-full h-3 bg-[#FFF0EB] dark:bg-[#342822] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] rounded-full transition-all duration-500"
-              style={{ width: '42%' }}
-            />
+            <div className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] rounded-full transition-all duration-500" style={{ width: `${levelCompletion?.completionPercent ?? 0}%` }} />
           </div>
-        </div>
-
-        {/* Quick Preview Chips */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-          <span className="text-xs text-[#716761] dark:text-[#A89E97] self-center mr-1">
-            Từ vựng đang học:
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            饭 (fàn - cơm)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            水 (shuǐ - nước)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            好吃 (hǎochī - ngon)
-          </span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#716761] dark:text-[#A89E97]">
+            <span>{levelCompletion?.completedLessons ?? 0}/{levelCompletion?.totalRequiredLessons ?? 0} bài bắt buộc</span>
+            <span>Mastery {levelCompletion?.masteryScore ?? 0}/100</span>
+            <span>Quiz {levelCompletion?.quizMastery ?? 0}/100</span>
+          </div>
         </div>
       </div>
 
