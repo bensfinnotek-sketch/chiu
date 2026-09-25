@@ -43,6 +43,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     userProgress,
     isLoading,
     saveSectionProgress,
+    completeLesson,
     completeQuiz,
   } = useLesson(lessonId);
 
@@ -67,41 +68,51 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   }
 
   const currentSection = sections[activeSectionIndex] || sections[0];
-  const requiredSectionCount = sections.filter((section) => section.isRequired).length;
+  // The summary is a completion screen, not learning content. Keep it out of
+  // the required-section denominator so "all required sections" can actually
+  // reach 100% before the summary is shown.
+  const requiredSections = sections.filter(
+    (section) => section.isRequired && section.type !== 'summary'
+  );
+  const requiredSectionCount = requiredSections.length;
+  const completedRequiredCount = sections
+    .slice(0, activeSectionIndex + 1)
+    .filter(
+      (section) =>
+        section.isRequired &&
+        section.type !== 'summary'
+    ).length;
   const progressPercent = Math.round(
-    ((sections.slice(0, activeSectionIndex + 1).filter((section) =>
-      requiredSectionCount > 0 ? section.isRequired : true
-    ).length) /
-      Math.max(requiredSectionCount || sections.length, 1)) *
-      100
+    (completedRequiredCount / Math.max(requiredSectionCount, 1)) * 100
   );
   const finalSectionId = sections[sections.length - 1]?.id;
-  const requiredSectionsBeforeFinal = sections
-    .slice(0, Math.max(0, sections.length - 1))
-    .filter((section) => (requiredSectionCount > 0 ? section.isRequired : true)).length;
-  const requiredProgressBeforeFinal = Math.round(
-    (requiredSectionsBeforeFinal / Math.max(requiredSectionCount || sections.length, 1)) * 100
-  );
   const canFinishRequiredSections =
     lesson.completionRule === 'all_required_sections' &&
     activeSectionIndex >= sections.length - 1 &&
     !!finalSectionId &&
-    (userProgress?.progressPercent ?? 0) >= requiredProgressBeforeFinal;
+    (userProgress?.progressPercent ?? 0) >= 100;
 
   const handleNextSection = () => {
     if (activeSectionIndex < sections.length - 1) {
+      const currentSection = sections[activeSectionIndex];
       const nextIdx = activeSectionIndex + 1;
       setActiveSectionIndex(nextIdx);
-      const completedThroughIndex = Math.max(0, nextIdx - 1);
-      const completedRequiredCount = sections
-        .slice(0, completedThroughIndex + 1)
-        .filter((section) => (requiredSectionCount > 0 ? section.isRequired : true))
-        .length;
-      const completionPercent = Math.round(
-        (completedRequiredCount / Math.max(requiredSectionCount || sections.length, 1)) * 100
-      );
-      if (completionPercent > 0) {
-        saveSectionProgress(sections[completedThroughIndex].id, completionPercent);
+
+      // Persist the section the learner has just completed. This avoids the
+      // previous off-by-one behavior where entering the next section saved the
+      // section before the current one.
+      if (currentSection?.isRequired && currentSection.type !== 'summary') {
+        const completedRequiredCount = sections
+          .slice(0, activeSectionIndex + 1)
+          .filter(
+            (section) =>
+              section.isRequired &&
+              section.type !== 'summary'
+          ).length;
+        const completionPercent = Math.round(
+          (completedRequiredCount / Math.max(requiredSectionCount, 1)) * 100
+        );
+        saveSectionProgress(currentSection.id, completionPercent);
       }
     }
   };
@@ -171,6 +182,13 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     setQuizPersistenceError(null);
 
     try {
+      // The quiz is itself a required section. Persist it as completed even
+      // when the learner fails, so all_required_and_quiz can distinguish
+      // "all content visited" from "quiz passed".
+      const quizSection = sections.find((section) => section.type === 'quiz');
+      if (quizSection?.isRequired) {
+        await saveSectionProgress(quizSection.id, 100);
+      }
       const result = await completeQuiz(attempt);
       setLearningLoopResult(result);
     } catch (error) {
@@ -751,10 +769,10 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (activeSectionIndex >= sections.length - 1) {
                 if (canFinishRequiredSections) {
-                  saveSectionProgress(sections[activeSectionIndex].id, 100);
+                  await completeLesson(100, { vocabulary: 0, grammar: 0 });
                 }
                 return;
               }

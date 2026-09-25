@@ -1,3 +1,20 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Lesson,
+  LessonSection,
+  Vocabulary,
+  GrammarPoint,
+  QuizQuestion,
+  QuizAttempt,
+  UserLessonProgress,
+} from '../types/curriculum';
+import { curriculumRepository } from '../curriculum/curriculumRepository';
+import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
+import { recommendationService } from '../curriculum/recommendationService';
+import { useAuth } from './useAuth';
+import { getProgressRepository } from '../services/repositories/repositoryFactory';
+import { flashcardService } from '../services/flashcardService';
+
 export function useLesson(lessonId: string) {
   const { user } = useAuth();
   const userId = user?.id || 'guest_user';
