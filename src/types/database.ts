@@ -30,6 +30,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['profiles']['Row']>;
       };
+        Relationships: [];
+      };
       conversation_sessions: {
         Row: {
           id: string;
@@ -49,6 +51,8 @@ export interface Database {
           topic: string;
         };
         Update: Partial<Database['public']['Tables']['conversation_sessions']['Row']>;
+      };
+        Relationships: [];
       };
       conversation_messages: {
         Row: {
@@ -75,6 +79,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['conversation_messages']['Row']>;
       };
+        Relationships: [];
+      };
       learning_progress: {
         Row: {
           user_id: string;
@@ -92,6 +98,8 @@ export interface Database {
           user_id: string;
         };
         Update: Partial<Database['public']['Tables']['learning_progress']['Row']>;
+      };
+        Relationships: [];
       };
       user_vocabulary: {
         Row: {
@@ -115,6 +123,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
       };
+        Relationships: [];
+      };
       user_lesson_progress: {
         Row: {
           user_id: string;
@@ -136,6 +146,8 @@ export interface Database {
           status: string;
         };
         Update: Partial<Database['public']['Tables']['user_lesson_progress']['Row']>;
+      };
+        Relationships: [];
       };
       quiz_attempts: {
         Row: {
@@ -159,6 +171,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['quiz_attempts']['Row']>;
       };
+        Relationships: [];
+      };
       user_vocabulary_progress: {
         Row: {
           user_id: string;
@@ -178,6 +192,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']>;
       };
+        Relationships: [];
+      };
       user_grammar_progress: {
         Row: {
           user_id: string;
@@ -193,6 +209,8 @@ export interface Database {
           grammar_point_id: string;
         };
         Update: Partial<Database['public']['Tables']['user_grammar_progress']['Row']>;
+      };
+        Relationships: [];
       };
       user_skill_progress: {
         Row: {
@@ -210,6 +228,8 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['user_skill_progress']['Row']>;
       };
+        Relationships: [];
+      };
       subscriptions: {
         Row: {
           user_id: string;
@@ -223,6 +243,8 @@ export interface Database {
           user_id: string;
         };
         Update: Partial<Database['public']['Tables']['subscriptions']['Row']>;
+      };
+        Relationships: [];
       };
     };
     Functions: {
