@@ -16,7 +16,7 @@ import {
   X,
   Send,
 } from 'lucide-react';
-import { useLesson } from '../hooks/useCurriculum';
+import { useLesson } from '../hooks/useLesson';
 import { QuizAnswer, QuizAttempt, QuizQuestion, DialogueLine } from '../types/curriculum';
 import { LinaChatModal } from '../components/LinaChatModal';
 import { voiceService } from '../services/voiceService';
