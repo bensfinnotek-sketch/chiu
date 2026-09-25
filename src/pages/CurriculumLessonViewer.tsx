@@ -67,14 +67,30 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   }
 
   const currentSection = sections[activeSectionIndex] || sections[0];
-  const progressPercent = Math.round(((activeSectionIndex + 1) / Math.max(sections.length, 1)) * 100);
+  const requiredSectionCount = sections.filter((section) => section.isRequired).length;
+  const progressPercent = Math.round(
+    ((sections.slice(0, activeSectionIndex + 1).filter((section) =>
+      requiredSectionCount > 0 ? section.isRequired : true
+    ).length) /
+      Math.max(requiredSectionCount || sections.length, 1)) *
+      100
+  );
 
   const handleNextSection = () => {
     if (activeSectionIndex < sections.length - 1) {
       const nextIdx = activeSectionIndex + 1;
       setActiveSectionIndex(nextIdx);
-      const newPercent = Math.round(((nextIdx + 1) / sections.length) * 100);
-      saveSectionProgress(sections[nextIdx].id, newPercent);
+      const completedThroughIndex = Math.max(0, nextIdx - 1);
+      const completedRequiredCount = sections
+        .slice(0, completedThroughIndex + 1)
+        .filter((section) => (requiredSectionCount > 0 ? section.isRequired : true))
+        .length;
+      const completionPercent = Math.round(
+        (completedRequiredCount / Math.max(requiredSectionCount || sections.length, 1)) * 100
+      );
+      if (completionPercent > 0) {
+        saveSectionProgress(sections[completedThroughIndex].id, completionPercent);
+      }
     }
   };
 
@@ -210,8 +226,9 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                 key={sec.id}
                 type="button"
                 onClick={() => {
+                  // Navigation alone does not mark a section complete.
+                  // Completion is recorded only when the learner advances past it.
                   setActiveSectionIndex(idx);
-                  saveSectionProgress(sec.id, Math.round(((idx + 1) / sections.length) * 100));
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
