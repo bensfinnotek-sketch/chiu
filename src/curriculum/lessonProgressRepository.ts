@@ -345,7 +345,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
       progressPercent: data.progress_percent || 0,
       currentSectionId: data.current_section_id,
       score: data.score,
-      attempts: data.attempts || 1,
+      attempts: data.attempts ?? 0,
       startedAt: data.started_at,
       completedAt: data.completed_at,
       lastAccessedAt: data.last_accessed_at,
