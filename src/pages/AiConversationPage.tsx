@@ -163,6 +163,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   });
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const latestTranscriptRef = useRef('');
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -274,7 +275,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   }, [micState, teacherState]);
 
   // Process user message with Gemini Speaking Engine
-  const processUserMessage = async (userText: string) => {
+  const processUserMessage = async (userText: string, pronunciationAudio?: Blob | null) => {
     if (!guestCanSpeak) {
       setGuestLimitReached(true);
       setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
@@ -283,6 +284,14 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
     const cleanText = userText.trim();
     if (!cleanText) return;
+
+    // Pass captured audio into the pronunciation layer without deriving an acoustic score from transcript text.
+    if (pronunciationAudio) {
+      await geminiSpeakingService.assessPronunciation({
+        spokenText: cleanText,
+        audio: pronunciationAudio,
+      });
+    }
 
     // Interrupt any ongoing speech
     stopLinaSpeech();
@@ -466,12 +475,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setInterimTranscript(interim);
       },
       onResult: (finalText, isFinal) => {
+        latestTranscriptRef.current = finalText;
         setInterimTranscript(finalText);
         if (isFinal && finalText.trim()) {
-          speechRecognitionService.stopListening();
           setMicState('PROCESSING');
-          setInterimTranscript('');
-          processUserMessage(finalText);
         }
       },
       onError: (errMsg) => {
@@ -482,17 +489,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setMicState('IDLE');
         }, 3000);
       },
-      onEnd: () => {
-        if (micState === 'LISTENING') {
-          // If ended with content, submit it
-          if (interimTranscript.trim()) {
-            processUserMessage(interimTranscript);
-            setInterimTranscript('');
-          } else {
-            setMicState('IDLE');
-            setTeacherState('idle');
-            setStatusMessage('Nhấn mic để nói');
-          }
+      onEnd: (finalText, audioBlob) => {
+        const transcript = (finalText || latestTranscriptRef.current).trim();
+        latestTranscriptRef.current = '';
+        setInterimTranscript('');
+
+        if (transcript) {
+          setMicState('PROCESSING');
+          void processUserMessage(transcript, audioBlob);
+        } else {
+          setMicState('IDLE');
+          setTeacherState('idle');
+          setStatusMessage('Nhấn mic để nói');
         }
       },
     });
