@@ -800,3 +800,62 @@ Output JSON:
 
     const response = await generateContentSafely(ai, {
       contents: `Generate lesson for ${level}, topic: ${topic}`,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+      },
+    });
+
+    const data = JSON.parse(response.text || "{}");
+    return sendJson(res, 200, data);
+  } catch (error: any) {
+    console.error("Lesson generation API error:", error?.message || error);
+    return sendJson(res, 500, {
+      error: "Unable to generate the lesson.",
+    });
+  }
+}
+
+// AI Quiz Generator handler
+export async function handleQuiz(req: any, res: any) {
+  try {
+    const body = parseBody(req);
+    const { level = "HSK 1", count = 5 } = body;
+    const ai = getAI();
+
+    if (!ai) {
+      return sendJson(res, 503, {
+        error: "GEMINI_API_KEY is not configured on the server.",
+      });
+    }
+
+    const systemPrompt = `You are a test designer for HanziAI. Generate ${count} multiple-choice questions for Chinese level ${level}.
+Output JSON:
+{
+  "questions": [
+    {
+      "question": "Câu hỏi bằng tiếng Trung kèm pinyin hoặc nghĩa cần chọn",
+      "options": ["A", "B", "C", "D"],
+      "answerIndex": 0,
+      "explanation": "Giải thích ngắn gọn tại sao chọn đáp án này"
+    }
+  ]
+}`;
+
+    const response = await generateContentSafely(ai, {
+      contents: `Generate ${count} quiz questions for ${level}`,
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+      },
+    });
+
+    const data = JSON.parse(response.text || "{}");
+    return sendJson(res, 200, data);
+  } catch (error: any) {
+    console.error("Quiz generation API error:", error?.message || error);
+    return sendJson(res, 500, {
+      error: "Unable to generate the quiz.",
+    });
+  }
+}
