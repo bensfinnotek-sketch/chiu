@@ -623,6 +623,13 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                           onNavigate?.('learn', next.targetId);
                           return;
                         }
+                        // Grammar review is a level-level action, not a lesson id.
+                        // Keep the learner inside the curriculum instead of opening
+                        // a non-existent "grammar" lesson.
+                        if (next.type === 'review_grammar' || next.targetId === 'grammar') {
+                          onNavigate?.('learn', 'level:' + lesson.levelNumber);
+                          return;
+                        }
                         onNavigate?.('learn-detail', next.targetId);
                       }}
                       className="px-4 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-xs font-bold transition-all"
