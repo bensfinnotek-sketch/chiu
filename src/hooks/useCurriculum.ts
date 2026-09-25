@@ -296,9 +296,6 @@ export function useLesson(lessonId: string) {
     // Do not trust the client-provided "passed" flag as the completion
     // authority. The lesson definition owns the passing threshold/rule.
     const quizPassed = attempt.score >= lesson.passingScore;
-    const quizRequired =
-      lesson.completionRule === 'quiz_pass' ||
-      lesson.completionRule === 'all_required_and_quiz';
     const requiredSectionsComplete =
       lesson.completionRule === 'all_required_and_quiz'
         ? (await repo.getLessonProgress(userId, lessonId))?.progressPercent === 100
