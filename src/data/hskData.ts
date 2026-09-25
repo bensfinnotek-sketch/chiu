@@ -606,6 +606,147 @@ export const HSK1_LESSONS: Lesson[] = [
   },
 ];
 
+
+/**
+ * HSK 3.0-aligned learning layer for the HSK 1 lessons.
+ * The official syllabus organizes learning around tasks, topics, vocabulary,
+ * grammar and Chinese characters; these lesson fields turn the existing
+ * vocabulary/dialogue into more varied, exam-oriented practice.
+ */
+const HSK1_LESSON_ENRICHMENT: Record<string, {
+  grammarPoints: Lesson['grammarPoints'];
+  examFocus: Lesson['examFocus'];
+}> = {
+  'hsk1-l1': {
+    grammarPoints: [{
+      title: 'Câu vị ngữ tính từ',
+      pattern: '主语 + 很 + 形容词',
+      explanationVi: 'Dùng 很 trước tính từ khi mô tả trạng thái cơ bản; ở trình độ HSK 1, đây là mẫu câu tự nhiên để nói “rất/khá…”.',
+      examples: [
+        { chinese: '我很好。', pinyin: 'Wǒ hěn hǎo.', translationVi: 'Tôi rất khỏe.' },
+        { chinese: '今天很好。', pinyin: 'Jīntiān hěn hǎo.', translationVi: 'Hôm nay rất tốt.' },
+      ],
+    }],
+    examFocus: { tasks: ['Chào hỏi và đáp lại trong hội thoại ngắn', 'Nhận diện ý nghĩa câu nghe đơn giản'], skills: ['listening', 'speaking'] },
+  },
+  'hsk1-l2': {
+    grammarPoints: [{
+      title: 'Câu 是 và cấu trúc 的',
+      pattern: '主语 + 是 + danh từ; A + 的 + B',
+      explanationVi: 'Dùng 是 để xác định người/nghề/quốc tịch và 的 để biểu thị quan hệ sở hữu hoặc định ngữ đơn giản.',
+      examples: [
+        { chinese: '我是越南人。', pinyin: 'Wǒ shì Yuènán rén.', translationVi: 'Tôi là người Việt Nam.' },
+        { chinese: '这是我的名字。', pinyin: 'Zhè shì wǒ de míngzi.', translationVi: 'Đây là tên của tôi.' },
+      ],
+    }],
+    examFocus: { tasks: ['Tự giới thiệu bản thân', 'Điền thông tin cá nhân cơ bản'], skills: ['listening', 'speaking', 'writing'] },
+  },
+  'hsk1-l3': {
+    grammarPoints: [{
+      title: 'Số + lượng từ + danh từ',
+      pattern: 'Số + 个/口 + danh từ',
+      explanationVi: 'Khi đếm người hoặc đồ vật, số thường đi cùng lượng từ trước danh từ.',
+      examples: [
+        { chinese: '三个人。', pinyin: 'Sān gè rén.', translationVi: 'Ba người.' },
+        { chinese: '一个苹果。', pinyin: 'Yí gè píngguǒ.', translationVi: 'Một quả táo.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe và nhận diện số', 'Đọc số lượng và thông tin ngắn'], skills: ['listening', 'reading', 'writing'] },
+  },
+  'hsk1-l4': {
+    grammarPoints: [{
+      title: '有 + số lượng',
+      pattern: '主语 + 有 + số + lượng từ + danh từ',
+      explanationVi: 'Dùng 有 để nói ai hoặc nơi nào có bao nhiêu người/vật.',
+      examples: [
+        { chinese: '我家有四口人。', pinyin: 'Wǒ jiā yǒu sì kǒu rén.', translationVi: 'Nhà tôi có bốn người.' },
+        { chinese: '我有一个哥哥。', pinyin: 'Wǒ yǒu yí ge gēge.', translationVi: 'Tôi có một anh trai.' },
+      ],
+    }],
+    examFocus: { tasks: ['Mô tả gia đình', 'Đọc thông tin gia đình ngắn'], skills: ['listening', 'speaking', 'reading'] },
+  },
+  'hsk1-l5': {
+    grammarPoints: [{
+      title: '想 + động từ',
+      pattern: '主语 + 想 + V + tân ngữ',
+      explanationVi: '想 + động từ diễn đạt mong muốn hoặc dự định đơn giản.',
+      examples: [
+        { chinese: '我想喝水。', pinyin: 'Wǒ xiǎng hē shuǐ.', translationVi: 'Tôi muốn uống nước.' },
+        { chinese: '你想吃什么？', pinyin: 'Nǐ xiǎng chī shénme?', translationVi: 'Bạn muốn ăn gì?' },
+      ],
+    }],
+    examFocus: { tasks: ['Gọi món và hỏi nhu cầu', 'Nghe lựa chọn đồ ăn/uống'], skills: ['listening', 'speaking'] },
+  },
+  'hsk1-l6': {
+    grammarPoints: [{
+      title: '疑问词 多少',
+      pattern: '多少 + danh từ / 多少 + 钱',
+      explanationVi: '多少 dùng để hỏi số lượng hoặc giá tiền khi con số chưa biết.',
+      examples: [
+        { chinese: '这个多少钱？', pinyin: 'Zhè ge duōshao qián?', translationVi: 'Cái này bao nhiêu tiền?' },
+        { chinese: '你有多少钱？', pinyin: 'Nǐ yǒu duōshao qián?', translationVi: 'Bạn có bao nhiêu tiền?' },
+      ],
+    }],
+    examFocus: { tasks: ['Hỏi và hiểu giá cả', 'Đọc thông tin số lượng đơn giản'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  'hsk1-l7': {
+    grammarPoints: [{
+      title: 'Thời gian + chủ ngữ + động từ',
+      pattern: '时间 + 主语 + V + O',
+      explanationVi: 'Đưa mốc thời gian lên đầu câu giúp diễn đạt lịch sinh hoạt rõ ràng.',
+      examples: [
+        { chinese: '早上我学习中文。', pinyin: 'Zǎoshang wǒ xuéxí Zhōngwén.', translationVi: 'Buổi sáng tôi học tiếng Trung.' },
+        { chinese: '下午我去工作。', pinyin: 'Xiàwǔ wǒ qù gōngzuò.', translationVi: 'Buổi chiều tôi đi làm.' },
+      ],
+    }],
+    examFocus: { tasks: ['Sắp xếp hoạt động theo thời gian', 'Nghe và chọn hoạt động đúng'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  'hsk1-l8': {
+    grammarPoints: [{
+      title: 'Câu hỏi với 几',
+      pattern: '几点 / 星期几 / 几 + lượng từ + danh từ',
+      explanationVi: '几 dùng để hỏi số lượng nhỏ hoặc thông tin thời gian như mấy giờ, thứ mấy.',
+      examples: [
+        { chinese: '现在几点？', pinyin: 'Xiànzài jǐ diǎn?', translationVi: 'Bây giờ là mấy giờ?' },
+        { chinese: '今天星期几？', pinyin: 'Jīntiān xīngqī jǐ?', translationVi: 'Hôm nay là thứ mấy?' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe và nhận diện giờ/ngày', 'Đọc lịch và thông tin thời gian'], skills: ['listening', 'reading', 'writing'] },
+  },
+  'hsk1-l9': {
+    grammarPoints: [{
+      title: '在 + địa điểm',
+      pattern: '主语 + 在 + địa điểm',
+      explanationVi: '在 đứng trước địa điểm để nói ai đang ở đâu.',
+      examples: [
+        { chinese: '我在学校。', pinyin: 'Wǒ zài xuéxiào.', translationVi: 'Tôi ở trường.' },
+        { chinese: '他在医院。', pinyin: 'Tā zài yīyuàn.', translationVi: 'Anh ấy ở bệnh viện.' },
+      ],
+    }],
+    examFocus: { tasks: ['Xác định địa điểm', 'Hỏi và trả lời vị trí'], skills: ['listening', 'speaking', 'reading'] },
+  },
+  'hsk1-l10': {
+    grammarPoints: [{
+      title: '喜欢 + danh từ/động từ',
+      pattern: '主语 + 喜欢 + N / V',
+      explanationVi: '喜欢 có thể đi với danh từ hoặc hoạt động để nói về sở thích.',
+      examples: [
+        { chinese: '我喜欢音乐。', pinyin: 'Wǒ xǐhuan yīnyuè.', translationVi: 'Tôi thích âm nhạc.' },
+        { chinese: '我喜欢看电影。', pinyin: 'Wǒ xǐhuan kàn diànyǐng.', translationVi: 'Tôi thích xem phim.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nói về sở thích', 'Nghe và xác định hoạt động yêu thích'], skills: ['listening', 'speaking'] },
+  },
+};
+
+for (const lesson of HSK1_LESSONS) {
+  const enrichment = HSK1_LESSON_ENRICHMENT[lesson.id];
+  if (enrichment) {
+    lesson.grammarPoints = enrichment.grammarPoints;
+    lesson.examFocus = enrichment.examFocus;
+  }
+}
+
 // Curated vocabulary bank for flashcards & spaced repetition
 export const INITIAL_FLASHCARDS: VocabularyItem[] = [
   ...HSK1_LESSONS.flatMap((l) => l.vocabulary).map((v, i) => ({
