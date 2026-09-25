@@ -79,6 +79,20 @@ export interface Lesson {
   vocabulary: VocabularyItem[];
   dialogue: DialogueExchange[];
   quiz: QuizQuestion[];
+  grammarPoints?: Array<{
+    title: string;
+    pattern: string;
+    explanationVi: string;
+    examples: Array<{
+      chinese: string;
+      pinyin: string;
+      translationVi: string;
+    }>;
+  }>;
+  examFocus?: {
+    tasks: string[];
+    skills: Array<'listening' | 'speaking' | 'reading' | 'writing'>;
+  };
   isCompleted?: boolean;
   progressPercent?: number;
 }
