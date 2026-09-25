@@ -245,4 +245,4 @@ export interface Database {
         Returns: unknown;
       };
     };
-}
+};
