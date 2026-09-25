@@ -225,7 +225,6 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['subscriptions']['Row']>;
       };
     };
-  };
     Functions: {
       complete_lesson: {
         Args: {
