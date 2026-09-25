@@ -208,8 +208,20 @@ export function useLesson(lessonId: string) {
       })
     );
 
-    if (!attempt.passed) {
-      const currentProgress = await repo.getLessonProgress(userId, lessonId);
+    const currentProgress = await repo.getLessonProgress(userId, lessonId);
+    const quizPassed = attempt.score >= lesson.passingScore;
+    const requiredSectionsComplete =
+      lesson.completionRule === 'all_required_and_quiz'
+        ? (currentProgress?.progressPercent ?? 0) >= 100
+        : true;
+    const canCompleteLesson =
+      lesson.completionRule === 'quiz_pass'
+        ? quizPassed
+        : lesson.completionRule === 'all_required_and_quiz'
+          ? quizPassed && requiredSectionsComplete
+          : false;
+
+    if (!canCompleteLesson) {
       const failedAttemptProgress = currentProgress
         ? {
             ...currentProgress,
