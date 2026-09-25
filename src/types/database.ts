@@ -2,7 +2,7 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: {
+        Row: Record<string, unknown> & {
           id: string;
           email: string;
           display_name: string | null;
@@ -24,15 +24,15 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['profiles']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['profiles']['Row']> & {
           id: string;
           email: string;
         };
-        Update: Partial<Database['public']['Tables']['profiles']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['profiles']['Row']>;
         Relationships: [];
       };
       conversation_sessions: {
-        Row: {
+        Row: Record<string, unknown> & {
           id: string;
           user_id: string;
           title: string;
@@ -44,16 +44,16 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['conversation_sessions']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['conversation_sessions']['Row']> & {
           user_id: string;
           title: string;
           topic: string;
         };
-        Update: Partial<Database['public']['Tables']['conversation_sessions']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['conversation_sessions']['Row']>;
         Relationships: [];
       };
       conversation_messages: {
-        Row: {
+        Row: Record<string, unknown> & {
           id: string;
           session_id: string;
           user_id: string;
@@ -64,7 +64,7 @@ export type Database = {
           analysis: any | null;
           timestamp: string;
         };
-        Insert: {
+        Insert: Record<string, unknown> & {
           id?: string;
           session_id: string;
           user_id: string;
@@ -75,11 +75,11 @@ export type Database = {
           analysis?: any | null;
           timestamp?: string;
         };
-        Update: Partial<Database['public']['Tables']['conversation_messages']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['conversation_messages']['Row']>;
         Relationships: [];
       };
       learning_progress: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           total_study_minutes: number;
           lessons_completed: number;
@@ -91,14 +91,14 @@ export type Database = {
           last_study_date: string | null;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['learning_progress']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['learning_progress']['Row']> & {
           user_id: string;
         };
-        Update: Partial<Database['public']['Tables']['learning_progress']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['learning_progress']['Row']>;
         Relationships: [];
       };
       user_vocabulary: {
-        Row: {
+        Row: Record<string, unknown> & {
           id: string;
           user_id: string;
           hanzi: string;
@@ -111,17 +111,17 @@ export type Database = {
           next_review_at: string | null;
           created_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['user_vocabulary']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['user_vocabulary']['Row']> & {
           user_id: string;
           hanzi: string;
           pinyin: string;
           meaning: string;
         };
-        Update: Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
         Relationships: [];
       };
       user_lesson_progress: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           lesson_id: string;
           level_number: number;
@@ -134,17 +134,17 @@ export type Database = {
           completed_at: string | null;
           last_accessed_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['user_lesson_progress']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['user_lesson_progress']['Row']> & {
           user_id: string;
           lesson_id: string;
           level_number: number;
           status: string;
         };
-        Update: Partial<Database['public']['Tables']['user_lesson_progress']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['user_lesson_progress']['Row']>;
         Relationships: [];
       };
       quiz_attempts: {
-        Row: {
+        Row: Record<string, unknown> & {
           id: string;
           user_id: string;
           lesson_id: string;
@@ -158,16 +158,16 @@ export type Database = {
           started_at: string;
           completed_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['quiz_attempts']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['quiz_attempts']['Row']> & {
           id: string;
           user_id: string;
           lesson_id: string;
         };
-        Update: Partial<Database['public']['Tables']['quiz_attempts']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['quiz_attempts']['Row']>;
         Relationships: [];
       };
       user_vocabulary_progress: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           vocabulary_id: string;
           status: string;
@@ -179,15 +179,15 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']> & {
           user_id: string;
           vocabulary_id: string;
         };
-        Update: Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['user_vocabulary_progress']['Row']>;
         Relationships: [];
       };
       user_grammar_progress: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           grammar_point_id: string;
           exposure_count: number;
@@ -196,15 +196,15 @@ export type Database = {
           mastery_score: number;
           last_practiced_at: string | null;
         };
-        Insert: Partial<Database['public']['Tables']['user_grammar_progress']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['user_grammar_progress']['Row']> & {
           user_id: string;
           grammar_point_id: string;
         };
-        Update: Partial<Database['public']['Tables']['user_grammar_progress']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['user_grammar_progress']['Row']>;
         Relationships: [];
       };
       user_skill_progress: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           skill: string;
           level: number;
@@ -212,16 +212,16 @@ export type Database = {
           completed_activities: number;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['user_skill_progress']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['user_skill_progress']['Row']> & {
           user_id: string;
           skill: string;
           level: number;
         };
-        Update: Partial<Database['public']['Tables']['user_skill_progress']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['user_skill_progress']['Row']>;
         Relationships: [];
       };
       subscriptions: {
-        Row: {
+        Row: Record<string, unknown> & {
           user_id: string;
           plan: string;
           status: string;
@@ -229,10 +229,10 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['subscriptions']['Row']> & {
+        Insert: Record<string, unknown> & Partial<Database['public']['Tables']['subscriptions']['Row']> & {
           user_id: string;
         };
-        Update: Partial<Database['public']['Tables']['subscriptions']['Row']>;
+        Update: Record<string, unknown> & Partial<Database['public']['Tables']['subscriptions']['Row']>;
         Relationships: [];
       };
     };
