@@ -163,11 +163,13 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async updateMemory(sessionId: string, memory: Partial<ConversationMemory>): Promise<void> {
     if (!supabase) return;
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (memory.summary !== undefined) updates.summary = memory.summary;
     if (memory.keyFacts !== undefined) updates.key_facts = memory.keyFacts;
     if (memory.vocabulary !== undefined) updates.vocabulary = memory.vocabulary;
-    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (error) throw new Error(`Không thể cập nhật bộ nhớ hội thoại: ${formatSupabaseError(error)}`);
   }
 
