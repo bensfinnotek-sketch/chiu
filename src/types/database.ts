@@ -115,6 +115,50 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['user_vocabulary']['Row']>;
       };
+      user_lesson_progress: {
+        Row: {
+          user_id: string;
+          lesson_id: string;
+          level_number: number;
+          status: string;
+          progress_percent: number;
+          current_section_id: string | null;
+          score: number | null;
+          attempts: number;
+          started_at: string | null;
+          completed_at: string | null;
+          last_accessed_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['user_lesson_progress']['Row']> & {
+          user_id: string;
+          lesson_id: string;
+          level_number: number;
+          status: string;
+        };
+        Update: Partial<Database['public']['Tables']['user_lesson_progress']['Row']>;
+      };
+      quiz_attempts: {
+        Row: {
+          id: string;
+          user_id: string;
+          lesson_id: string;
+          score: number;
+          total_points: number;
+          earned_points: number;
+          correct_answers: number;
+          total_questions: number;
+          passed: boolean;
+          answers: unknown[];
+          started_at: string;
+          completed_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['quiz_attempts']['Row']> & {
+          id: string;
+          user_id: string;
+          lesson_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['quiz_attempts']['Row']>;
+      };
       user_vocabulary_progress: {
         Row: {
           user_id: string;
@@ -182,4 +226,24 @@ export interface Database {
       };
     };
   };
+    Functions: {
+      complete_lesson: {
+        Args: {
+          p_user_id: string;
+          p_lesson_id: string;
+          p_score: number;
+          p_level_number: number;
+        };
+        Returns: unknown;
+      };
+      increment_user_skill_score: {
+        Args: {
+          p_user_id: string;
+          p_skill: string;
+          p_level: number;
+          p_points_delta: number;
+        };
+        Returns: unknown;
+      };
+    };
 }
