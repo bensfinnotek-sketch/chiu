@@ -4,6 +4,7 @@
 import { geminiService } from './geminiService';
 import type { ConversationMemory } from '../ai/memory/conversationMemory';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { PronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 
 
 export interface SpeakingAnalysisInput {
@@ -108,7 +109,7 @@ export const TOPIC_STARTERS: Record<string, Record<string, { chinese: string; pi
       chinese: '去旅行的时候，你更喜欢坐飞机还是坐高铁？为什么？',
       pinyin: 'Qù lǚxíng de shíhou, nǐ gèng xǐhuan zuò fēijī háishì zuò gāotiě? Wèishénme?',
       vi: 'Khi đi du lịch, bạn thích đi máy bay hay đi tàu cao tốc hơn? Vì sao?',
-      en: 'When traveling, do you prefer taking a plane or high-speed rail? Why?',
+      en: 'When traveling, do you prefer taking a plane or high-speed rail?',
     },
   },
   'Work': {
@@ -184,6 +185,25 @@ class GeminiSpeakingService {
       nativeLanguage: input.nativeLanguage,
       difficulty: input.difficulty,
       memory: input.memory,
+    });
+  }
+
+  public async assessPronunciation(params: {
+    spokenText: string;
+    targetText?: string;
+    audio?: Blob | null;
+  }): Promise<PronunciationAssessment> {
+    if (!geminiService.assessPronunciation) {
+      throw new Error('Pronunciation assessment is not available.');
+    }
+
+    return geminiService.assessPronunciation({
+      spokenText: params.spokenText,
+      targetText: params.targetText,
+      language: 'vi',
+      audio: params.audio
+        ? { blob: params.audio, mimeType: params.audio.type || 'audio/webm' }
+        : null,
     });
   }
 }
