@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
@@ -41,6 +41,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isSavingGeneratedVocabulary, setIsSavingGeneratedVocabulary] = useState(false);
   const [generatedVocabularySaved, setGeneratedVocabularySaved] = useState(false);
+  const hskAdvanceInFlightRef = useRef<number | null>(null);
 
   React.useEffect(() => {
     const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
@@ -81,8 +82,13 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
     if (!profile || !completedLevel || !masteryReady || !canAdvance) return;
     if (currentProfileLevel !== selectedLevel) return;
     // Mastery, not lesson completion alone, controls automatic HSK progression.
+    // Guard against duplicate writes when React re-runs effects before the
+    // profile refresh arrives (for example in development Strict Mode).
+    if (hskAdvanceInFlightRef.current === selectedLevel) return;
+    hskAdvanceInFlightRef.current = selectedLevel;
 
     updateProfile({ hskLevel: selectedLevel + 1 }).catch((error) => {
+      hskAdvanceInFlightRef.current = null;
       console.warn('Could not advance HSK profile:', error);
     });
   }, [
