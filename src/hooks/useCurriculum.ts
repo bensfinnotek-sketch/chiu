@@ -157,7 +157,7 @@ export function useLesson(lessonId: string) {
     // sections is the authoritative completion event for this rule.
     if (
       lesson.completionRule === 'all_required_sections' &&
-      normalizedPercent >= 100 &&
+      updated.progressPercent >= 100 &&
       updated.status !== 'completed'
     ) {
       const { progress, isFirstCompletion } = await repo.markLessonCompleted(
@@ -323,7 +323,7 @@ export function useLesson(lessonId: string) {
     const quizPassed = attempt.score >= lesson.passingScore;
     const requiredSectionsComplete =
       lesson.completionRule === 'all_required_and_quiz'
-        ? (await repo.getLessonProgress(userId, lessonId))?.progressPercent === 100
+        ? (await repo.getLessonProgress(userId, lessonId))?.progressPercent >= 100
         : true;
     const canCompleteLesson =
       lesson.completionRule === 'quiz_pass'
