@@ -608,6 +608,376 @@ export const HSK1_LESSONS: Lesson[] = [
 
 
 /**
+ * HSK 2 learning layer.
+ * Focus: everyday communication, short descriptions, simple plans,
+ * comparisons, directions and practical reading/listening tasks.
+ */
+export const HSK2_LESSONS: Lesson[] = [
+  {
+    id: 'hsk2-l1',
+    level: 'HSK 2',
+    lessonNumber: 1,
+    title: 'Daily Schedule',
+    titleVi: 'Lịch sinh hoạt hằng ngày',
+    descriptionVi: 'Mở rộng cách nói về lịch sinh hoạt, thời điểm và tần suất trong ngày.',
+    icon: 'CalendarDays',
+    durationMinutes: 18,
+    objectivesVi: ['Nói được lịch sinh hoạt cơ bản', 'Dùng thường xuyên với 常常 và 每天', 'Hỏi và trả lời về thời gian biểu'],
+    vocabulary: [
+      { id: 'h2v1-1', hanzi: '每天', pinyin: 'měitiān', meaningVi: 'mỗi ngày', meaningEn: 'every day', partOfSpeech: 'Trạng từ', hskLevel: 'HSK 2', exampleChinese: '我每天学习中文。', examplePinyin: 'Wǒ měitiān xuéxí Zhōngwén.', exampleVi: 'Mỗi ngày tôi học tiếng Trung.', exampleEn: 'I study Chinese every day.' },
+      { id: 'h2v1-2', hanzi: '常常', pinyin: 'chángcháng', meaningVi: 'thường xuyên', meaningEn: 'often', partOfSpeech: 'Trạng từ', hskLevel: 'HSK 2', exampleChinese: '我常常坐公交车。', examplePinyin: 'Wǒ chángcháng zuò gōngjiāochē.', exampleVi: 'Tôi thường đi xe buýt.', exampleEn: 'I often take the bus.' },
+      { id: 'h2v1-3', hanzi: '开始', pinyin: 'kāishǐ', meaningVi: 'bắt đầu', meaningEn: 'to start', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '八点开始上课。', examplePinyin: 'Bā diǎn kāishǐ shàngkè.', exampleVi: 'Tám giờ bắt đầu học.', exampleEn: 'Class starts at eight.' },
+      { id: 'h2v1-4', hanzi: '结束', pinyin: 'jiéshù', meaningVi: 'kết thúc', meaningEn: 'to finish', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '五点结束工作。', examplePinyin: 'Wǔ diǎn jiéshù gōngzuò.', exampleVi: 'Năm giờ kết thúc công việc.', exampleEn: 'Work ends at five.' },
+      { id: 'h2v1-5', hanzi: '以前', pinyin: 'yǐqián', meaningVi: 'trước đây, trước', meaningEn: 'before, previously', partOfSpeech: 'Danh từ/Phó từ', hskLevel: 'HSK 2', exampleChinese: '我以前住在北京。', examplePinyin: 'Wǒ yǐqián zhù zài Běijīng.', exampleVi: 'Trước đây tôi sống ở Bắc Kinh.', exampleEn: 'I used to live in Beijing.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你每天几点开始学习？', pinyin: 'Nǐ měitiān jǐ diǎn kāishǐ xuéxí?', vi: 'Mỗi ngày bạn bắt đầu học lúc mấy giờ?', en: 'What time do you start studying every day?' },
+      { speaker: 'user', chinese: '我八点开始学习，十点结束。', pinyin: 'Wǒ bā diǎn kāishǐ xuéxí, shí diǎn jiéshù.', vi: 'Tôi bắt đầu học lúc tám giờ và kết thúc lúc mười giờ.', en: 'I start studying at eight and finish at ten.' },
+    ],
+    quiz: [
+      { id: 'h2q1-1', question: '"每天" có nghĩa là gì?', options: ['Mỗi ngày', 'Ngày hôm qua', 'Tuần sau', 'Trước đây'], correctIndex: 0, explanation: '"每天" nghĩa là mỗi ngày.' },
+      { id: 'h2q1-2', question: 'Từ nào trái nghĩa gần nhất với "开始"?', options: ['结束', '学习', '以前', '常常'], correctIndex: 0, explanation: '"开始" là bắt đầu, còn "结束" là kết thúc.' },
+    ],
+    grammarPoints: [{
+      title: 'Thời gian + chủ ngữ + động từ',
+      pattern: '时间 + 主语 + V',
+      explanationVi: 'Đưa mốc thời gian lên đầu câu để mô tả lịch sinh hoạt rõ ràng hơn.',
+      examples: [
+        { chinese: '每天早上我学习中文。', pinyin: 'Měitiān zǎoshang wǒ xuéxí Zhōngwén.', translationVi: 'Mỗi sáng tôi học tiếng Trung.' },
+        { chinese: '晚上我常常看书。', pinyin: 'Wǎnshang wǒ chángcháng kàn shū.', translationVi: 'Buổi tối tôi thường đọc sách.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe thời gian biểu ngắn', 'Đọc và sắp xếp hoạt động theo thời gian'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l2',
+    level: 'HSK 2',
+    lessonNumber: 2,
+    title: 'Weather',
+    titleVi: 'Thời tiết',
+    descriptionVi: 'Mô tả thời tiết và nói về hoạt động phù hợp với thời tiết.',
+    icon: 'CloudSun',
+    durationMinutes: 18,
+    objectivesVi: ['Hỏi và trả lời thời tiết', 'Dùng 有点儿 để mô tả mức độ nhẹ', 'Kết hợp thời tiết với kế hoạch'],
+    vocabulary: [
+      { id: 'h2v2-1', hanzi: '天气', pinyin: 'tiānqì', meaningVi: 'thời tiết', meaningEn: 'weather', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '今天天气很好。', examplePinyin: 'Jīntiān tiānqì hěn hǎo.', exampleVi: 'Hôm nay thời tiết rất đẹp.', exampleEn: 'The weather is nice today.' },
+      { id: 'h2v2-2', hanzi: '晴', pinyin: 'qíng', meaningVi: 'trời quang, nắng', meaningEn: 'sunny, clear', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '今天是晴天。', examplePinyin: 'Jīntiān shì qíngtiān.', exampleVi: 'Hôm nay trời nắng.', exampleEn: 'Today is sunny.' },
+      { id: 'h2v2-3', hanzi: '阴', pinyin: 'yīn', meaningVi: 'nhiều mây, âm u', meaningEn: 'cloudy', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '今天有点儿阴。', examplePinyin: 'Jīntiān yǒudiǎnr yīn.', exampleVi: 'Hôm nay hơi âm u.', exampleEn: 'It is a little cloudy today.' },
+      { id: 'h2v2-4', hanzi: '下雨', pinyin: 'xiàyǔ', meaningVi: 'mưa', meaningEn: 'to rain', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '明天下雨吗？', examplePinyin: 'Míngtiān xiàyǔ ma?', exampleVi: 'Ngày mai có mưa không?', exampleEn: 'Will it rain tomorrow?' },
+      { id: 'h2v2-5', hanzi: '冷', pinyin: 'lěng', meaningVi: 'lạnh', meaningEn: 'cold', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '今天很冷。', examplePinyin: 'Jīntiān hěn lěng.', exampleVi: 'Hôm nay rất lạnh.', exampleEn: 'It is very cold today.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '今天的天气怎么样？', pinyin: 'Jīntiān de tiānqì zěnmeyàng?', vi: 'Thời tiết hôm nay thế nào?', en: 'How is the weather today?' },
+      { speaker: 'user', chinese: '有点儿冷，但是没有下雨。', pinyin: 'Yǒudiǎnr lěng, dànshì méiyǒu xiàyǔ.', vi: 'Hơi lạnh nhưng không mưa.', en: 'It is a little cold, but it is not raining.' },
+    ],
+    quiz: [
+      { id: 'h2q2-1', question: '"下雨" nghĩa là gì?', options: ['Có tuyết', 'Có mưa', 'Có nắng', 'Có gió'], correctIndex: 1, explanation: '"下雨" nghĩa là trời mưa.' },
+      { id: 'h2q2-2', question: 'Câu nào phù hợp để nói "Hôm nay hơi lạnh"?', options: ['今天很热。', '今天有点儿冷。', '今天是晴天。', '今天不下雨。'], correctIndex: 1, explanation: '"有点儿 + tính từ" diễn tả mức độ hơi/khá nhẹ.' },
+    ],
+    grammarPoints: [{
+      title: '有点儿 + tính từ',
+      pattern: '主语 + 有点儿 + 形容词',
+      explanationVi: '有点儿 diễn tả mức độ hơi hoặc có chút, thường dùng khi mô tả trạng thái chưa thật dễ chịu.',
+      examples: [
+        { chinese: '今天有点儿冷。', pinyin: 'Jīntiān yǒudiǎnr lěng.', translationVi: 'Hôm nay hơi lạnh.' },
+        { chinese: '这个菜有点儿辣。', pinyin: 'Zhège cài yǒudiǎnr là.', translationVi: 'Món này hơi cay.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe dự báo thời tiết đơn giản', 'Đọc mô tả thời tiết và chọn hoạt động phù hợp'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l3',
+    level: 'HSK 2',
+    lessonNumber: 3,
+    title: 'Getting Around',
+    titleVi: 'Đi lại & phương tiện',
+    descriptionVi: 'Nói về cách di chuyển, thời gian đi lại và phương tiện quen thuộc.',
+    icon: 'Bus',
+    durationMinutes: 18,
+    objectivesVi: ['Nói mình đi bằng phương tiện nào', 'Hỏi cách đến một địa điểm', 'Hiểu câu trả lời ngắn về đường đi'],
+    vocabulary: [
+      { id: 'h2v3-1', hanzi: '公交车', pinyin: 'gōngjiāochē', meaningVi: 'xe buýt', meaningEn: 'bus', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '我坐公交车上班。', examplePinyin: 'Wǒ zuò gōngjiāochē shàngbān.', exampleVi: 'Tôi đi xe buýt đi làm.', exampleEn: 'I take the bus to work.' },
+      { id: 'h2v3-2', hanzi: '地铁', pinyin: 'dìtiě', meaningVi: 'tàu điện ngầm', meaningEn: 'subway', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '坐地铁很方便。', examplePinyin: 'Zuò dìtiě hěn fāngbiàn.', exampleVi: 'Đi tàu điện ngầm rất tiện.', exampleEn: 'Taking the subway is convenient.' },
+      { id: 'h2v3-3', hanzi: '一起', pinyin: 'yìqǐ', meaningVi: 'cùng nhau', meaningEn: 'together', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '我们一起去吧。', examplePinyin: 'Wǒmen yìqǐ qù ba.', exampleVi: 'Chúng ta cùng đi nhé.', exampleEn: 'Let’s go together.' },
+      { id: 'h2v3-4', hanzi: '方便', pinyin: 'fāngbiàn', meaningVi: 'tiện, thuận tiện', meaningEn: 'convenient', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '这里坐地铁很方便。', examplePinyin: 'Zhèlǐ zuò dìtiě hěn fāngbiàn.', exampleVi: 'Ở đây đi tàu điện ngầm rất tiện.', exampleEn: 'Taking the subway here is convenient.' },
+      { id: 'h2v3-5', hanzi: '分钟', pinyin: 'fēnzhōng', meaningVi: 'phút', meaningEn: 'minute', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '十分钟就到了。', examplePinyin: 'Shí fēnzhōng jiù dào le.', exampleVi: 'Mười phút là tới rồi.', exampleEn: 'It takes ten minutes to arrive.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你怎么去学校？', pinyin: 'Nǐ zěnme qù xuéxiào?', vi: 'Bạn đi đến trường bằng cách nào?', en: 'How do you get to school?' },
+      { speaker: 'user', chinese: '我坐地铁去，大概二十分钟。', pinyin: 'Wǒ zuò dìtiě qù, dàgài èrshí fēnzhōng.', vi: 'Tôi đi tàu điện ngầm, khoảng hai mươi phút.', en: 'I take the subway; it takes about twenty minutes.' },
+    ],
+    quiz: [
+      { id: 'h2q3-1', question: '"地铁" là phương tiện nào?', options: ['Xe buýt', 'Tàu điện ngầm', 'Xe đạp', 'Máy bay'], correctIndex: 1, explanation: '"地铁" là tàu điện ngầm.' },
+      { id: 'h2q3-2', question: 'Từ nào chỉ khoảng thời gian?', options: ['一起', '方便', '分钟', '地铁'], correctIndex: 2, explanation: '"分钟" là phút, dùng để nói khoảng thời gian.' },
+    ],
+    grammarPoints: [{
+      title: '怎么 + động từ',
+      pattern: '主语 + 怎么 + V + địa điểm',
+      explanationVi: '怎么 dùng để hỏi cách thức hoặc phương tiện thực hiện một hành động.',
+      examples: [
+        { chinese: '你怎么去公司？', pinyin: 'Nǐ zěnme qù gōngsī?', translationVi: 'Bạn đi đến công ty bằng cách nào?' },
+        { chinese: '我们怎么回家？', pinyin: 'Wǒmen zěnme huí jiā?', translationVi: 'Chúng ta về nhà bằng cách nào?' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe thông tin về phương tiện', 'Đọc thời gian di chuyển và chọn đáp án'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l4',
+    level: 'HSK 2',
+    lessonNumber: 4,
+    title: 'Directions',
+    titleVi: 'Hỏi đường & vị trí',
+    descriptionVi: 'Mô tả vị trí bằng các từ chỉ phương hướng và khoảng cách đơn giản.',
+    icon: 'Map',
+    durationMinutes: 18,
+    objectivesVi: ['Dùng 前面, 后面, 旁边 để mô tả vị trí', 'Hỏi một địa điểm ở đâu', 'Hiểu chỉ dẫn ngắn'],
+    vocabulary: [
+      { id: 'h2v4-1', hanzi: '前面', pinyin: 'qiánmiàn', meaningVi: 'phía trước', meaningEn: 'in front', partOfSpeech: 'Danh từ phương vị', hskLevel: 'HSK 2', exampleChinese: '学校在银行前面。', examplePinyin: 'Xuéxiào zài yínháng qiánmiàn.', exampleVi: 'Trường học ở phía trước ngân hàng.', exampleEn: 'The school is in front of the bank.' },
+      { id: 'h2v4-2', hanzi: '后面', pinyin: 'hòumiàn', meaningVi: 'phía sau', meaningEn: 'behind', partOfSpeech: 'Danh từ phương vị', hskLevel: 'HSK 2', exampleChinese: '医院在商店后面。', examplePinyin: 'Yīyuàn zài shāngdiàn hòumiàn.', exampleVi: 'Bệnh viện ở phía sau cửa hàng.', exampleEn: 'The hospital is behind the shop.' },
+      { id: 'h2v4-3', hanzi: '旁边', pinyin: 'pángbiān', meaningVi: 'bên cạnh', meaningEn: 'beside', partOfSpeech: 'Danh từ phương vị', hskLevel: 'HSK 2', exampleChinese: '银行在学校旁边。', examplePinyin: 'Yínháng zài xuéxiào pángbiān.', exampleVi: 'Ngân hàng ở cạnh trường học.', exampleEn: 'The bank is beside the school.' },
+      { id: 'h2v4-4', hanzi: '离', pinyin: 'lí', meaningVi: 'cách, cách xa', meaningEn: 'to be away from', partOfSpeech: 'Giới từ', hskLevel: 'HSK 2', exampleChinese: '车站离这里很近。', examplePinyin: 'Chēzhàn lí zhèlǐ hěn jìn.', exampleVi: 'Nhà ga cách đây rất gần.', exampleEn: 'The station is close to here.' },
+      { id: 'h2v4-5', hanzi: '近', pinyin: 'jìn', meaningVi: 'gần', meaningEn: 'near', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '学校离我家很近。', examplePinyin: 'Xuéxiào lí wǒ jiā hěn jìn.', exampleVi: 'Trường học rất gần nhà tôi.', exampleEn: 'The school is close to my home.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '请问，地铁站在哪儿？', pinyin: 'Qǐngwèn, dìtiě zhàn zài nǎr?', vi: 'Xin hỏi, ga tàu điện ngầm ở đâu?', en: 'Excuse me, where is the subway station?' },
+      { speaker: 'user', chinese: '在银行旁边，离这里很近。', pinyin: 'Zài yínháng pángbiān, lí zhèlǐ hěn jìn.', vi: 'Ở cạnh ngân hàng, rất gần đây.', en: 'It is beside the bank, very close to here.' },
+    ],
+    quiz: [
+      { id: 'h2q4-1', question: '"旁边" nghĩa là gì?', options: ['Phía trước', 'Phía sau', 'Bên cạnh', 'Bên trong'], correctIndex: 2, explanation: '"旁边" nghĩa là bên cạnh.' },
+      { id: 'h2q4-2', question: 'Cấu trúc nào dùng để nói khoảng cách?', options: ['离 + địa điểm + tính từ', '喜欢 + danh từ', '想 + động từ', '是 + danh từ'], correctIndex: 0, explanation: '离 + địa điểm + tính từ như 离这里很近 dùng để nói khoảng cách.' },
+    ],
+    grammarPoints: [{
+      title: '离 + địa điểm + tính từ',
+      pattern: 'A + 离 + B + 很近/很远',
+      explanationVi: '离 dùng để diễn tả khoảng cách giữa hai địa điểm hoặc người/vật.',
+      examples: [
+        { chinese: '我家离学校很近。', pinyin: 'Wǒ jiā lí xuéxiào hěn jìn.', translationVi: 'Nhà tôi rất gần trường.' },
+        { chinese: '机场离市中心很远。', pinyin: 'Jīchǎng lí shì zhōngxīn hěn yuǎn.', translationVi: 'Sân bay cách trung tâm thành phố khá xa.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe chỉ dẫn vị trí', 'Đọc sơ đồ đơn giản và xác định địa điểm'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l5',
+    level: 'HSK 2',
+    lessonNumber: 5,
+    title: 'Shopping',
+    titleVi: 'Mua sắm & quần áo',
+    descriptionVi: 'Hỏi giá, kích cỡ và đưa ra lựa chọn khi mua sắm.',
+    icon: 'ShoppingBag',
+    durationMinutes: 20,
+    objectivesVi: ['Hỏi giá và kích cỡ', 'Dùng 太…了 để nhận xét', 'So sánh hai món đồ đơn giản'],
+    vocabulary: [
+      { id: 'h2v5-1', hanzi: '衣服', pinyin: 'yīfu', meaningVi: 'quần áo', meaningEn: 'clothes', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '这件衣服很好看。', examplePinyin: 'Zhè jiàn yīfu hěn hǎokàn.', exampleVi: 'Bộ quần áo này rất đẹp.', exampleEn: 'These clothes look nice.' },
+      { id: 'h2v5-2', hanzi: '便宜', pinyin: 'piányi', meaningVi: 'rẻ', meaningEn: 'cheap', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '这个比较便宜。', examplePinyin: 'Zhège bǐjiào piányi.', exampleVi: 'Cái này rẻ hơn.', exampleEn: 'This one is cheaper.' },
+      { id: 'h2v5-3', hanzi: '贵', pinyin: 'guì', meaningVi: 'đắt', meaningEn: 'expensive', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '那件太贵了。', examplePinyin: 'Nà jiàn tài guì le.', exampleVi: 'Cái kia đắt quá.', exampleEn: 'That one is too expensive.' },
+      { id: 'h2v5-4', hanzi: '件', pinyin: 'jiàn', meaningVi: 'lượng từ cho quần áo/sự việc', meaningEn: 'measure word for clothes', partOfSpeech: 'Lượng từ', hskLevel: 'HSK 2', exampleChinese: '一件衣服。', examplePinyin: 'Yí jiàn yīfu.', exampleVi: 'Một bộ quần áo.', exampleEn: 'One piece of clothing.' },
+      { id: 'h2v5-5', hanzi: '颜色', pinyin: 'yánsè', meaningVi: 'màu sắc', meaningEn: 'color', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '你喜欢什么颜色？', examplePinyin: 'Nǐ xǐhuan shénme yánsè?', exampleVi: 'Bạn thích màu gì?', exampleEn: 'What color do you like?' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你喜欢哪件衣服？', pinyin: 'Nǐ xǐhuan nǎ jiàn yīfu?', vi: 'Bạn thích bộ quần áo nào?', en: 'Which piece of clothing do you like?' },
+      { speaker: 'user', chinese: '我喜欢这件，但是那件太贵了。', pinyin: 'Wǒ xǐhuan zhè jiàn, dànshì nà jiàn tài guì le.', vi: 'Tôi thích cái này, nhưng cái kia đắt quá.', en: 'I like this one, but that one is too expensive.' },
+    ],
+    quiz: [
+      { id: 'h2q5-1', question: 'Từ nào nghĩa là "rẻ"?', options: ['贵', '便宜', '漂亮', '颜色'], correctIndex: 1, explanation: '"便宜" nghĩa là rẻ.' },
+      { id: 'h2q5-2', question: '"太贵了" diễn tả điều gì?', options: ['Quá rẻ', 'Quá đẹp', 'Quá đắt', 'Quá nhỏ'], correctIndex: 2, explanation: '"太 + tính từ + 了" diễn tả mức độ quá…' },
+    ],
+    grammarPoints: [{
+      title: '太 + tính từ + 了',
+      pattern: '太 + 形容词 + 了',
+      explanationVi: 'Cấu trúc này nhấn mạnh mức độ cao, thường mang sắc thái “quá… rồi”.',
+      examples: [
+        { chinese: '这件衣服太贵了。', pinyin: 'Zhè jiàn yīfu tài guì le.', translationVi: 'Bộ quần áo này đắt quá.' },
+        { chinese: '今天太热了。', pinyin: 'Jīntiān tài rè le.', translationVi: 'Hôm nay nóng quá.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe hội thoại mua sắm', 'Đọc giá và lựa chọn sản phẩm'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l6',
+    level: 'HSK 2',
+    lessonNumber: 6,
+    title: 'Health',
+    titleVi: 'Sức khỏe & thói quen',
+    descriptionVi: 'Nói về tình trạng sức khỏe và đưa ra lời khuyên đơn giản.',
+    icon: 'HeartPulse',
+    durationMinutes: 20,
+    objectivesVi: ['Mô tả triệu chứng đơn giản', 'Dùng 应该 để đưa lời khuyên', 'Hiểu chỉ dẫn sức khỏe ngắn'],
+    vocabulary: [
+      { id: 'h2v6-1', hanzi: '身体', pinyin: 'shēntǐ', meaningVi: 'cơ thể, sức khỏe', meaningEn: 'body, health', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '身体很重要。', examplePinyin: 'Shēntǐ hěn zhòngyào.', exampleVi: 'Sức khỏe rất quan trọng.', exampleEn: 'Health is important.' },
+      { id: 'h2v6-2', hanzi: '生病', pinyin: 'shēngbìng', meaningVi: 'bị ốm, mắc bệnh', meaningEn: 'to get sick', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '他昨天生病了。', examplePinyin: 'Tā zuótiān shēngbìng le.', exampleVi: 'Hôm qua anh ấy bị ốm.', exampleEn: 'He got sick yesterday.' },
+      { id: 'h2v6-3', hanzi: '休息', pinyin: 'xiūxi', meaningVi: 'nghỉ ngơi', meaningEn: 'to rest', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '你应该多休息。', examplePinyin: 'Nǐ yīnggāi duō xiūxi.', exampleVi: 'Bạn nên nghỉ ngơi nhiều hơn.', exampleEn: 'You should rest more.' },
+      { id: 'h2v6-4', hanzi: '药', pinyin: 'yào', meaningVi: 'thuốc', meaningEn: 'medicine', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '吃药以后要休息。', examplePinyin: 'Chī yào yǐhòu yào xiūxi.', exampleVi: 'Sau khi uống thuốc cần nghỉ ngơi.', exampleEn: 'Rest after taking medicine.' },
+      { id: 'h2v6-5', hanzi: '重要', pinyin: 'zhòngyào', meaningVi: 'quan trọng', meaningEn: 'important', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '睡觉很重要。', examplePinyin: 'Shuìjiào hěn zhòngyào.', exampleVi: 'Ngủ rất quan trọng.', exampleEn: 'Sleep is important.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你今天怎么了？', pinyin: 'Nǐ jīntiān zěnme le?', vi: 'Hôm nay bạn sao vậy?', en: 'What is wrong today?' },
+      { speaker: 'user', chinese: '我有点儿不舒服，想早点儿休息。', pinyin: 'Wǒ yǒudiǎnr bù shūfu, xiǎng zǎodiǎnr xiūxi.', vi: 'Tôi hơi không khỏe, muốn nghỉ sớm một chút.', en: 'I feel a little unwell and want to rest early.' },
+    ],
+    quiz: [
+      { id: 'h2q6-1', question: '"休息" nghĩa là gì?', options: ['Nghỉ ngơi', 'Đi làm', 'Mua sắm', 'Đi du lịch'], correctIndex: 0, explanation: '"休息" nghĩa là nghỉ ngơi.' },
+      { id: 'h2q6-2', question: 'Câu nào là lời khuyên?', options: ['我生病了。', '你应该休息。', '我有药。', '身体很重要。'], correctIndex: 1, explanation: '"应该" thường dùng để đưa ra lời khuyên hoặc điều nên làm.' },
+    ],
+    grammarPoints: [{
+      title: '应该 + động từ',
+      pattern: '主语 + 应该 + V',
+      explanationVi: '应该 diễn tả điều nên làm hoặc lời khuyên đơn giản.',
+      examples: [
+        { chinese: '你应该多喝水。', pinyin: 'Nǐ yīnggāi duō hē shuǐ.', translationVi: 'Bạn nên uống nhiều nước.' },
+        { chinese: '我们应该早点儿睡觉。', pinyin: 'Wǒmen yīnggāi zǎodiǎnr shuìjiào.', translationVi: 'Chúng ta nên ngủ sớm hơn.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe mô tả tình trạng sức khỏe', 'Đọc lời khuyên và chọn hành động phù hợp'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l7',
+    level: 'HSK 2',
+    lessonNumber: 7,
+    title: 'Weekend Plans',
+    titleVi: 'Kế hoạch cuối tuần',
+    descriptionVi: 'Nói về dự định, lời mời và kế hoạch trong tương lai gần.',
+    icon: 'Plane',
+    durationMinutes: 20,
+    objectivesVi: ['Nói về dự định với 打算', 'Mời và phản hồi lời mời', 'Nói thời gian và địa điểm của kế hoạch'],
+    vocabulary: [
+      { id: 'h2v7-1', hanzi: '打算', pinyin: 'dǎsuàn', meaningVi: 'dự định, dự tính', meaningEn: 'plan, intend', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '周末你打算做什么？', examplePinyin: 'Zhōumò nǐ dǎsuàn zuò shénme?', exampleVi: 'Cuối tuần bạn dự định làm gì?', exampleEn: 'What do you plan to do this weekend?' },
+      { id: 'h2v7-2', hanzi: '周末', pinyin: 'zhōumò', meaningVi: 'cuối tuần', meaningEn: 'weekend', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '周末我想去公园。', examplePinyin: 'Zhōumò wǒ xiǎng qù gōngyuán.', exampleVi: 'Cuối tuần tôi muốn đi công viên.', exampleEn: 'I want to go to the park on the weekend.' },
+      { id: 'h2v7-3', hanzi: '准备', pinyin: 'zhǔnbèi', meaningVi: 'chuẩn bị', meaningEn: 'to prepare', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '我正在准备考试。', examplePinyin: 'Wǒ zhèngzài zhǔnbèi kǎoshì.', exampleVi: 'Tôi đang chuẩn bị cho kỳ thi.', exampleEn: 'I am preparing for an exam.' },
+      { id: 'h2v7-4', hanzi: '希望', pinyin: 'xīwàng', meaningVi: 'hy vọng, mong muốn', meaningEn: 'to hope', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '我希望明天天气好。', examplePinyin: 'Wǒ xīwàng míngtiān tiānqì hǎo.', exampleVi: 'Tôi hy vọng ngày mai thời tiết đẹp.', exampleEn: 'I hope the weather is good tomorrow.' },
+      { id: 'h2v7-5', hanzi: '一起', pinyin: 'yìqǐ', meaningVi: 'cùng nhau', meaningEn: 'together', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '我们一起吃饭吧。', examplePinyin: 'Wǒmen yìqǐ chīfàn ba.', exampleVi: 'Chúng ta cùng ăn nhé.', exampleEn: 'Let’s eat together.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '周末你打算做什么？', pinyin: 'Zhōumò nǐ dǎsuàn zuò shénme?', vi: 'Cuối tuần bạn dự định làm gì?', en: 'What do you plan to do this weekend?' },
+      { speaker: 'user', chinese: '我打算去公园，你要一起去吗？', pinyin: 'Wǒ dǎsuàn qù gōngyuán, nǐ yào yìqǐ qù ma?', vi: 'Tôi định đi công viên, bạn đi cùng không?', en: 'I plan to go to the park. Do you want to come with me?' },
+    ],
+    quiz: [
+      { id: 'h2q7-1', question: '"打算" dùng để nói về điều gì?', options: ['Kế hoạch/dự định', 'Quá khứ', 'Màu sắc', 'Địa điểm'], correctIndex: 0, explanation: '"打算" nghĩa là dự định hoặc kế hoạch.' },
+      { id: 'h2q7-2', question: 'Câu nào là lời mời?', options: ['我准备考试。', '我希望天气好。', '你要一起去吗？', '周末我在家。'], correctIndex: 2, explanation: '"你要一起去吗？" là lời mời người nghe đi cùng.' },
+    ],
+    grammarPoints: [{
+      title: '打算 + động từ',
+      pattern: '主语 + 打算 + V',
+      explanationVi: '打算 diễn tả kế hoạch hoặc dự định trong tương lai.',
+      examples: [
+        { chinese: '我打算周末学习。', pinyin: 'Wǒ dǎsuàn zhōumò xuéxí.', translationVi: 'Tôi định học vào cuối tuần.' },
+        { chinese: '你打算什么时候回家？', pinyin: 'Nǐ dǎsuàn shénme shíhou huí jiā?', translationVi: 'Bạn định khi nào về nhà?' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe lời mời và kế hoạch', 'Nói ngắn về kế hoạch cuối tuần'], skills: ['listening', 'speaking', 'reading'] },
+  },
+  {
+    id: 'hsk2-l8',
+    level: 'HSK 2',
+    lessonNumber: 8,
+    title: 'Study & Work',
+    titleVi: 'Học tập & công việc',
+    descriptionVi: 'Mô tả việc học, công việc và khả năng thực hiện một nhiệm vụ.',
+    icon: 'BookOpen',
+    durationMinutes: 20,
+    objectivesVi: ['Nói mình đang học/làm gì', 'Dùng 会 để nói khả năng đã học được', 'Đọc thông tin ngắn về trường/lớp/công việc'],
+    vocabulary: [
+      { id: 'h2v8-1', hanzi: '公司', pinyin: 'gōngsī', meaningVi: 'công ty', meaningEn: 'company', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '我在一家公司工作。', examplePinyin: 'Wǒ zài yì jiā gōngsī gōngzuò.', exampleVi: 'Tôi làm việc ở một công ty.', exampleEn: 'I work at a company.' },
+      { id: 'h2v8-2', hanzi: '同事', pinyin: 'tóngshì', meaningVi: 'đồng nghiệp', meaningEn: 'colleague', partOfSpeech: 'Danh từ', hskLevel: 'HSK 2', exampleChinese: '我的同事都很好。', examplePinyin: 'Wǒ de tóngshì dōu hěn hǎo.', exampleVi: 'Các đồng nghiệp của tôi đều rất tốt.', exampleEn: 'My colleagues are very nice.' },
+      { id: 'h2v8-3', hanzi: '考试', pinyin: 'kǎoshì', meaningVi: 'kỳ thi, thi', meaningEn: 'exam, to take an exam', partOfSpeech: 'Danh từ/Động từ', hskLevel: 'HSK 2', exampleChinese: '下周有考试。', examplePinyin: 'Xià zhōu yǒu kǎoshì.', exampleVi: 'Tuần sau có kỳ thi.', exampleEn: 'There is an exam next week.' },
+      { id: 'h2v8-4', hanzi: '会', pinyin: 'huì', meaningVi: 'biết, có thể (do đã học)', meaningEn: 'can, know how to', partOfSpeech: 'Động từ khuyết thiếu', hskLevel: 'HSK 2', exampleChinese: '我会说一点儿中文。', examplePinyin: 'Wǒ huì shuō yìdiǎnr Zhōngwén.', exampleVi: 'Tôi biết nói một chút tiếng Trung.', exampleEn: 'I can speak a little Chinese.' },
+      { id: 'h2v8-5', hanzi: '需要', pinyin: 'xūyào', meaningVi: 'cần', meaningEn: 'to need', partOfSpeech: 'Động từ', hskLevel: 'HSK 2', exampleChinese: '你需要帮助吗？', examplePinyin: 'Nǐ xūyào bāngzhù ma?', exampleVi: 'Bạn có cần giúp đỡ không?', exampleEn: 'Do you need help?' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你会说中文吗？', pinyin: 'Nǐ huì shuō Zhōngwén ma?', vi: 'Bạn biết nói tiếng Trung không?', en: 'Can you speak Chinese?' },
+      { speaker: 'user', chinese: '会一点儿，我每天都学习。', pinyin: 'Huì yìdiǎnr, wǒ měitiān dōu xuéxí.', vi: 'Biết một chút, ngày nào tôi cũng học.', en: 'A little. I study every day.' },
+    ],
+    quiz: [
+      { id: 'h2q8-1', question: '"会说中文" nhấn mạnh điều gì?', options: ['Khả năng đã học được', 'Địa điểm', 'Thời tiết', 'Giá tiền'], correctIndex: 0, explanation: '会 + động từ thường diễn tả khả năng hoặc kỹ năng đã học được.' },
+      { id: 'h2q8-2', question: '"需要" nghĩa là gì?', options: ['Bắt đầu', 'Cần', 'Kết thúc', 'So sánh'], correctIndex: 1, explanation: '"需要" nghĩa là cần.' },
+    ],
+    grammarPoints: [{
+      title: '会 + động từ',
+      pattern: '主语 + 会 + V',
+      explanationVi: '会 diễn tả khả năng hoặc kỹ năng mà người nói đã học được.',
+      examples: [
+        { chinese: '我会写汉字。', pinyin: 'Wǒ huì xiě Hànzì.', translationVi: 'Tôi biết viết chữ Hán.' },
+        { chinese: '她会开车。', pinyin: 'Tā huì kāichē.', translationVi: 'Cô ấy biết lái xe.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe hỏi đáp về khả năng', 'Đọc thông tin học tập/công việc ngắn'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l9',
+    level: 'HSK 2',
+    lessonNumber: 9,
+    title: 'Comparisons',
+    titleVi: 'So sánh đơn giản',
+    descriptionVi: 'So sánh người và vật bằng 比, 更 và các tính từ quen thuộc.',
+    icon: 'GitCompare',
+    durationMinutes: 20,
+    objectivesVi: ['Dùng 比 để so sánh hai đối tượng', 'Dùng 更 để nhấn mạnh mức độ hơn', 'Nói ý kiến ngắn dựa trên so sánh'],
+    vocabulary: [
+      { id: 'h2v9-1', hanzi: '比', pinyin: 'bǐ', meaningVi: 'so với, hơn', meaningEn: 'to compare, than', partOfSpeech: 'Giới từ', hskLevel: 'HSK 2', exampleChinese: '今天比昨天冷。', examplePinyin: 'Jīntiān bǐ zuótiān lěng.', exampleVi: 'Hôm nay lạnh hơn hôm qua.', exampleEn: 'Today is colder than yesterday.' },
+      { id: 'h2v9-2', hanzi: '更', pinyin: 'gèng', meaningVi: 'càng, hơn nữa', meaningEn: 'even more', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '这个更好。', examplePinyin: 'Zhège gèng hǎo.', exampleVi: 'Cái này tốt hơn.', exampleEn: 'This one is better.' },
+      { id: 'h2v9-3', hanzi: '一样', pinyin: 'yíyàng', meaningVi: 'giống nhau', meaningEn: 'the same', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '我们一样高。', examplePinyin: 'Wǒmen yíyàng gāo.', exampleVi: 'Chúng tôi cao bằng nhau.', exampleEn: 'We are the same height.' },
+      { id: 'h2v9-4', hanzi: '快', pinyin: 'kuài', meaningVi: 'nhanh', meaningEn: 'fast', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '地铁比公交车快。', pinyin: 'Dìtiě bǐ gōngjiāochē kuài.', meaningVi: 'Tàu điện ngầm nhanh hơn xe buýt.', meaningEn: 'The subway is faster than the bus.' },
+      { id: 'h2v9-5', hanzi: '慢', pinyin: 'màn', meaningVi: 'chậm', meaningEn: 'slow', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '走路比较慢。', examplePinyin: 'Zǒulù bǐjiào màn.', exampleVi: 'Đi bộ chậm hơn.', exampleEn: 'Walking is relatively slow.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '坐地铁和坐公交车，哪个快？', pinyin: 'Zuò dìtiě hé zuò gōngjiāochē, nǎge kuài?', vi: 'Đi tàu điện ngầm và xe buýt, cái nào nhanh hơn?', en: 'Which is faster, the subway or the bus?' },
+      { speaker: 'user', chinese: '地铁比公交车快。', pinyin: 'Dìtiě bǐ gōngjiāochē kuài.', vi: 'Tàu điện ngầm nhanh hơn xe buýt.', en: 'The subway is faster than the bus.' },
+    ],
+    quiz: [
+      { id: 'h2q9-1', question: 'Cấu trúc cơ bản để so sánh là gì?', options: ['A 比 B + tính từ', 'A 在 B', 'A 有 B', 'A 想 B'], correctIndex: 0, explanation: '比 được dùng trong cấu trúc A 比 B + tính từ.' },
+      { id: 'h2q9-2', question: '"一样" nghĩa là gì?', options: ['Khác nhau', 'Giống nhau', 'Nhanh', 'Chậm'], correctIndex: 1, explanation: '"一样" nghĩa là giống nhau/bằng nhau.' },
+    ],
+    grammarPoints: [{
+      title: 'Cấu trúc 比',
+      pattern: 'A + 比 + B + 形容词',
+      explanationVi: 'Dùng 比 để nói A có đặc điểm nào đó hơn B.',
+      examples: [
+        { chinese: '今天比昨天热。', pinyin: 'Jīntiān bǐ zuótiān rè.', translationVi: 'Hôm nay nóng hơn hôm qua.' },
+        { chinese: '中文比英文难一点儿。', pinyin: 'Zhōngwén bǐ Yīngwén nán yìdiǎnr.', translationVi: 'Tiếng Trung khó hơn tiếng Anh một chút.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe và xác định đối tượng được so sánh', 'Đọc câu so sánh và chọn thông tin đúng'], skills: ['listening', 'reading', 'speaking'] },
+  },
+  {
+    id: 'hsk2-l10',
+    level: 'HSK 2',
+    lessonNumber: 10,
+    title: 'Past Experiences',
+    titleVi: 'Trải nghiệm đã xảy ra',
+    descriptionVi: 'Kể lại trải nghiệm đơn giản và nói về hành động đã hoàn thành.',
+    icon: 'MessageCircle',
+    durationMinutes: 22,
+    objectivesVi: ['Dùng 过 để nói trải nghiệm', 'Dùng 了 để nói hành động đã xảy ra', 'Kể một trải nghiệm ngắn theo trình tự'],
+    vocabulary: [
+      { id: 'h2v10-1', hanzi: '过', pinyin: 'guo', meaningVi: 'đã từng', meaningEn: 'experienced before', partOfSpeech: 'Trợ từ', hskLevel: 'HSK 2', exampleChinese: '我去过北京。', examplePinyin: 'Wǒ qùguo Běijīng.', exampleVi: 'Tôi đã từng đi Bắc Kinh.', exampleEn: 'I have been to Beijing.' },
+      { id: 'h2v10-2', hanzi: '已经', pinyin: 'yǐjīng', meaningVi: 'đã, đã rồi', meaningEn: 'already', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '我已经吃饭了。', examplePinyin: 'Wǒ yǐjīng chīfàn le.', exampleVi: 'Tôi đã ăn cơm rồi.', exampleEn: 'I have already eaten.' },
+      { id: 'h2v10-3', hanzi: '还', pinyin: 'hái', meaningVi: 'vẫn, còn', meaningEn: 'still, yet', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '我还没看过。', examplePinyin: 'Wǒ hái méi kànguo.', exampleVi: 'Tôi vẫn chưa từng xem.', exampleEn: 'I have not seen it yet.' },
+      { id: 'h2v10-4', hanzi: '旅行', pinyin: 'lǚxíng', meaningVi: 'du lịch', meaningEn: 'to travel, trip', partOfSpeech: 'Động từ/Danh từ', hskLevel: 'HSK 2', exampleChinese: '我喜欢旅行。', examplePinyin: 'Wǒ xǐhuan lǚxíng.', exampleVi: 'Tôi thích du lịch.', exampleEn: 'I like traveling.' },
+      { id: 'h2v10-5', hanzi: '一次', pinyin: 'yí cì', meaningVi: 'một lần', meaningEn: 'once, one time', partOfSpeech: 'Lượng từ', hskLevel: 'HSK 2', exampleChinese: '我去过一次上海。', examplePinyin: 'Wǒ qùguo yí cì Shànghǎi.', exampleVi: 'Tôi đã từng đi Thượng Hải một lần.', exampleEn: 'I have been to Shanghai once.' },
+    ],
+    dialogue: [
+      { speaker: 'lina', chinese: '你去过中国吗？', pinyin: 'Nǐ qùguo Zhōngguó ma?', vi: 'Bạn đã từng đi Trung Quốc chưa?', en: 'Have you ever been to China?' },
+      { speaker: 'user', chinese: '去过一次。我很喜欢那里的美食。', pinyin: 'Qùguo yí cì. Wǒ hěn xǐhuan nàlǐ de měishí.', vi: 'Tôi đã đi một lần. Tôi rất thích đồ ăn ở đó.', en: 'I have been once. I really like the food there.' },
+    ],
+    quiz: [
+      { id: 'h2q10-1', question: 'Trợ từ "过" trong "去过" diễn tả điều gì?', options: ['Đang xảy ra', 'Đã từng trải nghiệm', 'Chưa bắt đầu', 'Mệnh lệnh'], correctIndex: 1, explanation: '过 sau động từ diễn tả một trải nghiệm đã từng xảy ra.' },
+      { id: 'h2q10-2', question: 'Câu nào nói "Tôi đã ăn rồi"?', options: ['我还吃饭。', '我已经吃饭了。', '我吃饭过。', '我会吃饭。'], correctIndex: 1, explanation: '"已经…了" có thể dùng để nói một việc đã hoàn thành.' },
+    ],
+    grammarPoints: [{
+      title: 'Động từ + 过 và 了',
+      pattern: 'V + 过; 已经 + V + 了',
+      explanationVi: '过 nhấn mạnh trải nghiệm từng có; 了 thường đánh dấu sự việc đã xảy ra hoặc hoàn thành trong ngữ cảnh.',
+      examples: [
+        { chinese: '我看过这部电影。', pinyin: 'Wǒ kànguo zhè bù diànyǐng.', translationVi: 'Tôi đã từng xem bộ phim này.' },
+        { chinese: '我已经完成作业了。', pinyin: 'Wǒ yǐjīng wánchéng zuòyè le.', translationVi: 'Tôi đã làm xong bài tập rồi.' },
+      ],
+    }],
+    examFocus: { tasks: ['Nghe kể trải nghiệm ngắn', 'Đọc câu về sự việc đã xảy ra và xác định thời gian/trạng thái'], skills: ['listening', 'reading', 'speaking', 'writing'] },
+  },
+];
+
+
+
+/**
  * HSK 3.0-aligned learning layer for the HSK 1 lessons.
  * The official syllabus organizes learning around tasks, topics, vocabulary,
  * grammar and Chinese characters; these lesson fields turn the existing
@@ -749,7 +1119,7 @@ for (const lesson of HSK1_LESSONS) {
 
 // Curated vocabulary bank for flashcards & spaced repetition
 export const INITIAL_FLASHCARDS: VocabularyItem[] = [
-  ...HSK1_LESSONS.flatMap((l) => l.vocabulary).map((v, i) => ({
+  ...[...HSK1_LESSONS, ...HSK2_LESSONS].flatMap((l) => l.vocabulary).map((v, i) => ({
     ...v,
     state: i < 5 ? ('mastered' as const) : i < 12 ? ('learning' as const) : ('new' as const),
     reviewCount: i < 5 ? 4 : i < 12 ? 2 : 0,
@@ -807,7 +1177,7 @@ export const HSK_LEVELS = [
   },
 ];
 
-export const ALL_LESSONS = HSK1_LESSONS.map((l) => ({
+export const ALL_LESSONS = [...HSK1_LESSONS, ...HSK2_LESSONS].map((l) => ({
   id: l.id,
   hskLevel: l.level,
   order: l.lessonNumber,
