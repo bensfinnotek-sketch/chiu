@@ -739,11 +739,22 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
           <button
             type="button"
-            onClick={handleNextSection}
-            disabled={activeSectionIndex >= sections.length - 1}
+            onClick={() => {
+              if (activeSectionIndex >= sections.length - 1) {
+                if (lesson.completionRule === 'all_required_sections') {
+                  saveSectionProgress(sections[activeSectionIndex].id, 100);
+                }
+                return;
+              }
+              handleNextSection();
+            }}
+            disabled={
+              activeSectionIndex >= sections.length - 1 &&
+              lesson.completionRule !== 'all_required_sections'
+            }
             className="px-5 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] disabled:opacity-40 disabled:hover:bg-[#E86F51] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
-            <span>Phần tiếp theo</span>
+            <span>{activeSectionIndex >= sections.length - 1 ? 'Hoàn thành bài học' : 'Phần tiếp theo'}</span>
             <ChevronRight size={16} />
           </button>
         </div>
