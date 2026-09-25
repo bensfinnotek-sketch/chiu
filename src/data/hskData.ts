@@ -915,7 +915,7 @@ export const HSK2_LESSONS: Lesson[] = [
       { id: 'h2v9-1', hanzi: '比', pinyin: 'bǐ', meaningVi: 'so với, hơn', meaningEn: 'to compare, than', partOfSpeech: 'Giới từ', hskLevel: 'HSK 2', exampleChinese: '今天比昨天冷。', examplePinyin: 'Jīntiān bǐ zuótiān lěng.', exampleVi: 'Hôm nay lạnh hơn hôm qua.', exampleEn: 'Today is colder than yesterday.' },
       { id: 'h2v9-2', hanzi: '更', pinyin: 'gèng', meaningVi: 'càng, hơn nữa', meaningEn: 'even more', partOfSpeech: 'Phó từ', hskLevel: 'HSK 2', exampleChinese: '这个更好。', examplePinyin: 'Zhège gèng hǎo.', exampleVi: 'Cái này tốt hơn.', exampleEn: 'This one is better.' },
       { id: 'h2v9-3', hanzi: '一样', pinyin: 'yíyàng', meaningVi: 'giống nhau', meaningEn: 'the same', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '我们一样高。', examplePinyin: 'Wǒmen yíyàng gāo.', exampleVi: 'Chúng tôi cao bằng nhau.', exampleEn: 'We are the same height.' },
-      { id: 'h2v9-4', hanzi: '快', pinyin: 'kuài', meaningVi: 'nhanh', meaningEn: 'fast', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '地铁比公交车快。', pinyin: 'Dìtiě bǐ gōngjiāochē kuài.', meaningVi: 'Tàu điện ngầm nhanh hơn xe buýt.', meaningEn: 'The subway is faster than the bus.' },
+      { id: 'h2v9-4', hanzi: '快', pinyin: 'kuài', meaningVi: 'nhanh', meaningEn: 'fast', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '地铁比公交车快。', examplePinyin: 'Dìtiě bǐ gōngjiāochē kuài.', exampleVi: 'Tàu điện ngầm nhanh hơn xe buýt.', exampleEn: 'The subway is faster than the bus.' },
       { id: 'h2v9-5', hanzi: '慢', pinyin: 'màn', meaningVi: 'chậm', meaningEn: 'slow', partOfSpeech: 'Tính từ', hskLevel: 'HSK 2', exampleChinese: '走路比较慢。', examplePinyin: 'Zǒulù bǐjiào màn.', exampleVi: 'Đi bộ chậm hơn.', exampleEn: 'Walking is relatively slow.' },
     ],
     dialogue: [
@@ -967,7 +967,7 @@ export const HSK2_LESSONS: Lesson[] = [
       pattern: 'V + 过; 已经 + V + 了',
       explanationVi: '过 nhấn mạnh trải nghiệm từng có; 了 thường đánh dấu sự việc đã xảy ra hoặc hoàn thành trong ngữ cảnh.',
       examples: [
-        { chinese: '我看过这部电影。', pinyin: 'Wǒ kànguo zhè bù diànyǐng.', translationVi: 'Tôi đã từng xem bộ phim này.' },
+        { chinese: '我看过这部电影。', pinyin: 'Wǒ kàn guo zhè bù diànyǐng.', translationVi: 'Tôi đã từng xem bộ phim này.' },
         { chinese: '我已经完成作业了。', pinyin: 'Wǒ yǐjīng wánchéng zuòyè le.', translationVi: 'Tôi đã làm xong bài tập rồi.' },
       ],
     }],
