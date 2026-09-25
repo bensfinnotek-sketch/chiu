@@ -175,9 +175,11 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async deleteSession(sessionId: string): Promise<void> {
     if (!supabase) return;
-    const { error: messageError } = await supabase.from('conversation_messages').delete().eq('session_id', sessionId);
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
+    const { error: messageError } = await supabase.from('conversation_messages').delete().eq('session_id', sessionId).eq('user_id', auth.data.user.id);
     if (messageError) throw new Error(`Không thể xóa tin nhắn hội thoại: ${formatSupabaseError(messageError)}`);
-    const { error: sessionError } = await supabase.from('conversation_sessions').delete().eq('id', sessionId);
+    const { error: sessionError } = await supabase.from('conversation_sessions').delete().eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (sessionError) throw new Error(`Không thể xóa phiên hội thoại: ${formatSupabaseError(sessionError)}`);
   }
 }
