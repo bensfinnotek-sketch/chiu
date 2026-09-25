@@ -130,7 +130,6 @@ export const useCurriculum = (lessonId: string | null) => {
         levelCompletion: await recommendationService.calculateLevelCompletion(userId, lesson.levelNumber, repo),
       };
     }
-
     const questionMap = new Map(quizQuestions.map((question) => [question.id, question]));
     let vocabularyQuestions = 0;
     let vocabularyCorrect = 0;
@@ -151,7 +150,6 @@ export const useCurriculum = (lessonId: string | null) => {
       const grammarUpdates = (question.grammarPointIds || []).map((grammarPointId) => repo.updateGrammarScore(userId, grammarPointId, answer.isCorrect));
       return [...vocabularyUpdates, ...grammarUpdates];
     }));
-
     const quizPassed = attempt.score >= lesson.passingScore;
     const requiredSectionsComplete = lesson.completionRule === 'all_required_and_quiz'
       ? (await repo.getLessonProgress(userId, lessonId))?.progressPercent >= 100
@@ -161,26 +159,22 @@ export const useCurriculum = (lessonId: string | null) => {
       : lesson.completionRule === 'all_required_and_quiz'
         ? quizPassed && requiredSectionsComplete
         : false;
-
     if (!canCompleteLesson) {
       const currentProgress = await repo.getLessonProgress(userId, lessonId);
-      const failedAttemptProgress: UserLessonProgress = currentProgress
-        ? { ...currentProgress, attempts: (currentProgress.attempts ?? 0) + 1, lastAccessedAt: new Date().toISOString() }
-        : {
-            userId,
-            lessonId,
-            levelNumber: lesson.levelNumber,
-            status: 'in_progress',
-            progressPercent: 0,
-            attempts: 1,
-            startedAt: new Date().toISOString(),
-            lastAccessedAt: new Date().toISOString(),
-          };
-      await repo.saveProgress(failedAttemptProgress);
-      setUserProgress(failedAttemptProgress);
+      if (currentProgress) {
+        const failedAttemptProgress: UserLessonProgress = {
+          ...currentProgress,
+          attempts: (currentProgress.attempts ?? 0) + 1,
+          lastAccessedAt: new Date().toISOString(),
+        };
+        await repo.saveProgress(failedAttemptProgress);
+        setUserProgress(failedAttemptProgress);
+      }
       const recommendations = await recommendationService.getRecommendations(userId, lesson.levelNumber, repo);
       return {
-        progress: failedAttemptProgress,
+        progress: currentProgress
+          ? { ...currentProgress, attempts: (currentProgress.attempts ?? 0) + 1 }
+          : userProgress,
         isFirstCompletion: false,
         flashcardsSaved: 0,
         skillDelta: 0,
@@ -188,11 +182,9 @@ export const useCurriculum = (lessonId: string | null) => {
         levelCompletion: await recommendationService.calculateLevelCompletion(userId, lesson.levelNumber, repo),
       };
     }
-
     const vocabularyDelta = vocabularyQuestions > 0 ? Math.round((vocabularyCorrect / vocabularyQuestions) * 15) : 0;
     const grammarDelta = grammarQuestions > 0 ? Math.round((grammarCorrect / grammarQuestions) * 15) : 0;
     return completeLesson(attempt.score, { vocabulary: vocabularyDelta, grammar: grammarDelta });
   };
-
   return { lesson, sections, vocabulary, grammar, quizQuestions, userProgress, isLoading, saveSectionProgress, completeLesson, completeQuiz, reload: loadLesson };
 };
