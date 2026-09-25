@@ -132,7 +132,20 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async getSessionMessages(sessionId: string): Promise<ConversationMessage[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('conversation_messages').select('*').eq('session_id', sessionId).order('timestamp', { ascending: true });
+    const { data: session, error: sessionError } = await supabase
+      .from('conversation_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .maybeSingle();
+    if (sessionError) throw new Error(`Không thể xác thực phiên hội thoại: ${formatSupabaseError(sessionError)}`);
+    if (!session?.user_id) return [];
+    await this.assertAuthenticatedUser(session.user_id);
+    const { data, error } = await supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_id', session.user_id)
+      .order('timestamp', { ascending: true });
     if (error) throw new Error(`Không thể tải tin nhắn hội thoại: ${formatSupabaseError(error)}`);
     if (!data) return [];
     return data.map((m) => ({ id: m.id, sessionId: m.session_id, userId: m.user_id, role: m.role as any, chinese: m.chinese, pinyin: m.pinyin || undefined, translation: m.translation || undefined, timestamp: m.timestamp, corrections: m.analysis?.corrections || [], vocabulary: m.analysis?.vocabulary || [], grammarNote: m.analysis?.grammarNote || null, encouragement: m.analysis?.encouragement || undefined, followUpQuestion: m.analysis?.followUpQuestion || undefined, scores: m.analysis?.scores || undefined }));
