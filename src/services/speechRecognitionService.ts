@@ -16,6 +16,8 @@ export class SpeechRecognitionService {
   private mediaRecorder: MediaRecorder | null = null;
   private mediaStream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
+  private audioCaptureStartPromise: Promise<void> | null = null;
+  private audioCaptureSession = 0;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -59,7 +61,8 @@ export class SpeechRecognitionService {
     }
 
     let finalAccumulated = '';
-    this.startAudioCapture();
+    const audioSession = ++this.audioCaptureSession;
+    this.startAudioCapture(audioSession);
 
     this.recognition.onstart = () => {
       this.isListeningActive = true;
@@ -127,13 +130,13 @@ export class SpeechRecognitionService {
     return new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
   }
 
-  private startAudioCapture(): void {
+  private startAudioCapture(session: number): void {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       return;
     }
 
-    void navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      if (!this.isListeningActive && !this.recognition) {
+    this.audioCaptureStartPromise = navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      if (session !== this.audioCaptureSession || !this.recognition) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
@@ -148,10 +151,11 @@ export class SpeechRecognitionService {
       recorder.start();
     }).catch(() => {
       // Web Speech recognition can still operate when audio recording is unavailable.
-    });
+    }).then(() => undefined);
   }
 
-  private finishAudioCapture(): Promise<Blob | null> {
+  private async finishAudioCapture(): Promise<Blob | null> {
+    if (this.audioCaptureStartPromise) await this.audioCaptureStartPromise;
     return new Promise((resolve) => {
       const recorder = this.mediaRecorder;
       const stream = this.mediaStream;
@@ -169,6 +173,7 @@ export class SpeechRecognitionService {
         stream?.getTracks().forEach((track) => track.stop());
         this.mediaRecorder = null;
         this.mediaStream = null;
+        this.audioCaptureStartPromise = null;
         resolve(blob);
       };
 
@@ -205,6 +210,7 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    ++this.audioCaptureSession;
     void this.finishAudioCapture();
   }
 }
