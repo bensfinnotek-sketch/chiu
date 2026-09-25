@@ -350,6 +350,15 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                 return;
               }
 
+              // Grammar review is handled at the curriculum level. Returning
+              // to the current level keeps the learner in a valid route and
+              // lets the recommendation refresh after review.
+              if (recommendations[0].type === 'review_grammar' || targetId === 'grammar') {
+                setSelectedLevel(selectedLevel);
+                setSearchQuery('');
+                return;
+              }
+
               onSelectLesson(targetId);
             }}
             className="px-6 py-3.5 rounded-2xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-sm font-bold shadow-md shadow-[#E86F51]/25 transition-all flex items-center justify-center gap-2 cursor-pointer self-start md:self-center"
