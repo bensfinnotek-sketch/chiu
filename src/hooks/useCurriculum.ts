@@ -293,10 +293,26 @@ export function useLesson(lessonId: string) {
       })
     );
 
-    if (!attempt.passed) {
-      // A failed submission is still a real assessment attempt. Keep the
-      // lesson open, but increment attempts exactly once so progress reflects
-      // every submitted quiz without counting page opens/resumes.
+    // Do not trust the client-provided "passed" flag as the completion
+    // authority. The lesson definition owns the passing threshold/rule.
+    const quizPassed = attempt.score >= lesson.passingScore;
+    const quizRequired =
+      lesson.completionRule === 'quiz_pass' ||
+      lesson.completionRule === 'all_required_and_quiz';
+    const requiredSectionsComplete =
+      lesson.completionRule === 'all_required_and_quiz'
+        ? (await repo.getLessonProgress(userId, lessonId))?.progressPercent === 100
+        : true;
+    const canCompleteLesson =
+      lesson.completionRule === 'quiz_pass'
+        ? quizPassed
+        : lesson.completionRule === 'all_required_and_quiz'
+          ? quizPassed && requiredSectionsComplete
+          : false;
+
+    if (!canCompleteLesson) {
+      // A failed/incomplete submission is still a real assessment attempt.
+      // Keep the lesson open, but increment attempts exactly once.
       const currentProgress = await repo.getLessonProgress(userId, lessonId);
       if (currentProgress) {
         const failedAttemptProgress: UserLessonProgress = {
