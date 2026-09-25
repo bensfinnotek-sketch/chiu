@@ -256,5 +256,7 @@ export interface Database {
         Returns: unknown;
       };
     };
+    Enums: {};
+    CompositeTypes: {};
   };
 }
