@@ -144,7 +144,7 @@ export function useLesson(lessonId: string) {
       progressPercent: Math.max(existing?.progressPercent || 0, percent),
       currentSectionId: sectionId,
       score: existing?.score,
-      attempts: existing?.attempts || 1,
+      attempts: existing?.attempts ?? 0,
       startedAt: existing?.startedAt || new Date().toISOString(),
       completedAt: existing?.completedAt,
       lastAccessedAt: new Date().toISOString(),
@@ -294,13 +294,29 @@ export function useLesson(lessonId: string) {
     );
 
     if (!attempt.passed) {
+      // A failed submission is still a real assessment attempt. Keep the
+      // lesson open, but increment attempts exactly once so progress reflects
+      // every submitted quiz without counting page opens/resumes.
+      const currentProgress = await repo.getLessonProgress(userId, lessonId);
+      if (currentProgress) {
+        const failedAttemptProgress: UserLessonProgress = {
+          ...currentProgress,
+          attempts: (currentProgress.attempts ?? 0) + 1,
+          lastAccessedAt: new Date().toISOString(),
+        };
+        await repo.saveProgress(failedAttemptProgress);
+        setUserProgress(failedAttemptProgress);
+      }
+
       const recommendations = await recommendationService.getRecommendations(
         userId,
         lesson.levelNumber,
         repo
       );
       return {
-        progress: userProgress,
+        progress: currentProgress
+          ? { ...currentProgress, attempts: (currentProgress.attempts ?? 0) + 1 }
+          : userProgress,
         isFirstCompletion: false,
         flashcardsSaved: 0,
         skillDelta: 0,
