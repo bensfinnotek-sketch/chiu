@@ -136,12 +136,13 @@ export function useLesson(lessonId: string) {
   const saveSectionProgress = async (sectionId: string, percent: number) => {
     if (!lesson) return;
     const existing = await repo.getLessonProgress(userId, lessonId);
+    const normalizedPercent = Math.max(0, Math.min(100, Math.round(percent)));
     const updated: UserLessonProgress = {
       userId,
       lessonId,
       levelNumber: lesson.levelNumber,
       status: existing?.status === 'completed' ? 'completed' : 'in_progress',
-      progressPercent: Math.max(existing?.progressPercent || 0, percent),
+      progressPercent: Math.max(existing?.progressPercent ?? 0, normalizedPercent),
       currentSectionId: sectionId,
       score: existing?.score,
       attempts: existing?.attempts ?? 0,
@@ -151,6 +152,30 @@ export function useLesson(lessonId: string) {
     };
     await repo.saveProgress(updated);
     setUserProgress(updated);
+
+    // Section-only lessons have no quiz gate. Completing all required
+    // sections is the authoritative completion event for this rule.
+    if (
+      lesson.completionRule === 'all_required_sections' &&
+      normalizedPercent >= 100 &&
+      updated.status !== 'completed'
+    ) {
+      const { progress, isFirstCompletion } = await repo.markLessonCompleted(
+        userId,
+        lessonId,
+        updated.score ?? 100,
+        lesson.levelNumber
+      );
+      setUserProgress(progress);
+
+      if (isFirstCompletion) {
+        await progressRepo.recordStudyActivity(userId, {
+          type: 'lesson',
+          durationMinutes: lesson.estimatedMinutes,
+          wordsLearnedDelta: vocabulary.length,
+        });
+      }
+    }
   };
 
   const completeLesson = async (
