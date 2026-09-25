@@ -5,7 +5,7 @@ export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
   onInterimResult?: (interim: string) => void;
   onError?: (error: string) => void;
-  onEnd?: () => void;
+  onEnd?: (finalTranscript?: string, audioBlob?: Blob | null) => void;
   onStart?: () => void;
 }
 
@@ -13,6 +13,9 @@ export class SpeechRecognitionService {
   private recognition: any = null;
   private isListeningActive: boolean = false;
   private isSupportedBrowser: boolean = false;
+  private mediaRecorder: MediaRecorder | null = null;
+  private mediaStream: MediaStream | null = null;
+  private audioChunks: Blob[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -56,6 +59,7 @@ export class SpeechRecognitionService {
     }
 
     let finalAccumulated = '';
+    this.startAudioCapture();
 
     this.recognition.onstart = () => {
       this.isListeningActive = true;
@@ -100,9 +104,10 @@ export class SpeechRecognitionService {
       if (callbacks.onError) callbacks.onError(userMsg);
     };
 
-    this.recognition.onend = () => {
+    this.recognition.onend = async () => {
       this.isListeningActive = false;
-      if (callbacks.onEnd) callbacks.onEnd();
+      const audioBlob = await this.finishAudioCapture();
+      if (callbacks.onEnd) callbacks.onEnd(finalAccumulated, audioBlob);
     };
 
     try {
@@ -115,6 +120,69 @@ export class SpeechRecognitionService {
       }
       return false;
     }
+  }
+
+  public getLastAudioCapture(): Blob | null {
+    if (this.audioChunks.length === 0) return null;
+    return new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
+  }
+
+  private startAudioCapture(): void {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      return;
+    }
+
+    void navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      if (!this.isListeningActive && !this.recognition) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      this.mediaStream = stream;
+      this.audioChunks = [];
+      const recorder = new MediaRecorder(stream);
+      this.mediaRecorder = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) this.audioChunks.push(event.data);
+      };
+      recorder.start();
+    }).catch(() => {
+      // Web Speech recognition can still operate when audio recording is unavailable.
+    });
+  }
+
+  private finishAudioCapture(): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const recorder = this.mediaRecorder;
+      const stream = this.mediaStream;
+      if (!recorder) {
+        stream?.getTracks().forEach((track) => track.stop());
+        this.mediaStream = null;
+        resolve(null);
+        return;
+      }
+
+      const finalize = () => {
+        const blob = this.audioChunks.length > 0
+          ? new Blob(this.audioChunks, { type: recorder.mimeType || 'audio/webm' })
+          : null;
+        stream?.getTracks().forEach((track) => track.stop());
+        this.mediaRecorder = null;
+        this.mediaStream = null;
+        resolve(blob);
+      };
+
+      recorder.onstop = finalize;
+      try {
+        if (recorder.state !== 'inactive') {
+          recorder.stop();
+        } else {
+          finalize();
+        }
+      } catch {
+        finalize();
+      }
+    });
   }
 
   public stopListening(): void {
@@ -137,6 +205,7 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    void this.finishAudioCapture();
   }
 }
 
