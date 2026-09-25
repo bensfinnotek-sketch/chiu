@@ -188,11 +188,13 @@ export class LocalStorageProgressRepository implements ProgressRepository {
       const raw = localStorage.getItem(this.getStorageKey(userId));
       if (raw) return JSON.parse(raw);
     } catch {
-      // ignore
+      // ignore malformed/unavailable local progress and fall back to defaults
     }
-    const def = this.getDefaultProgress(userId);
-    await this.updateProgress(userId, def);
-    return def;
+
+    // Do not call updateProgress() here: updateProgress() reads through
+    // getProgress(), so doing so would recurse indefinitely when no local
+    // progress exists and eventually throw "Maximum call stack size exceeded".
+    return this.getDefaultProgress(userId);
   }
 
   async updateProgress(userId: string, updates: Partial<LearningProgress>): Promise<LearningProgress> {
