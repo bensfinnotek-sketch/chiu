@@ -46,6 +46,8 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState<number | null>(null);
+  const [quizError, setQuizError] = useState('');
   const [lessonCompleted, setLessonCompleted] = useState(
     storageService.getCompletedLessons().includes(lesson.id)
   );
@@ -76,10 +78,27 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
 
   const handleSelectQuizOption = (qId: string, optIndex: number) => {
     if (quizSubmitted) return;
+    setQuizError('');
     setQuizAnswers({ ...quizAnswers, [qId]: optIndex });
   };
 
   const handleSubmitQuiz = () => {
+    if (lesson.quiz.length === 0) {
+      setQuizError('Bài học chưa có câu hỏi kiểm tra.');
+      return;
+    }
+    const unanswered = lesson.quiz.filter((q) => quizAnswers[q.id] === undefined);
+    if (unanswered.length > 0) {
+      setQuizError(`Bạn còn ${unanswered.length} câu chưa trả lời. Hãy hoàn thành tất cả trước khi nộp bài.`);
+      return;
+    }
+
+    const correctCount = lesson.quiz.reduce(
+      (total, q) => total + (quizAnswers[q.id] === q.correctAnswer ? 1 : 0),
+      0
+    );
+    setQuizScore(Math.round((correctCount / lesson.quiz.length) * 100));
+    setQuizError('');
     setQuizSubmitted(true);
     // Mark as completed
     storageService.markLessonCompleted(lesson.id);
@@ -644,10 +663,16 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
               </p>
               <p className="text-xs text-[#716761] dark:text-[#A89E97]">
                 {quizSubmitted
-                  ? 'Tuyệt vời! Bạn đã mở khóa và hoàn thành bài học này.'
-                  : 'Nộp bài để kiểm tra độ hiểu bài và ghi nhận điểm số.'}
+                  ? `Bạn đạt ${quizScore ?? 0}/100 điểm. Bài học đã được ghi nhận hoàn thành.`
+                  : 'Trả lời đủ câu hỏi để kiểm tra độ hiểu bài và ghi nhận điểm số.'}
               </p>
             </div>
+
+            {quizError && (
+              <div className="w-full sm:w-auto sm:max-w-md p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-xs font-medium text-amber-800 dark:text-amber-200">
+                {quizError}
+              </div>
+            )}
 
             {!quizSubmitted ? (
               <button
