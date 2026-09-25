@@ -64,6 +64,17 @@ export function useLesson(lessonId: string) {
     loadLesson();
   }, [loadLesson]);
 
+  // Restore the learner's last persisted section after refresh/re-entry.
+  // currentSectionId is the repository-backed source of truth for the last
+  // section reached; the array index is only a UI position.
+  useEffect(() => {
+    if (!userProgress?.currentSectionId || sections.length === 0) return;
+    const savedIndex = sections.findIndex(
+      (section) => section.id === userProgress.currentSectionId
+    );
+    if (savedIndex >= 0) setActiveSectionIndex(savedIndex);
+  }, [sections, userProgress?.currentSectionId]);
+
   const saveSectionProgress = async (sectionId: string, percent: number) => {
     if (!lesson) return;
     const existing = await repo.getLessonProgress(userId, lessonId);
