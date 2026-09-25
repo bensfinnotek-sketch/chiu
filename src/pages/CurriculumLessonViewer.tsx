@@ -75,6 +75,18 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
       Math.max(requiredSectionCount || sections.length, 1)) *
       100
   );
+  const finalSectionId = sections[sections.length - 1]?.id;
+  const requiredSectionsBeforeFinal = sections
+    .slice(0, Math.max(0, sections.length - 1))
+    .filter((section) => (requiredSectionCount > 0 ? section.isRequired : true)).length;
+  const requiredProgressBeforeFinal = Math.round(
+    (requiredSectionsBeforeFinal / Math.max(requiredSectionCount || sections.length, 1)) * 100
+  );
+  const canFinishRequiredSections =
+    lesson.completionRule === 'all_required_sections' &&
+    activeSectionIndex >= sections.length - 1 &&
+    !!finalSectionId &&
+    (userProgress?.progressPercent ?? 0) >= requiredProgressBeforeFinal;
 
   const handleNextSection = () => {
     if (activeSectionIndex < sections.length - 1) {
@@ -741,7 +753,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
             type="button"
             onClick={() => {
               if (activeSectionIndex >= sections.length - 1) {
-                if (lesson.completionRule === 'all_required_sections') {
+                if (canFinishRequiredSections) {
                   saveSectionProgress(sections[activeSectionIndex].id, 100);
                 }
                 return;
@@ -750,7 +762,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
             }}
             disabled={
               activeSectionIndex >= sections.length - 1 &&
-              lesson.completionRule !== 'all_required_sections'
+              !canFinishRequiredSections
             }
             className="px-5 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] disabled:opacity-40 disabled:hover:bg-[#E86F51] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
