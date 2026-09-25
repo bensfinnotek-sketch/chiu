@@ -10,7 +10,7 @@ import {
 import { mockGeminiService } from './mockGeminiService';
 import { ConversationMessage, SpeakingFeedback, TranslationResult, DictionaryEntry } from '../types';
 import { getAuthHeaders } from './flashcardService';
-import { PronunciationAssessment, createUnavailablePronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
+import { PronunciationAssessment, PronunciationAudioInput, createUnavailablePronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 
 export interface AIService {
   generateConversation(params: any): Promise<any>;
@@ -26,9 +26,14 @@ export interface AIService {
   }): Promise<SpeakingAnalysis>;
   correctChinese?(sentence: string, level?: string, language?: string): Promise<any>;
   translateChinese?(text: string, from?: string, to?: string): Promise<any>;
-  explainGrammar?(point: string, level?: string): Promise<any>;
+  explainGrammar?(point: string, level?: string, language?: string): Promise<any>;
   summarizeMemory?(memory: any): Promise<{ summary: string; keyFacts: string[] }>;
-  assessPronunciation?(params: { spokenText: string; targetText?: string; language?: string; audioAvailable?: boolean }): Promise<PronunciationAssessment>;
+  assessPronunciation?(params: {
+    spokenText: string;
+    targetText?: string;
+    language?: string;
+    audio?: PronunciationAudioInput | null;
+  }): Promise<PronunciationAssessment>;
 }
 
 export class GeminiServiceImpl implements AIService {
@@ -297,9 +302,9 @@ export class GeminiServiceImpl implements AIService {
     spokenText: string;
     targetText?: string;
     language?: string;
-    audioAvailable?: boolean;
+    audio?: PronunciationAudioInput | null;
   }): Promise<PronunciationAssessment> {
-    if (!params.audioAvailable) {
+    if (!params.audio) {
       return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
