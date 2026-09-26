@@ -16,8 +16,8 @@ export interface PronunciationAssessment {
 }
 
 /**
- * Safe default until an acoustic speech assessment provider is wired in.
- * Never invents a pronunciation score from transcript text alone.
+ * Safe state whenever acoustic assessment is unavailable or cannot produce
+ * a trustworthy score. Never invents a pronunciation score from transcript text alone.
  */
 export function createUnavailablePronunciationAssessment(
   language: string = 'vi'
@@ -26,10 +26,10 @@ export function createUnavailablePronunciationAssessment(
     source: 'unavailable',
     accuracyScore: null,
     feedback: language === 'vi'
-      ? 'Chưa có dữ liệu âm thanh để đánh giá phát âm.'
-      : 'No audio data is available for pronunciation assessment yet.',
+      ? 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.'
+      : 'Acoustic pronunciation assessment is unavailable for this turn.',
     suggestedImprovement: language === 'vi'
-      ? 'Hãy ghi âm câu nói để hệ thống có thể đánh giá âm thanh khi tính năng này được kết nối.'
-      : 'Record the spoken sentence so acoustic assessment can be added when the provider is connected.',
+      ? 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.'
+      : 'Try recording the sentence again to continue pronunciation assessment.',
   };
 }
