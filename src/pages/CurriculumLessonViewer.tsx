@@ -472,6 +472,35 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                       </button>
                     )}
                   </div>
+
+                  {missionCompleted && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {sections.some((section) => section.type === 'speaking') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const speakingIndex = sections.findIndex((section) => section.type === 'speaking');
+                            if (speakingIndex >= 0) setActiveSectionIndex(speakingIndex);
+                          }}
+                          className="px-4 py-2.5 rounded-2xl bg-white/10 border border-white/15 text-white text-xs font-black hover:bg-white/15 transition-all cursor-pointer"
+                        >
+                          🎙️ Sang bước Luyện nói
+                        </button>
+                      )}
+                      {sections.some((section) => section.type === 'quiz') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const quizIndex = sections.findIndex((section) => section.type === 'quiz');
+                            if (quizIndex >= 0) setActiveSectionIndex(quizIndex);
+                          }}
+                          className="px-4 py-2.5 rounded-2xl bg-[#E86F51] text-white text-xs font-black hover:bg-[#D35B3E] transition-all cursor-pointer"
+                        >
+                          ✓ Sang bước Quiz
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
