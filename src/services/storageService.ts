@@ -6,6 +6,7 @@ const SAVED_WORDS_KEY = 'hanziai_saved_words';
 const CONVERSATION_KEY = 'hanziai_conversation_history';
 const COMPLETED_LESSONS_KEY = 'hanziai_completed_lessons';
 const QUIZ_ATTEMPTS_KEY = 'hanziai_quiz_attempts';
+const SPEAKING_REVIEW_KEY = 'hanziai_speaking_review_v1';
 const LANG_KEY = 'hanziai_lang';
 const THEME_KEY = 'hanziai_theme';
 
@@ -18,6 +19,16 @@ export interface QuizAttemptRecord {
   answers: Record<string, number>;
   submittedAt: string;
   submissionKey: string;
+}
+
+export interface SpeakingReviewItem {
+  id: string;
+  sessionId: string;
+  topic: string;
+  original: string;
+  corrected: string;
+  explanation: string;
+  createdAt: string;
 }
 
 const createQuizSubmissionKey = (lessonId: string, answers: Record<string, number>): string =>
@@ -108,6 +119,34 @@ export const storageService = {
     } catch {
       return [];
     }
+  },
+
+  getSpeakingReviewItems(sessionId?: string): SpeakingReviewItem[] {
+    try {
+      const stored = localStorage.getItem(SPEAKING_REVIEW_KEY);
+      const items = stored ? (JSON.parse(stored) as SpeakingReviewItem[]) : [];
+      return sessionId ? items.filter((item) => item.sessionId === sessionId) : items;
+    } catch {
+      return [];
+    }
+  },
+
+  saveSpeakingReviewItem(item: SpeakingReviewItem): SpeakingReviewItem {
+    try {
+      const items = this.getSpeakingReviewItems().filter(
+        (existing) =>
+          !(
+            existing.sessionId === item.sessionId &&
+            existing.original === item.original &&
+            existing.corrected === item.corrected
+          )
+      );
+      const next = [item, ...items].slice(0, 100);
+      localStorage.setItem(SPEAKING_REVIEW_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.error(e);
+    }
+    return item;
   },
 
   recordQuizAttempt(params: {
