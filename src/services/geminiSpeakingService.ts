@@ -194,11 +194,13 @@ class GeminiSpeakingService {
     spokenText: string;
     targetText?: string;
     audio?: Blob | null;
+    signal?: AbortSignal;
   }): Promise<PronunciationAssessment> {
     return this.pronunciationProvider.assess({
       spokenText: params.spokenText,
       targetText: params.targetText,
       language: 'vi',
+      signal: params.signal,
       audio: params.audio
         ? { blob: params.audio, mimeType: params.audio.type || 'audio/webm' }
         : null,
