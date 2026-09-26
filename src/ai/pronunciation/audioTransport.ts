@@ -36,7 +36,13 @@ export class MediaRecorderAudioTransport implements AudioTransport {
 
         this.stream = stream;
         this.chunks = [];
-        const recorder = new MediaRecorder(stream);
+        const preferredOptions: MediaRecorderOptions = { audioBitsPerSecond: 32000 };
+        let recorder: MediaRecorder;
+        try {
+          recorder = new MediaRecorder(stream, preferredOptions);
+        } catch {
+          recorder = new MediaRecorder(stream);
+        }
         this.recorder = recorder;
 
         recorder.ondataavailable = (event) => {
