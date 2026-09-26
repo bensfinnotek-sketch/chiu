@@ -306,24 +306,24 @@ export class GeminiServiceImpl implements AIService {
   }): Promise<PronunciationAssessment> {
     try {
       if (!params.audio) {
-      return createUnavailablePronunciationAssessment(params.language || 'vi');
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
+      }
+
+      const blob = params.audio.blob;
+      if (!blob.size || blob.size > 12 * 1024 * 1024) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
-    const blob = params.audio.blob;
-    if (!blob.size || blob.size > 12 * 1024 * 1024) {
-      return createUnavailablePronunciationAssessment(params.language || 'vi');
-    }
-
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = '';
-    const chunkSize = 0x8000;
-    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
       binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
     }
 
-    const base64 = btoa(binary);
-    const authHeaders = await getAuthHeaders();
-    const res = await fetch('/api/ai/pronunciation', {
+      const base64 = btoa(binary);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch('/api/ai/pronunciation', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -341,20 +341,20 @@ export class GeminiServiceImpl implements AIService {
       cache: 'no-store',
     });
 
-    if (!res.ok) {
-      return createUnavailablePronunciationAssessment(params.language || 'vi');
+      if (!res.ok) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
-    const data = await res.json();
-    if (
-      (data?.source !== 'acoustic' && data?.source !== 'unavailable') ||
-      (data?.accuracyScore !== null &&
-        (typeof data?.accuracyScore !== 'number' ||
-          !Number.isFinite(data.accuracyScore) ||
-          data.accuracyScore < 0 ||
-          data.accuracyScore > 100))
+      const data = await res.json();
+      if (
+        (data?.source !== 'acoustic' && data?.source !== 'unavailable') ||
+        (data?.accuracyScore !== null &&
+          (typeof data?.accuracyScore !== 'number' ||
+            !Number.isFinite(data.accuracyScore) ||
+            data.accuracyScore < 0 ||
+            data.accuracyScore > 100))
     ) {
-      return createUnavailablePronunciationAssessment(params.language || 'vi');
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
       return {
@@ -366,7 +366,7 @@ export class GeminiServiceImpl implements AIService {
       };
     } catch (error) {
       console.warn('[Pronunciation] Acoustic assessment unavailable:', error);
-      return createUnavailablePronunciationAssessment(params.language || 'vi');
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
   }
 
