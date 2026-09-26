@@ -344,6 +344,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
       // Update user message with correction if any
       if (analysis.corrections && analysis.corrections.length > 0) {
+        analysis.corrections.forEach((correction, index) => {
+          storageService.saveSpeakingReviewItem({
+            id: `speaking-review-${userMsg.id}-${index}`,
+            sessionId: conversationSessionId || memory.sessionId,
+            topic: activeTopic,
+            original: correction.original,
+            corrected: correction.corrected,
+            explanation: correction.explanation,
+            createdAt: new Date().toISOString(),
+          });
+        });
+
         const firstCorrection = analysis.corrections[0];
         userMsg.correction = {
           hasMistake: true,
