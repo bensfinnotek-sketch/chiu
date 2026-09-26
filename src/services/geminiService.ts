@@ -310,9 +310,13 @@ export class GeminiServiceImpl implements AIService {
       }
 
       const blob = params.audio.blob;
-      if (!blob.size || blob.size > 12 * 1024 * 1024) {
+      // Vercel Functions cap incoming request bodies at 4.5 MB. Base64 expands
+      // the audio payload by roughly 4/3, so keep the raw recording below 3 MB
+      // to leave room for JSON and auth metadata.
+      const MAX_PRONUNCIATION_AUDIO_BYTES = 3 * 1024 * 1024;
+      if (!blob.size || blob.size > MAX_PRONUNCIATION_AUDIO_BYTES) {
         return createUnavailablePronunciationAssessment(params.language || 'vi');
-    }
+      }
 
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let binary = '';
