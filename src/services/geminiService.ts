@@ -325,8 +325,10 @@ export class GeminiServiceImpl implements AIService {
       let binary = '';
       const chunkSize = 0x8000;
       for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
-    }
+        binary += String.fromCharCode(
+          ...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length))
+        );
+      }
 
       const base64 = btoa(binary);
       const authHeaders = await getAuthHeaders();
