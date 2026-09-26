@@ -6,7 +6,6 @@ import {
   handleSummarize,
   handleCorrect,
   handleSpeakingFeedback,
-  handlePronunciation,
   handleTranslate,
   handleDictionaryLookup,
   handleLesson,
