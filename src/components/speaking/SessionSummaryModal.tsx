@@ -8,6 +8,7 @@ interface SessionSummaryModalProps {
   onClose: () => void;
   onPracticeAgain: () => void;
   onGoHome: () => void;
+  onReviewLesson?: () => void;
   stats: {
     durationMinutes: number;
     turnsCount: number;
@@ -29,6 +30,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   onClose,
   onPracticeAgain,
   onGoHome,
+  onReviewLesson,
   stats,
 }) => {
   if (!isOpen) return null;
@@ -226,6 +228,16 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
           </button>
 
           <div className="flex gap-2">
+            {onReviewLesson && (
+              <button
+                type="button"
+                onClick={onReviewLesson}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#E86F51]/30 bg-white dark:bg-[#28201B] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] text-[#E86F51] text-sm font-medium transition-colors cursor-pointer"
+              >
+                <BookOpen size={16} />
+                Xem lại bài học
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
