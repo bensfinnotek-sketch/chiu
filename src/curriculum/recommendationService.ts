@@ -289,7 +289,9 @@ export class RecommendationService {
             .filter((attempt) => attempt.lessonId === lesson.id)
             .reduce((best, attempt) => Math.max(best, attempt.score), 0),
         }))
-        .filter((item: { lesson: Lesson; score: number }) => item.score > 0 && item.score < 80)
+        .filter((item: { lesson: Lesson; score: number }) =>
+          quizAttempts.some((attempt) => attempt.lessonId === item.lesson.id) && item.score < 80
+        )
         .sort((a: { score: number }, b: { score: number }) => a.score - b.score)[0];
 
       if (weakQuiz) {
