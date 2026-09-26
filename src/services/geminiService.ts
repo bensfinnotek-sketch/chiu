@@ -307,7 +307,15 @@ export class GeminiServiceImpl implements AIService {
     signal?: AbortSignal;
   }): Promise<PronunciationAssessment> {
     const signal = params.signal;
+    const throwIfAborted = () => {
+      if (signal?.aborted) {
+        throw new DOMException('The request was aborted.', 'AbortError');
+      }
+    };
+
     try {
+      throwIfAborted();
+
       if (!params.audio) {
         return createUnavailablePronunciationAssessment(params.language || 'vi');
       }
@@ -321,7 +329,10 @@ export class GeminiServiceImpl implements AIService {
         return createUnavailablePronunciationAssessment(params.language || 'vi');
       }
 
+      throwIfAborted();
       const bytes = new Uint8Array(await blob.arrayBuffer());
+      throwIfAborted();
+
       let binary = '';
       const chunkSize = 0x8000;
       for (let offset = 0; offset < bytes.length; offset += chunkSize) {
@@ -331,7 +342,10 @@ export class GeminiServiceImpl implements AIService {
       }
 
       const base64 = btoa(binary);
+      throwIfAborted();
+
       const authHeaders = await getAuthHeaders();
+      throwIfAborted();
       const res = await fetch('/api/ai/pronunciation', {
       method: 'POST',
       headers: {
