@@ -75,9 +75,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     initialLevel ||
     sessionStorage.getItem('selected_speaking_level') ||
     userProfile.chineseLevel ||
-  const sourceLessonId = sessionStorage.getItem('selected_speaking_source_lesson') || '';
-
     'HSK 1';
+  const sourceLessonId = sessionStorage.getItem('selected_speaking_source_lesson') || '';
 
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
