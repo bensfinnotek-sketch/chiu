@@ -112,7 +112,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
       goal: 'Nói về gia đình và giới thiệu nhà của mình bằng câu đơn giản.',
       scenario: 'Bạn mời một người bạn đến nhà và giới thiệu bố mẹ.',
       challenge: 'Dùng 这是我的… và 我爸爸/妈妈… để giới thiệu ít nhất 2 thành viên.',
-      success: 'Bạn có thể giới thiệu gia đình gần gũi bằng các câu ngắn, rõ nghĩa.',,
+      success: 'Bạn có thể giới thiệu gia đình gần gũi bằng các câu ngắn, rõ nghĩa.',
       skills: ['Giới thiệu gia đình', 'Dùng 的 để nói sở hữu', 'Mô tả người thân']
     },
     'lesson-hsk1-u2-l8': {
