@@ -56,6 +56,68 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   const [quizScore, setQuizScore] = useState(0);
   const [quizStartedAt, setQuizStartedAt] = useState<string | null>(null);
   const [learningLoopResult, setLearningLoopResult] = useState<Awaited<ReturnType<typeof completeQuiz>>>(null);
+
+  const lessonMissions: Record<string, {
+    goal: string;
+    scenario: string;
+    challenge: string;
+    success: string;
+  }> = {
+    'lesson-hsk1-u1-l1': {
+      goal: 'Chào hỏi và kết thúc một cuộc gặp bằng tiếng Trung lịch sự.',
+      scenario: 'Bạn vừa gặp một người Trung Quốc lần đầu và muốn tạo ấn tượng thân thiện.',
+      challenge: 'Nói liền mạch: chào hỏi → cảm ơn → đáp lại → tạm biệt.',
+      success: 'Bạn có thể mở đầu và kết thúc một cuộc trò chuyện ngắn mà không cần dịch từng câu.',
+    },
+    'lesson-hsk1-u1-l2': {
+      goal: 'Hỏi thăm sức khỏe và phản hồi tự nhiên.',
+      scenario: 'Bạn gặp một người bạn vào buổi sáng và muốn hỏi thăm họ.',
+      challenge: 'Dùng 你好吗？→ 我很好。→ 你呢？ để duy trì ít nhất 3 lượt đối đáp.',
+      success: 'Bạn có thể hỏi thăm và phản hồi về tình trạng của mình trong một đoạn hội thoại ngắn.',
+    },
+    'lesson-hsk1-u2-l3': {
+      goal: 'Tự giới thiệu tên và hỏi tên người đối diện.',
+      scenario: 'Bạn làm quen với một bạn mới trong lớp tiếng Trung.',
+      challenge: 'Hỏi tên, nói “我叫…” và chủ động hỏi lại đối phương.',
+      success: 'Bạn có thể tự giới thiệu bản thân ngay khi gặp một người mới.',
+    },
+    'lesson-hsk1-u2-l4': {
+      goal: 'Nói mình đến từ đâu và hỏi quốc tịch của người khác.',
+      scenario: 'Bạn gặp một người bạn mới đến từ một quốc gia khác.',
+      challenge: 'Hỏi “你是哪国人？” rồi trả lời rõ ràng về quốc gia của mình.',
+      success: 'Bạn có thể thực hiện một đoạn làm quen ngắn xoay quanh quốc gia và nguồn gốc.',
+    },
+    'lesson-hsk1-u3-l5': {
+      goal: 'Nói mình muốn ăn hoặc uống gì trong một tình huống đơn giản.',
+      scenario: 'Bạn bước vào một quán ăn Trung Quốc và cần gọi món.',
+      challenge: 'Nói món muốn gọi, hỏi/đáp về đồ ăn hoặc đồ uống và xác nhận lựa chọn.',
+      success: 'Bạn có thể xử lý một tình huống gọi món cơ bản mà không cần dùng tiếng Việt.',
+    },
+    'lesson-hsk1-u3-l6': {
+      goal: 'Hỏi giá và phản hồi khi mua một món đồ.',
+      scenario: 'Bạn đang mua một món đồ nhỏ ở cửa hàng và cần hỏi giá.',
+      challenge: 'Dùng 多少钱？ để hỏi giá, nghe con số và xác nhận món mình muốn mua.',
+      success: 'Bạn có thể hỏi giá và hoàn tất một đoạn hội thoại mua sắm ngắn.',
+    },
+    'lesson-hsk1-u2-l7': {
+      goal: 'Nói về gia đình và giới thiệu nhà của mình bằng câu đơn giản.',
+      scenario: 'Bạn mời một người bạn đến nhà và giới thiệu bố mẹ.',
+      challenge: 'Dùng 这是我的… và 我爸爸/妈妈… để giới thiệu ít nhất 2 thành viên.',
+      success: 'Bạn có thể giới thiệu gia đình gần gũi bằng các câu ngắn, rõ nghĩa.',
+    },
+    'lesson-hsk1-u2-l8': {
+      goal: 'Hỏi ngày trong tuần và hẹn một hoạt động đơn giản.',
+      scenario: 'Bạn muốn hẹn bạn đi uống trà vào ngày mai.',
+      challenge: 'Hỏi hôm nay là thứ mấy, nói ngày mai và đề nghị một cuộc hẹn.',
+      success: 'Bạn có thể xác nhận ngày và tạo một cuộc hẹn ngắn bằng tiếng Trung.',
+    },
+    'lesson-hsk1-u3-l9': {
+      goal: 'Nói về sở thích và rủ người khác cùng làm một hoạt động.',
+      scenario: 'Cuối tuần, bạn muốn rủ một người bạn xem phim.',
+      challenge: 'Nói ít nhất 2 sở thích với 喜欢 rồi chuyển sang một lời mời.',
+      success: 'Bạn có thể nói mình thích gì và chủ động rủ bạn bè làm một hoạt động.',
+    },
+  };
   const [quizPersistenceError, setQuizPersistenceError] = useState<string | null>(null);
 
   if (isLoading || !lesson) {
@@ -304,6 +366,44 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                 ))}
               </ul>
             </div>
+
+            {lessonMissions[lesson.id] && (
+              <div className="rounded-3xl bg-[#211A17] text-white border border-[#E86F51]/30 p-5 sm:p-6 space-y-5 shadow-md">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-[#E86F51] flex items-center justify-center shrink-0">
+                    <Award size={22} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Mini Mission · Nhiệm vụ thực chiến</span>
+                    <h3 className="text-lg sm:text-xl font-black mt-1">Cuối bài, bạn sẽ dùng tiếng Trung để làm được việc này</h3>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-4 rounded-2xl bg-white/10 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Mục tiêu giao tiếp</p>
+                    <p className="text-sm font-bold mt-1">{lessonMissions[lesson.id].goal}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/10 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Tình huống</p>
+                    <p className="text-sm font-medium mt-1 text-white/85">{lessonMissions[lesson.id].scenario}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#E86F51]/15 border border-[#E86F51]/30">
+                  <div className="flex items-center gap-2 text-sm font-black">
+                    <Star size={16} className="text-[#F6B39F]" />
+                    Thử thách cuối bài
+                  </div>
+                  <p className="text-sm text-white/90 mt-1.5">{lessonMissions[lesson.id].challenge}</p>
+                </div>
+
+                <div className="flex items-start gap-2 text-xs text-white/75">
+                  <CheckCircle2 size={15} className="text-[#F6B39F] shrink-0 mt-0.5" />
+                  <span><strong className="text-white">Dấu hiệu hoàn thành:</strong> {lessonMissions[lesson.id].success}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
