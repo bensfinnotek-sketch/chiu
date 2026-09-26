@@ -165,6 +165,19 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   const progressPercent = Math.round(
     (completedRequiredCount / Math.max(requiredSectionCount, 1)) * 100
   );
+  const hasSpeakingSection = sections.some((section) => section.type === 'speaking');
+  const hasQuizSection = sections.some((section) => section.type === 'quiz');
+  const missionStepDone = missionCompleted;
+  const speakingIndex = sections.findIndex((section) => section.type === 'speaking');
+  const quizIndex = sections.findIndex((section) => section.type === 'quiz');
+  const speakingStepDone =
+    !hasSpeakingSection ||
+    (speakingIndex >= 0 && activeSectionIndex > speakingIndex) ||
+    (currentSection.type === 'speaking' && quizSubmitted);
+  const quizStepDone =
+    !hasQuizSection ||
+    quizSubmitted ||
+    (quizIndex >= 0 && activeSectionIndex > quizIndex);
   const finalSectionId = sections[sections.length - 1]?.id;
   const canFinishRequiredSections =
     lesson.completionRule === 'all_required_sections' &&
@@ -352,6 +365,38 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
         </div>
       </div>
 
+      {/* Learning loop */}
+      <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#2A2320] border border-[#E86F51]/15">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Lộ trình bài này</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
+              Mission → Luyện nói → Quiz → Hoàn thành
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Mission', done: missionStepDone },
+              { label: 'Luyện nói', done: speakingStepDone },
+              { label: 'Quiz', done: quizStepDone },
+              { label: 'Hoàn thành', done: progressPercent >= 100 },
+            ].map((step) => (
+              <span
+                key={step.label}
+                className={
+                  'px-2.5 py-1 rounded-full text-[10px] font-black border ' +
+                  (step.done
+                    ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                    : 'bg-white text-[#716761] border-[#E86F51]/10 dark:bg-[#1E1917] dark:text-[#A89E97]')
+                }
+              >
+                {step.done ? '✓ ' : ''}{step.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Section Content Area */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm min-h-[420px] flex flex-col justify-between space-y-6">
         {/* Intro / Objectives */}
@@ -419,6 +464,36 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                   <CheckCircle2 size={15} className="text-[#F6B39F] shrink-0 mt-0.5" />
                   <span><strong className="text-white">Dấu hiệu hoàn thành:</strong> {lessonMissions[lesson.id].success}</span>
                 </div>
+
+                {missionCompleted && (
+                  <div className="p-4 rounded-2xl bg-[#E86F51]/10 border border-[#E86F51]/25 space-y-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Bước tiếp theo</p>
+                      <p className="text-sm font-black mt-1">Đã hoàn thành Mission — giờ hãy biến nó thành phản xạ nói.</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {onNavigateToSpeaking && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToSpeaking(lesson.title)}
+                          className="flex-1 px-4 py-2.5 rounded-xl bg-[#E86F51] text-white text-xs font-black hover:bg-[#D35B3E] transition-all cursor-pointer"
+                        >
+                          🎙️ Luyện nói với Lina
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetQuizIndex = sections.findIndex((section) => section.type === 'quiz');
+                          if (targetQuizIndex >= 0) setActiveSectionIndex(targetQuizIndex);
+                        }}
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white text-xs font-black hover:bg-white/15 transition-all cursor-pointer"
+                      >
+                        📝 Đi tới Quiz
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-3 border-t border-white/10 space-y-3">
                   <div>
