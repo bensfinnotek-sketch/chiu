@@ -454,13 +454,21 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ) : (
         <div className="space-y-8">
           {units.map((unit) => {
+            const allUnitLessons = lessons.filter((l) => l.unitId === unit.id);
             const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
+            const completedUnitLessons = allUnitLessons.filter(
+              (lesson) => progressMap[lesson.id]?.status === 'completed',
+            ).length;
+            const unitProgress = allUnitLessons.length
+              ? Math.round((completedUnitLessons / allUnitLessons.length) * 100)
+              : 0;
+
             if (unitLessons.length === 0 && searchQuery) return null;
 
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-[#E86F51]/15">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-2 border-b border-[#E86F51]/15">
                   <div className="space-y-0.5">
                     <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
                       Unit {unit.order} · {unit.titleZh}
@@ -472,9 +480,23 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       {unit.description}
                     </p>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-xl bg-gray-100 dark:bg-[#342822] text-[#716761] dark:text-[#A89E97] font-semibold">
-                    {unitLessons.length} bài
-                  </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
+                        {completedUnitLessons}/{allUnitLessons.length} bài
+                      </p>
+                      <p className="text-xs font-black text-[#E86F51]">{unitProgress}%</p>
+                    </div>
+                    <div
+                      className="w-20 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden"
+                      aria-label={`Tiến độ Unit ${unit.order}: ${unitProgress}%`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-[#E86F51] transition-all duration-500"
+                        style={{ width: `${unitProgress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Lessons Grid in Unit */}
