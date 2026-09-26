@@ -243,6 +243,57 @@ export const ALL_VOCABULARY: Vocabulary[] = [
     updatedAt: '2026-03-18T00:00:00Z',
   },
 
+
+  // HSK 1 Extension Vocab
+  {
+    id: 'vocab-hsk1-017', hanzi: '爸爸', pinyin: 'bàba', meaningVi: 'bố, ba', meaningEn: 'father', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我爸爸是老师。', examplePinyin: 'Wǒ bàba shì lǎoshī.', exampleTranslation: 'Bố tôi là giáo viên.', tags: ['family'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-018', hanzi: '妈妈', pinyin: 'māma', meaningVi: 'mẹ', meaningEn: 'mother', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我妈妈很好。', examplePinyin: 'Wǒ māma hěn hǎo.', exampleTranslation: 'Mẹ tôi rất khỏe.', tags: ['family'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-019', hanzi: '家', pinyin: 'jiā', meaningVi: 'nhà, gia đình', meaningEn: 'home, family', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我家在河内。', examplePinyin: 'Wǒ jiā zài Hénèi.', exampleTranslation: 'Nhà tôi ở Hà Nội.', tags: ['family', 'home'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-020', hanzi: '学生', pinyin: 'xuésheng', meaningVi: 'học sinh, sinh viên', meaningEn: 'student', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我是学生。', examplePinyin: 'Wǒ shì xuésheng.', exampleTranslation: 'Tôi là học sinh/sinh viên.', tags: ['school', 'identity'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-021', hanzi: '今天', pinyin: 'jīntiān', meaningVi: 'hôm nay', meaningEn: 'today', partOfSpeech: 'Danh từ thời gian', hskLevel: 1,
+    exampleSentence: '今天星期几？', examplePinyin: 'Jīntiān xīngqī jǐ?', exampleTranslation: 'Hôm nay là thứ mấy?', tags: ['time'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-022', hanzi: '明天', pinyin: 'míngtiān', meaningVi: 'ngày mai', meaningEn: 'tomorrow', partOfSpeech: 'Danh từ thời gian', hskLevel: 1,
+    exampleSentence: '明天见！', examplePinyin: 'Míngtiān jiàn!', exampleTranslation: 'Hẹn gặp ngày mai!', tags: ['time'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-023', hanzi: '星期', pinyin: 'xīngqī', meaningVi: 'tuần, thứ (trong tuần)', meaningEn: 'week, weekday', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '今天星期一。', examplePinyin: 'Jīntiān xīngqī yī.', exampleTranslation: 'Hôm nay là thứ Hai.', tags: ['time'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-024', hanzi: '喜欢', pinyin: 'xǐhuan', meaningVi: 'thích', meaningEn: 'to like', partOfSpeech: 'Động từ', hskLevel: 1,
+    exampleSentence: '我喜欢喝茶。', examplePinyin: 'Wǒ xǐhuan hē chá.', exampleTranslation: 'Tôi thích uống trà.', tags: ['hobbies', 'verb'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-025', hanzi: '看', pinyin: 'kàn', meaningVi: 'xem, đọc, nhìn', meaningEn: 'to watch, read, look', partOfSpeech: 'Động từ', hskLevel: 1,
+    exampleSentence: '我喜欢看电影。', examplePinyin: 'Wǒ xǐhuan kàn diànyǐng.', exampleTranslation: 'Tôi thích xem phim.', tags: ['hobbies', 'verb'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-026', hanzi: '电影', pinyin: 'diànyǐng', meaningVi: 'phim', meaningEn: 'movie', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我喜欢看电影。', examplePinyin: 'Wǒ xǐhuan kàn diànyǐng.', exampleTranslation: 'Tôi thích xem phim.', tags: ['hobbies', 'media'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-027', hanzi: '听', pinyin: 'tīng', meaningVi: 'nghe', meaningEn: 'to listen', partOfSpeech: 'Động từ', hskLevel: 1,
+    exampleSentence: '我喜欢听音乐。', examplePinyin: 'Wǒ xǐhuan tīng yīnyuè.', exampleTranslation: 'Tôi thích nghe nhạc.', tags: ['hobbies', 'verb'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'vocab-hsk1-028', hanzi: '音乐', pinyin: 'yīnyuè', meaningVi: 'âm nhạc', meaningEn: 'music', partOfSpeech: 'Danh từ', hskLevel: 1,
+    exampleSentence: '我喜欢听音乐。', examplePinyin: 'Wǒ xǐhuan tīng yīnyuè.', exampleTranslation: 'Tôi thích nghe nhạc.', tags: ['hobbies', 'media'], createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+
   // HSK 2 Core Vocab
   {
     id: 'vocab-hsk2-001',
@@ -501,6 +552,29 @@ export const ALL_GRAMMAR_POINTS: GrammarPoint[] = [
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-03-18T00:00:00Z',
   },
+
+  {
+    id: 'grammar-hsk1-004', level: 1, title: 'Câu hỏi với 哪 (nǎ)', pattern: '哪 + Danh từ？',
+    explanationVi: '哪 dùng để hỏi lựa chọn hoặc xác định một đối tượng trong một nhóm.', examples: [
+      { chinese: '你是哪国人？', pinyin: 'Nǐ shì nǎ guó rén?', translationVi: 'Bạn là người nước nào?' },
+      { chinese: '你是哪位老师？', pinyin: 'Nǐ shì nǎ wèi lǎoshī?', translationVi: 'Bạn là vị giáo viên nào?' },
+    ], commonMistakes: ['Không dùng 哪 thay cho 什么 khi hỏi "cái gì" nói chung.'], difficulty: 'beginner', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'grammar-hsk1-005', level: 1, title: 'Sở hữu với 的 (de)', pattern: 'Đại từ + 的 + Danh từ',
+    explanationVi: '的 nối người/vật sở hữu với danh từ được sở hữu, tương đương "của" trong tiếng Việt.', examples: [
+      { chinese: '这是我的妈妈。', pinyin: 'Zhè shì wǒ de māma.', translationVi: 'Đây là mẹ của tôi.' },
+      { chinese: '这是我的家。', pinyin: 'Zhè shì wǒ de jiā.', translationVi: 'Đây là nhà của tôi.' },
+    ], commonMistakes: ['Khi cần nhấn mạnh quan hệ sở hữu, không bỏ 的.'], difficulty: 'beginner', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'grammar-hsk1-006', level: 1, title: 'Động từ 喜欢 (xǐhuan) để nói sở thích', pattern: 'Chủ ngữ + 喜欢 + Danh từ/Động từ',
+    explanationVi: '喜欢 dùng để nói điều mình thích, có thể đi với danh từ hoặc hoạt động như 看电影, 听音乐.', examples: [
+      { chinese: '我喜欢看电影。', pinyin: 'Wǒ xǐhuan kàn diànyǐng.', translationVi: 'Tôi thích xem phim.' },
+      { chinese: '你喜欢听音乐吗？', pinyin: 'Nǐ xǐhuan tīng yīnyuè ma?', translationVi: 'Bạn thích nghe nhạc không?' },
+    ], commonMistakes: ['喜欢 là động từ, không cần thêm 是 trước nó.'], difficulty: 'beginner', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+
   {
     id: 'grammar-hsk2-001',
     level: 2,
