@@ -40,6 +40,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     vocabulary,
     grammar,
     quizQuestions,
+    quizAttempts,
     userProgress,
     isLoading,
     saveSectionProgress,
@@ -728,6 +729,16 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                   Trả lời các câu hỏi trắc nghiệm và điền từ để mở khóa bài học kế tiếp.
                 </p>
               </div>
+              {!quizSubmitted && quizAttempts.length > 0 && (
+                <div className="px-3.5 py-2 rounded-xl bg-orange-50 dark:bg-[#342822] border border-[#E86F51]/10 text-xs text-[#716761] dark:text-[#A89E97]">
+                  <span className="font-bold text-[#E86F51]">Lịch sử quiz:</span>{' '}
+                  {quizAttempts.length} lần làm · điểm tốt nhất {Math.max(...quizAttempts.map((attempt) => attempt.score))}%.
+                  {Math.max(...quizAttempts.map((attempt) => attempt.score)) < lesson.passingScore
+                    ? ' Bạn có thể làm lại để cải thiện điểm.'
+                    : ' Bạn có thể ôn lại để củng cố phản xạ.'}
+                </div>
+              )}
+
               {quizSubmitted && (
                 <span
                   className={`text-sm font-black px-3.5 py-1 rounded-xl ${
