@@ -49,6 +49,7 @@ import {
 
 interface AiConversationPageProps {
   onBackToTopics?: () => void;
+  onReviewLesson?: (lessonId: string) => void;
   initialTopic?: string;
   initialLevel?: string;
   selectedSessionId?: string;
@@ -56,6 +57,7 @@ interface AiConversationPageProps {
 
 export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   onBackToTopics,
+  onReviewLesson,
   initialTopic,
   initialLevel,
   selectedSessionId,
@@ -73,6 +75,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     initialLevel ||
     sessionStorage.getItem('selected_speaking_level') ||
     userProfile.chineseLevel ||
+  const sourceLessonId = sessionStorage.getItem('selected_speaking_source_lesson') || '';
+
     'HSK 1';
 
   // Settings & Progress state
@@ -587,6 +591,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     const durationMinutes = (Date.now() - sessionStartTime) / 60000;
     const turnsCount = messages.filter((m) => m.sender === 'user').length;
     const correctionsCount = messages.filter((m) => m.correction?.hasMistake).length;
+
+    // Keep the lesson context through the speaking handoff so the
+    // session can return to the exact lesson for review.
+    if (sourceLessonId && turnsCount > 0) {
+      sessionStorage.setItem('selected_speaking_source_lesson', sourceLessonId);
+    }
 
     const sessionData = {
       topic: activeTopic,
@@ -1251,6 +1261,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setSummaryOpen(false);
           handleGoBack();
         }}
+        onReviewLesson={sourceLessonId && onReviewLesson ? () => {
+          setSummaryOpen(false);
+          onReviewLesson(sourceLessonId);
+        } : undefined}
         onGoHome={() => {
           setSummaryOpen(false);
           window.location.hash = '#dashboard';
