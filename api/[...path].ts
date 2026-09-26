@@ -37,7 +37,7 @@ export default async function handler(req: any, res: any) {
     segments = Array.isArray(req.query.path) ? req.query.path : [req.query.path];
   } else {
     const rawUrl = (req.url || "").split("?")[0];
-    const cleanUrl = rawUrl.replace(/^\\/api\\/?/, "");
+    const cleanUrl = rawUrl.replace(/^\/api\/?/, "");
     segments = cleanUrl.split("/").filter(Boolean);
   }
 
