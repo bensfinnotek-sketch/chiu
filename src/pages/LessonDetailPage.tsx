@@ -95,7 +95,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     }
 
     const correctCount = lesson.quiz.reduce(
-      (total, q) => total + (quizAnswers[q.id] === q.correctIndex ? 1 : 0),
+      (total, q) => total + (quizAnswers[q.id] === q.correctAnswer ? 1 : 0),
       0
     );
     const score = Math.round((correctCount / lesson.quiz.length) * 100);
@@ -623,7 +623,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             {lesson.quiz.map((q, qIndex) => {
               const selectedOpt = quizAnswers[q.id];
               const isAnswered = selectedOpt !== undefined;
-              const isCorrect = selectedOpt === q.correctIndex;
+              const isCorrect = selectedOpt === q.correctAnswer;
 
               return (
                 <div
@@ -642,7 +642,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                       let btnStyle = 'bg-[#FFF9F4] dark:bg-[#181412] border-gray-200 dark:border-white/10 text-[#211A17] dark:text-white hover:border-[#E86F51]';
 
                       if (quizSubmitted) {
-                        if (optIdx === q.correctIndex) {
+                        if (optIdx === q.correctAnswer) {
                           btnStyle = 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold';
                         } else if (isOptionSelected && !isCorrect) {
                           btnStyle = 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200';
@@ -659,7 +659,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                           className={`p-4 rounded-2xl border text-left text-sm transition-all cursor-pointer flex items-center justify-between ${btnStyle}`}
                         >
                           <span>{option}</span>
-                          {quizSubmitted && optIdx === q.correctIndex && (
+                          {quizSubmitted && optIdx === q.correctAnswer && (
                             <CheckCircle2 size={16} className="text-emerald-600" />
                           )}
                           {quizSubmitted && isOptionSelected && !isCorrect && (
