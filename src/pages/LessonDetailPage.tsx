@@ -18,7 +18,8 @@ import { AudioButton } from '../components/common/AudioButton';
 import { MicrophoneButton } from '../components/common/MicrophoneButton';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { storageService } from '../services/storageService';
-import { voiceService } from '../services/voiceService';
+import { speechRecognitionService } from '../services/speechRecognitionService';
+import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import { flashcardService } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 
@@ -176,36 +177,73 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     setQuizError('');
   };
 
-  // Speaking voice capture
+  // Speaking voice capture + acoustic pronunciation assessment
   const handleToggleSpeak = () => {
     if (isListening) {
-      voiceService.stopListening();
-      setIsListening(false);
+      speechRecognitionService.stopListening();
       return;
     }
 
+    const targetText = lesson.dialogue[speakingIndex]?.chinese?.trim();
+    if (!targetText) return;
+
     setIsListening(true);
+    setIsEvaluating(false);
     setSpeechResult(null);
 
-    voiceService.startListening({
-      onResult: async (transcript: string) => {
+    const started = speechRecognitionService.startListening({
+      onResult: () => {
+        setIsListening(true);
+      },
+      onEnd: (finalTranscript, audioBlob) => {
+        const transcript = finalTranscript?.trim() || '';
         setIsListening(false);
-        setIsEvaluating(true);
-        try {
+
+        if (!transcript) {
+          setIsEvaluating(false);
           setSpeechResult({
             accuracyScore: null,
-            feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
-            transcription: transcript,
+            feedback: 'Chưa nhận được câu nói để đánh giá.',
+            transcription: '',
           });
-        } finally {
-          setIsEvaluating(false);
+          return;
         }
+
+        setIsEvaluating(true);
+        void geminiSpeakingService
+          .assessPronunciation({
+            spokenText: transcript,
+            targetText,
+            audio: audioBlob,
+          })
+          .then((assessment) => {
+            setSpeechResult({
+              accuracyScore: assessment.accuracyScore,
+              feedback: assessment.feedback,
+              transcription: transcript,
+            });
+          })
+          .catch(() => {
+            setSpeechResult({
+              accuracyScore: null,
+              feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
+              transcription: transcript,
+            });
+          })
+          .finally(() => {
+            setIsEvaluating(false);
+          });
       },
       onError: () => {
         setIsListening(false);
         setIsEvaluating(false);
       },
     });
+
+    if (!started) {
+      setIsListening(false);
+      setIsEvaluating(false);
+    }
   };
 
   return (
