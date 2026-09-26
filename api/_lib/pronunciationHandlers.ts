@@ -49,8 +49,6 @@ export async function handlePronunciation(req: any, res: any) {
     return sendJson(res, 200, assessment);
   } catch (error: any) {
     console.error("[Pronunciation] API error:", error?.message || error);
-    return sendJson(res, 200, createUnavailablePronunciationAssessment(
-      typeof req?.body?.language === "string" ? req.body.language : "vi"
-    ));
+    return sendJson(res, 200, createUnavailablePronunciationAssessment("vi"));
   }
 }
