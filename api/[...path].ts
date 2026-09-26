@@ -11,6 +11,7 @@ import {
   handleQuiz,
   sendJson,
 } from "./_lib/geminiHandlers.ts";
+import { handlePronunciation } from "./_lib/pronunciationHandlers.ts";
 import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.ts";
 import { handleGeneratePersonalizedLesson } from "./_lib/personalizedLessonHandlers.ts";
 import {
@@ -36,7 +37,7 @@ export default async function handler(req: any, res: any) {
     segments = Array.isArray(req.query.path) ? req.query.path : [req.query.path];
   } else {
     const rawUrl = (req.url || "").split("?")[0];
-    const cleanUrl = rawUrl.replace(/^\/api\/?/, "");
+    const cleanUrl = rawUrl.replace(/^\\/api\\/?/, "");
     segments = cleanUrl.split("/").filter(Boolean);
   }
 
@@ -53,6 +54,10 @@ export default async function handler(req: any, res: any) {
   if (fullSubPath === "ai/summarize") {
     if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSummarize(req, res);
+  }
+  if (fullSubPath === "ai/pronunciation") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
+    return handlePronunciation(req, res);
   }
   if (fullSubPath === "gemini/conversation") {
     if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
@@ -107,7 +112,9 @@ export default async function handler(req: any, res: any) {
 
   // User Profile endpoint (Protected)
   if (fullSubPath === "user/profile") {
-    if (req.method === "GET") return handleGetUserProfile(req, res);
+    if (req.method === "GET") {
+      return handleGetUserProfile(req, res);
+    }
   }
 
   return sendJson(res, 404, { error: `API route /api/${fullSubPath} not found` });
