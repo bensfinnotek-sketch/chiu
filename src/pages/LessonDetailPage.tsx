@@ -48,6 +48,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const [quizError, setQuizError] = useState('');
+  const [quizAttemptCount, setQuizAttemptCount] = useState(() => storageService.getQuizAttempts(lesson.id).length);
   const [lessonCompleted, setLessonCompleted] = useState(
     storageService.getCompletedLessons().includes(lesson.id)
   );
@@ -94,18 +95,35 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     }
 
     const correctCount = lesson.quiz.reduce(
-      (total, q) => total + (quizAnswers[q.id] === q.correctAnswer ? 1 : 0),
+      (total, q) => total + (quizAnswers[q.id] === q.correctIndex ? 1 : 0),
       0
     );
-    setQuizScore(Math.round((correctCount / lesson.quiz.length) * 100));
+    const score = Math.round((correctCount / lesson.quiz.length) * 100);
+    const passingScore = 80;
+
+    const attempt = storageService.recordQuizAttempt({
+      lessonId: lesson.id,
+      score,
+      correctCount,
+      totalQuestions: lesson.quiz.length,
+      answers: quizAnswers,
+    });
+
+    setQuizScore(attempt.score);
     setQuizError('');
     setQuizSubmitted(true);
-    // Mark as completed
-    storageService.markLessonCompleted(lesson.id);
-    setLessonCompleted(true);
+    setQuizAttemptCount(storageService.getQuizAttempts(lesson.id).length);
 
-    // Auto-Flashcard: When an authenticated user completes a lesson, automatically upsert lesson vocabulary
-    if (user && lesson.vocabulary && lesson.vocabulary.length > 0) {
+    const passed = attempt.score >= passingScore;
+    if (passed) {
+      storageService.markLessonCompleted(lesson.id);
+      setLessonCompleted(true);
+    } else {
+      setLessonCompleted(false);
+    }
+
+    // Auto-Flashcard: Only unlock lesson completion after the quiz passes.
+    if (passed && user && lesson.vocabulary && lesson.vocabulary.length > 0) {
       // Normalize and deduplicate vocabulary items
       const seenHanzi = new Set<string>();
       const cardsToUpsert: Array<{
@@ -150,6 +168,13 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         });
       }
     }
+  };
+
+  const handleRetryQuiz = () => {
+    setQuizAnswers({});
+    setQuizScore(null);
+    setQuizSubmitted(false);
+    setQuizError('');
   };
 
   // Speaking voice capture
@@ -598,7 +623,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             {lesson.quiz.map((q, qIndex) => {
               const selectedOpt = quizAnswers[q.id];
               const isAnswered = selectedOpt !== undefined;
-              const isCorrect = selectedOpt === q.correctAnswer;
+              const isCorrect = selectedOpt === q.correctIndex;
 
               return (
                 <div
@@ -617,7 +642,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                       let btnStyle = 'bg-[#FFF9F4] dark:bg-[#181412] border-gray-200 dark:border-white/10 text-[#211A17] dark:text-white hover:border-[#E86F51]';
 
                       if (quizSubmitted) {
-                        if (optIdx === q.correctAnswer) {
+                        if (optIdx === q.correctIndex) {
                           btnStyle = 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold';
                         } else if (isOptionSelected && !isCorrect) {
                           btnStyle = 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200';
@@ -634,7 +659,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                           className={`p-4 rounded-2xl border text-left text-sm transition-all cursor-pointer flex items-center justify-between ${btnStyle}`}
                         >
                           <span>{option}</span>
-                          {quizSubmitted && optIdx === q.correctAnswer && (
+                          {quizSubmitted && optIdx === q.correctIndex && (
                             <CheckCircle2 size={16} className="text-emerald-600" />
                           )}
                           {quizSubmitted && isOptionSelected && !isCorrect && (
@@ -659,11 +684,13 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
           <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FFF5F1] to-white dark:from-[#241F1C] dark:to-[#2A2320] border border-[#E86F51]/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="font-extrabold text-lg text-[#211A17] dark:text-white">
-                {quizSubmitted ? 'Hoàn tất bài kiểm tra!' : 'Sẵn sàng nộp bài?'}
+                {quizSubmitted ? (quizScore !== null && quizScore >= 80 ? 'Hoàn tất bài kiểm tra!' : 'Cần thử lại bài kiểm tra') : 'Sẵn sàng nộp bài?'}
               </p>
               <p className="text-xs text-[#716761] dark:text-[#A89E97]">
                 {quizSubmitted
-                  ? `Bạn đạt ${quizScore ?? 0}/100 điểm. Bài học đã được ghi nhận hoàn thành.`
+                  ? quizScore !== null && quizScore >= 80
+                    ? `Bạn đạt ${quizScore}/100 điểm. Bài học đã được ghi nhận hoàn thành.`
+                    : `Bạn đạt ${quizScore ?? 0}/100 điểm. Cần ít nhất 80 điểm để hoàn thành bài học. Lần thử: ${quizAttemptCount}.`
                   : 'Trả lời đủ câu hỏi để kiểm tra độ hiểu bài và ghi nhận điểm số.'}
               </p>
             </div>
@@ -682,7 +709,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
               >
                 Nộp bài trắc nghiệm
               </button>
-            ) : (
+            ) : quizScore !== null && quizScore >= 80 ? (
               <button
                 type="button"
                 onClick={onBack}
@@ -690,6 +717,14 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
               >
                 <Trophy size={16} />
                 <span>Tiếp tục bài tiếp theo</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleRetryQuiz}
+                className="px-8 py-3.5 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] cursor-pointer"
+              >
+                Làm lại bài kiểm tra
               </button>
             )}
           </div>
