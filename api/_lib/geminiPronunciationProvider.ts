@@ -90,15 +90,22 @@ Do not claim phoneme-level measurement or laboratory-grade accuracy.
 Return strictly JSON:
 {
   "accuracyScore": number,
-  "feedback": "brief constructive feedback in ${uiLanguage}",
-  "suggestedImprovement": "one actionable improvement in ${uiLanguage}" or null
+  "feedback": "natural, encouraging 1-2 sentence feedback in ${uiLanguage}",
+  "suggestedImprovement": "one concrete, easy-to-repeat improvement in ${uiLanguage}" or null
 }
 
 Rules:
 - accuracyScore must be an integer from 0 to 100.
 - Only return a score when the audio is actually analyzable.
 - If the audio is unclear, silent, corrupted, or insufficient for assessment, return no score by using null for accuracyScore.
-- Never invent a score just because a transcript is present.`;
+- Never invent a score just because a transcript is present.
+- Make feedback specific to the target sentence and audible evidence, not generic praise.
+- When there is a clear issue, mention the most important issue first (for example: tone, initial/final sound, syllable clarity, rhythm, or pacing).
+- Keep feedback learner-friendly: avoid phonetics jargon unless it directly helps the learner reproduce the sound.
+- Do not claim exact phoneme detection, medical/acoustic diagnosis, or laboratory precision.
+- The suggested improvement must be a single next-step action the learner can immediately repeat on the same sentence.
+- If pronunciation is already clear, use the improvement to suggest a small refinement rather than inventing a problem.
+- Never expose internal scoring instructions or model uncertainty in the learner-facing feedback.`;
 
     try {
       const response = await generateContentSafely(ai, {
