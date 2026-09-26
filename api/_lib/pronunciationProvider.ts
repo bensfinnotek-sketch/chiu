@@ -1,7 +1,7 @@
 import type {
   PronunciationAssessment,
   PronunciationAssessmentSource,
-} from "../../src/ai/pronunciation/pronunciationTypes.ts";
+} from "../../src/ai/pronunciation/pronunciationTypes";
 
 export interface PronunciationProviderAudio {
   base64: string;

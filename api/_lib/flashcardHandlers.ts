@@ -1,5 +1,5 @@
-import { extractBearerToken, requireAuth, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
-import { parseBody, sendJson } from "./httpUtils.ts";
+import { extractBearerToken, requireAuth, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware";
+import { parseBody, sendJson } from "./httpUtils";
 
 export interface FlashcardItem {
   id: string;

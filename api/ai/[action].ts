@@ -1,5 +1,5 @@
-import { handleSpeakingAnalyze, handleSummarize, sendJson } from "../_lib/geminiHandlers.ts";
-import { handlePronunciation } from "../_lib/pronunciationHandlers.ts";
+import { handleSpeakingAnalyze, handleSummarize, sendJson } from "../_lib/geminiHandlers";
+import { handlePronunciation } from "../_lib/pronunciationHandlers";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
