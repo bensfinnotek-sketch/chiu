@@ -308,8 +308,61 @@ export class GeminiServiceImpl implements AIService {
       return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
-    // Audio transport/provider integration belongs here; do not infer acoustic quality from text.
-    return createUnavailablePronunciationAssessment(params.language || 'vi');
+    const blob = params.audio.blob;
+    if (!blob.size || blob.size > 12 * 1024 * 1024) {
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+    }
+
+    const base64 = btoa(binary);
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch('/api/ai/pronunciation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify({
+        spokenText: params.spokenText,
+        targetText: params.targetText,
+        language: params.language || 'vi',
+        audio: {
+          base64,
+          mimeType: params.audio.mimeType || blob.type || 'audio/webm',
+        },
+      }),
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+    const data = await res.json();
+    if (
+      (data?.source !== 'acoustic' && data?.source !== 'unavailable') ||
+      (data?.accuracyScore !== null &&
+        (typeof data?.accuracyScore !== 'number' ||
+          !Number.isFinite(data.accuracyScore) ||
+          data.accuracyScore < 0 ||
+          data.accuracyScore > 100))
+    ) {
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+    return {
+      source: data.source,
+      accuracyScore: data.accuracyScore,
+      feedback: typeof data.feedback === 'string' ? data.feedback : '',
+      suggestedImprovement:
+        typeof data.suggestedImprovement === 'string' ? data.suggestedImprovement : null,
+    };
   }
 
   async evaluateSpeech(targetSentence: string, spokenText: string): Promise<{ accuracyScore: number; feedback: string }> {
