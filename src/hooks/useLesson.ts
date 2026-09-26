@@ -34,7 +34,7 @@ export function useLesson(lessonId: string) {
   const loadLesson = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [l, s, v, g, q, p] = await Promise.all([
+      const [l, s, v, g, q, p, attempts] = await Promise.all([
         curriculumRepository.getLesson(lessonId),
         curriculumRepository.getLessonSections(lessonId),
         curriculumRepository.getVocabularyForLesson(lessonId),
