@@ -17,6 +17,7 @@ export class SpeechRecognitionService {
   private mediaStream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
   private audioCaptureStartPromise: Promise<void> | null = null;
+  private audioFinalizationPromise: Promise<Blob | null> | null = null;
   private audioCaptureSession = 0;
 
   constructor() {
@@ -155,13 +156,16 @@ export class SpeechRecognitionService {
   }
 
   private async finishAudioCapture(): Promise<Blob | null> {
+    if (this.audioFinalizationPromise) return this.audioFinalizationPromise;
     if (this.audioCaptureStartPromise) await this.audioCaptureStartPromise;
-    return new Promise((resolve) => {
+
+    this.audioFinalizationPromise = new Promise((resolve) => {
       const recorder = this.mediaRecorder;
       const stream = this.mediaStream;
       if (!recorder) {
         stream?.getTracks().forEach((track) => track.stop());
         this.mediaStream = null;
+        this.audioCaptureStartPromise = null;
         resolve(null);
         return;
       }
@@ -174,6 +178,7 @@ export class SpeechRecognitionService {
         this.mediaRecorder = null;
         this.mediaStream = null;
         this.audioCaptureStartPromise = null;
+        this.audioFinalizationPromise = null;
         resolve(blob);
       };
 
@@ -188,9 +193,13 @@ export class SpeechRecognitionService {
         finalize();
       }
     });
+
+    return this.audioFinalizationPromise;
   }
 
   public stopListening(): void {
+    // Invalidate a pending microphone permission request so a late stream cannot outlive the turn.
+    ++this.audioCaptureSession;
     if (this.recognition && this.isListeningActive) {
       try {
         this.recognition.stop();
