@@ -22,12 +22,29 @@ function validateAssessment(value: unknown, language: string): PronunciationAsse
   const score = candidate.accuracyScore;
 
   if (
-    typeof score !== "number" ||
-    !Number.isFinite(score) ||
-    score < 0 ||
-    score > 100
+    score !== null &&
+    (typeof score !== "number" ||
+      !Number.isFinite(score) ||
+      score < 0 ||
+      score > 100)
   ) {
     return null;
+  }
+
+  if (score === null) {
+    return {
+      source: "unavailable",
+      accuracyScore: null,
+      feedback: typeof candidate.feedback === "string" && candidate.feedback.trim()
+        ? candidate.feedback.trim()
+        : "Chưa đủ dữ liệu âm thanh để đánh giá phát âm.",
+      suggestedImprovement:
+        candidate.suggestedImprovement === null
+          ? null
+          : typeof candidate.suggestedImprovement === "string"
+            ? candidate.suggestedImprovement.trim() || null
+            : null,
+    };
   }
 
   if (typeof candidate.feedback !== "string" || !candidate.feedback.trim()) {
@@ -132,6 +149,8 @@ Analyze the attached learner audio.`,
         config: {
           systemInstruction,
           responseMimeType: "application/json",
+          temperature: 0.2,
+          maxOutputTokens: 256,
         },
       });
 
