@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   BookOpen,
@@ -74,6 +74,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   const [pronunciationState, setPronunciationState] = useState<PronunciationResultState>({
     phase: 'idle',
   });
+  const pronunciationAbortRef = useRef<AbortController | null>(null);
 
   const toggleSaveWord = (wordItem: any) => {
     const allSaved = storageService.getSavedWords();
@@ -200,6 +201,9 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     const targetText = lesson.dialogue[speakingIndex]?.chinese?.trim();
     if (!targetText) return;
 
+    pronunciationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    pronunciationAbortRef.current = abortController;
     setPronunciationState({ phase: 'listening' });
 
     const started = speechRecognitionService.startListening({
@@ -229,6 +233,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             spokenText: transcript,
             targetText,
             audio: audioBlob,
+            signal: abortController.signal,
           })
           .then((assessment) => {
             setPronunciationState({
@@ -713,6 +718,8 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => {
+                    pronunciationAbortRef.current?.abort();
+                    pronunciationAbortRef.current = null;
                     setSpeakingIndex(idx);
                     setPronunciationState({ phase: 'idle' });
                   }}
