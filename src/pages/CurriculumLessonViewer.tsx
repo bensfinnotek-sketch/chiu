@@ -119,6 +119,12 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     },
   };
   const [quizPersistenceError, setQuizPersistenceError] = useState<string | null>(null);
+  const [missionCompleted, setMissionCompleted] = useState(false);
+
+  React.useEffect(() => {
+    if (!lesson) return;
+    setMissionCompleted(window.localStorage.getItem(`chiu-mini-mission:${lesson.id}`) === 'completed');
+  }, [lesson?.id]);
 
   if (isLoading || !lesson) {
     return (
@@ -401,6 +407,40 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                 <div className="flex items-start gap-2 text-xs text-white/75">
                   <CheckCircle2 size={15} className="text-[#F6B39F] shrink-0 mt-0.5" />
                   <span><strong className="text-white">Dấu hiệu hoàn thành:</strong> {lessonMissions[lesson.id].success}</span>
+                </div>
+
+                <div className="pt-2 border-t border-white/10 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black text-white">Tự kiểm tra trước khi rời bài</p>
+                      <p className="text-[11px] text-white/60 mt-0.5">Chọn trạng thái thật của bạn, không cần đoán điểm.</p>
+                    </div>
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${missionCompleted ? 'bg-green-500/20 text-green-200' : 'bg-white/10 text-white/70'}`}>
+                      {missionCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.localStorage.setItem(`chiu-mini-mission:${lesson.id}`, 'completed');
+                        setMissionCompleted(true);
+                      }}
+                      className={`flex-1 px-4 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer ${missionCompleted ? 'bg-green-500/20 text-green-200 border border-green-400/30' : 'bg-[#E86F51] text-white hover:bg-[#D35B3E]'}`}
+                    >
+                      {missionCompleted ? '✓ Mình đã làm được' : '✓ Mình đã làm được'}
+                    </button>
+                    {onNavigateToSpeaking && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToSpeaking(lesson.title)}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-white text-xs font-black hover:bg-white/15 transition-all cursor-pointer"
+                      >
+                        🎙️ Thử cùng Lina
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
