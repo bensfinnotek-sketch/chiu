@@ -173,6 +173,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
+      {/* 4. Daily goal */}
+      <div className="rounded-3xl bg-[#211A17] dark:bg-[#2A2320] p-5 sm:p-6 text-white border border-[#E86F51]/20 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Flame size={17} className="text-[#F5A28E]" />
+              <span className="text-xs font-black uppercase tracking-wider text-[#F5A28E]">Mục tiêu hôm nay</span>
+            </div>
+            <h3 className="text-xl font-bold mt-1">{Math.min(minutesLearnedToday, user.dailyMinutes)} / {user.dailyMinutes} phút học</h3>
+            <p className="text-xs text-white/65 mt-1">
+              {minutesLearnedToday >= user.dailyMinutes ? 'Bạn đã hoàn thành mục tiêu hôm nay. Giữ nhịp học tiếp nhé!' : 'Một phiên học ngắn nữa là bạn chạm mục tiêu hôm nay.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('review')}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#E86F51] text-white text-xs font-bold hover:bg-[#d85f41] transition-colors cursor-pointer shrink-0"
+          >
+            {minutesLearnedToday >= user.dailyMinutes ? 'Ôn thêm' : 'Học tiếp'}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+        <div className="mt-4 h-2.5 rounded-full bg-white/10 overflow-hidden" aria-label={`Tiến độ mục tiêu hôm nay: ${Math.min(100, Math.round((minutesLearnedToday / Math.max(user.dailyMinutes, 1)) * 100))}%`}>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] transition-all duration-500"
+            style={{ width: `${Math.min(100, Math.round((minutesLearnedToday / Math.max(user.dailyMinutes, 1)) * 100))}%` }}
+          />
+        </div>
+      </div>
+
       {/* 4. Quick Action Modules */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold text-[#211A17] dark:text-white">Luyện tập hôm nay</h3>
