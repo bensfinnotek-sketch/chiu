@@ -238,10 +238,18 @@ export class RecommendationService {
     }
 
     const componentScores = [
-      { key: 'vocabulary' as const, score: currentMastery.vocabularyScore },
-      { key: 'grammar' as const, score: currentMastery.grammarScore },
-      { key: 'quiz' as const, score: currentMastery.quizScore },
-    ].sort((a, b) => a.score - b.score);
+      currentMastery.weakVocabularyCount > 0
+        ? { key: 'vocabulary' as const, score: currentMastery.vocabularyScore }
+        : null,
+      currentMastery.weakGrammarCount > 0
+        ? { key: 'grammar' as const, score: currentMastery.grammarScore }
+        : null,
+      currentMastery.quizAttempts > 0
+        ? { key: 'quiz' as const, score: currentMastery.quizScore }
+        : null,
+    ]
+      .filter((component): component is NonNullable<typeof component> => component !== null)
+      .sort((a, b) => a.score - b.score);
     const weakestComponent = componentScores[0];
 
     if (decision.decision === 'review_quiz' && weakestComponent.key === 'vocabulary' && currentMastery.weakVocabularyCount > 0) {
