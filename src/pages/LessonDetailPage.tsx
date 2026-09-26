@@ -691,10 +691,17 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                   </div>
                   {pronunciationState.result.suggestedImprovement && (
                     <div className="rounded-xl bg-white/70 dark:bg-black/10 border border-[#E86F51]/10 px-3 py-2 text-xs text-[#716761] dark:text-[#A89E97]">
-                      <span className="font-bold text-[#E86F51]">Gợi ý cải thiện: </span>
+                      <span className="font-bold text-[#E86F51]">Sửa ngay: </span>
                       {pronunciationState.result.suggestedImprovement}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={handleToggleSpeak}
+                    className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#E86F51] text-white text-xs font-bold hover:bg-[#d85f41] transition-colors cursor-pointer"
+                  >
+                    🎙️ Nói lại câu này
+                  </button>
                 </div>
               </div>
             )}
