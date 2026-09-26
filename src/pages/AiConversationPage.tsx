@@ -1278,6 +1278,13 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           topic: activeTopic,
           level: activeLevel,
           scores: sessionScores,
+          corrections: messages
+            .filter((message) => message.sender === 'user' && message.correction?.hasMistake && message.correction.userSentence && message.correction.naturalVersion)
+            .map((message) => ({
+              original: message.correction!.userSentence!,
+              corrected: message.correction!.naturalVersion!,
+              explanation: message.correction!.explanationVi || '',
+            })),
         }}
       />
     </div>
