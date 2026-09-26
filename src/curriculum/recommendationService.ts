@@ -122,6 +122,7 @@ export class RecommendationService {
       vocabularyProgress: vocabProgress,
       grammarProgress,
       skillProgress,
+      quizAttempts,
     });
 
     const flashcards = await flashcardService.getFlashcards();
@@ -374,7 +375,7 @@ export class RecommendationService {
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const vocabularyLevels = snapshot?.vocabularyLevels ?? new Map((await curriculumRepository.getAllVocabulary()).map((item) => [item.id, item.hskLevel]));
     const grammarLevels = snapshot?.grammarLevels ?? new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
-    const quizAttempts = (
+    const quizAttempts = snapshot?.quizAttempts ?? (
       await Promise.all(levelLessons.map((lesson) => repo.getQuizAttempts(userId, lesson.id)))
     ).flat();
     const profile = getHskMasteryProfile(
