@@ -73,10 +73,24 @@ export async function generateContentSafely(
 
   for (const model of MODEL_CANDIDATES) {
     try {
+      const config = options.config
+        ? {
+            ...options.config,
+            ...(options.config.thinkingConfig && model.startsWith("gemini-3")
+              ? { thinkingConfig: options.config.thinkingConfig }
+              : options.config.thinkingConfig
+                ? (() => {
+                    const { thinkingConfig: _ignoredThinkingConfig, ...rest } = options.config;
+                    return rest;
+                  })()
+                : {}),
+          }
+        : undefined;
+
       const response = await ai.models.generateContent({
         model,
         contents: options.contents,
-        config: options.config,
+        config,
       });
       return { text: response.text || "" };
     } catch (err: any) {
