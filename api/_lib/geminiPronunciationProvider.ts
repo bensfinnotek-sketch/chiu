@@ -150,7 +150,12 @@ Analyze the attached learner audio.`,
           systemInstruction,
           responseMimeType: "application/json",
           temperature: 0.2,
-          maxOutputTokens: 256,
+          maxOutputTokens: 160,
+          // Pronunciation feedback is a short, instruction-following task.
+          // Keep Gemini 3 reasoning at low to reduce time-to-first-output.
+          thinkingConfig: {
+            thinkingLevel: "low",
+          },
         },
       });
 
