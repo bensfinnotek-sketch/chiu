@@ -1,6 +1,6 @@
-import { parseBody, sendJson } from "./httpUtils";
-import { geminiPronunciationProvider } from "./geminiPronunciationProvider";
-import { createUnavailablePronunciationAssessment } from "../../src/ai/pronunciation/pronunciationTypes";
+import { parseBody, sendJson } from "./httpUtils.js";
+import { geminiPronunciationProvider } from "./geminiPronunciationProvider.js";
+import { createUnavailablePronunciationAssessment } from "../../src/ai/pronunciation/pronunciationTypes.js";
 
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 
