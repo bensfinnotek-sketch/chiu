@@ -365,30 +365,6 @@ export class GeminiServiceImpl implements AIService {
     };
   }
 
-  async evaluateSpeech(targetSentence: string, spokenText: string): Promise<{ accuracyScore: number; feedback: string }> {
-    try {
-      const res = await fetch('/api/gemini/speaking-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({ sentence: spokenText, targetPrompt: targetSentence }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          accuracyScore: data.pronunciationScore || 90,
-          feedback: data.feedback || 'Phát âm rất tốt!',
-        };
-      }
-    } catch {
-      // fallback
-    }
-    return {
-      accuracyScore: 92,
-      feedback: 'Phát âm rõ ràng, nhịp điệu tự nhiên.',
-    };
-  }
-
   async translateChinese(text: string, from: string = 'zh', to: string = 'vi') {
     return this.translateText(text, from, to);
   }
