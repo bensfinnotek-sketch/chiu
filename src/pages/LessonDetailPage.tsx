@@ -29,6 +29,22 @@ interface LessonDetailPageProps {
   onNavigate: (route: string) => void;
 }
 
+type PronunciationAssessment = {
+  source: 'acoustic' | 'unavailable';
+  accuracyScore: number | null;
+  feedback: string;
+  suggestedImprovement: string | null;
+  transcription: string;
+};
+
+type PronunciationResultState =
+  | { phase: 'idle' }
+  | { phase: 'listening' }
+  | { phase: 'evaluating' }
+  | { phase: 'ready'; result: PronunciationAssessment }
+  | { phase: 'unavailable'; result: PronunciationAssessment }
+  | { phase: 'error'; result: PronunciationAssessment };
+
 export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   lessonId,
   onBack,
@@ -55,15 +71,9 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
 
   // Speaking state
   const [speakingIndex, setSpeakingIndex] = useState(0);
-  const [isListening, setIsListening] = useState(false);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [speechResult, setSpeechResult] = useState<{
-    source: 'acoustic' | 'unavailable';
-    accuracyScore: number | null;
-    feedback: string;
-    suggestedImprovement: string | null;
-    transcription: string;
-  } | null>(null);
+  const [pronunciationState, setPronunciationState] = useState<PronunciationResultState>({
+    phase: 'idle',
+  });
 
   const toggleSaveWord = (wordItem: any) => {
     const allSaved = storageService.getSavedWords();
@@ -181,6 +191,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
 
   // Speaking voice capture + acoustic pronunciation assessment
   const handleToggleSpeak = () => {
+    const isListening = pronunciationState.phase === 'listening';
     if (isListening) {
       speechRecognitionService.stopListening();
       return;
@@ -189,31 +200,30 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     const targetText = lesson.dialogue[speakingIndex]?.chinese?.trim();
     if (!targetText) return;
 
-    setIsListening(true);
-    setIsEvaluating(false);
-    setSpeechResult(null);
+    setPronunciationState({ phase: 'listening' });
 
     const started = speechRecognitionService.startListening({
       onResult: () => {
-        setIsListening(true);
+        setPronunciationState({ phase: 'listening' });
       },
       onEnd: (finalTranscript, audioBlob) => {
         const transcript = finalTranscript?.trim() || '';
-        setIsListening(false);
 
         if (!transcript) {
-          setIsEvaluating(false);
-          setSpeechResult({
-            source: 'unavailable',
-            accuracyScore: null,
-            feedback: 'Chưa nhận được câu nói để đánh giá.',
-            suggestedImprovement: 'Hãy nói lại trọn câu sau khi nhấn mic để Lina có dữ liệu âm thanh.',
-            transcription: '',
+          setPronunciationState({
+            phase: 'unavailable',
+            result: {
+              source: 'unavailable',
+              accuracyScore: null,
+              feedback: 'Chưa nhận được câu nói để đánh giá.',
+              suggestedImprovement: 'Hãy nói lại trọn câu sau khi nhấn mic để Lina có dữ liệu âm thanh.',
+              transcription: '',
+            },
           });
           return;
         }
 
-        setIsEvaluating(true);
+        setPronunciationState({ phase: 'evaluating' });
         void geminiSpeakingService
           .assessPronunciation({
             spokenText: transcript,
@@ -221,36 +231,55 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             audio: audioBlob,
           })
           .then((assessment) => {
-            setSpeechResult({
-              source: assessment.source,
-              accuracyScore: assessment.accuracyScore,
-              feedback: assessment.feedback,
-              suggestedImprovement: assessment.suggestedImprovement,
-              transcription: transcript,
+            setPronunciationState({
+              phase: assessment.source === 'acoustic' ? 'ready' : 'unavailable',
+              result: {
+                source: assessment.source,
+                accuracyScore: assessment.accuracyScore,
+                feedback: assessment.feedback,
+                suggestedImprovement: assessment.suggestedImprovement,
+                transcription: transcript,
+              },
             });
           })
           .catch(() => {
-            setSpeechResult({
-              source: 'unavailable',
-              accuracyScore: null,
-              feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
-              suggestedImprovement: 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.',
-              transcription: transcript,
+            setPronunciationState({
+              phase: 'error',
+              result: {
+                source: 'unavailable',
+                accuracyScore: null,
+                feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
+                suggestedImprovement: 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.',
+                transcription: transcript,
+              },
             });
-          })
-          .finally(() => {
-            setIsEvaluating(false);
           });
       },
       onError: () => {
-        setIsListening(false);
-        setIsEvaluating(false);
+        setPronunciationState({
+          phase: 'error',
+          result: {
+            source: 'unavailable',
+            accuracyScore: null,
+            feedback: 'Không thể ghi nhận giọng nói ở lượt này.',
+            suggestedImprovement: 'Kiểm tra quyền microphone rồi thử lại.',
+            transcription: '',
+          },
+        });
       },
     });
 
     if (!started) {
-      setIsListening(false);
-      setIsEvaluating(false);
+      setPronunciationState({
+        phase: 'error',
+        result: {
+          source: 'unavailable',
+          accuracyScore: null,
+          feedback: 'Không thể bắt đầu ghi âm trên thiết bị này.',
+          suggestedImprovement: 'Kiểm tra quyền microphone rồi thử lại.',
+          transcription: '',
+        },
+      });
     }
   };
 
@@ -624,44 +653,46 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             {/* Big Accessible Mic Button */}
             <div className="py-4">
               <MicrophoneButton
-                isListening={isListening}
-                isProcessing={isEvaluating}
+                isListening={pronunciationState.phase === 'listening'}
+                isProcessing={pronunciationState.phase === 'evaluating'}
                 onClick={handleToggleSpeak}
                 statusText={
-                  isListening
+                  pronunciationState.phase === 'listening'
                     ? 'Đang lắng nghe giọng bạn...'
-                    : isEvaluating
+                    : pronunciationState.phase === 'evaluating'
                     ? 'Lina đang chấm điểm phát âm...'
+                    : pronunciationState.phase === 'error'
+                    ? 'Có lỗi — nhấn mic để thử lại'
                     : 'Nhấn mic và đọc to câu trên'
                 }
               />
             </div>
 
             {/* Speech Result Feedback Box */}
-            {speechResult && (
+            {(pronunciationState.phase === 'ready' || pronunciationState.phase === 'unavailable' || pronunciationState.phase === 'error') && (
               <div className="max-w-md mx-auto p-5 rounded-2xl bg-[#FFF9F4] dark:bg-[#342822] border border-[#E86F51]/20 space-y-2 text-left animate-fade-in">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <span className="text-xs font-bold text-[#716761]">Đánh giá phát âm</span>
                     <p className="text-[11px] text-[#8A7F78] mt-0.5">
-                      {speechResult.source === 'acoustic' ? 'Đã phân tích từ dữ liệu âm thanh' : 'Chưa thể đánh giá bằng âm thanh'}
+                      {pronunciationState.phase === 'ready' ? 'Đã phân tích từ dữ liệu âm thanh' : pronunciationState.phase === 'error' ? 'Có lỗi khi xử lý lượt nói' : 'Chưa thể đánh giá bằng âm thanh'}
                     </p>
                   </div>
                   <span className="text-lg font-black text-[#E86F51]">
-                    {speechResult.accuracyScore !== null ? speechResult.accuracyScore + '/100' : 'Chưa có điểm'}
+                    {pronunciationState.result.accuracyScore !== null ? pronunciationState.result.accuracyScore + '/100' : 'Chưa có điểm'}
                   </span>
                 </div>
                 <p className="text-xs text-[#716761]">
-                  Bạn vừa nói: <span className="font-chinese font-bold text-[#211A17] dark:text-white">"{speechResult.transcription}"</span>
+                  Bạn vừa nói: <span className="font-chinese font-bold text-[#211A17] dark:text-white">"{pronunciationState.result.transcription}"</span>
                 </p>
                 <div className="pt-2 border-t border-[#E86F51]/10 space-y-2">
                   <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    {speechResult.feedback}
+                    {pronunciationState.result.feedback}
                   </div>
-                  {speechResult.suggestedImprovement && (
+                  {pronunciationState.result.suggestedImprovement && (
                     <div className="rounded-xl bg-white/70 dark:bg-black/10 border border-[#E86F51]/10 px-3 py-2 text-xs text-[#716761] dark:text-[#A89E97]">
                       <span className="font-bold text-[#E86F51]">Gợi ý cải thiện: </span>
-                      {speechResult.suggestedImprovement}
+                      {pronunciationState.result.suggestedImprovement}
                     </div>
                   )}
                 </div>
@@ -676,7 +707,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                   type="button"
                   onClick={() => {
                     setSpeakingIndex(idx);
-                    setSpeechResult(null);
+                    setPronunciationState({ phase: 'idle' });
                   }}
                   className={`w-8 h-8 rounded-full text-xs font-bold cursor-pointer transition-colors ${
                     speakingIndex === idx
