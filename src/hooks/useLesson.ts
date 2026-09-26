@@ -26,6 +26,7 @@ export function useLesson(lessonId: string) {
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
   const [grammar, setGrammar] = useState<GrammarPoint[]>([]);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
   const [userProgress, setUserProgress] = useState<UserLessonProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -40,6 +41,7 @@ export function useLesson(lessonId: string) {
         curriculumRepository.getGrammarForLesson(lessonId),
         curriculumRepository.getQuiz(lessonId),
         repo.getLessonProgress(userId, lessonId),
+        repo.getQuizAttempts(userId, lessonId),
       ]);
 
       setLesson(l);
@@ -47,6 +49,7 @@ export function useLesson(lessonId: string) {
       setVocabulary(v);
       setGrammar(g);
       setQuizQuestions(q);
+      setQuizAttempts(attempts);
       setUserProgress(p);
 
       // Auto mark started if not started yet
@@ -187,6 +190,9 @@ export function useLesson(lessonId: string) {
     // Duplicate attempt IDs are treated as already processed, preventing mastery
     // and skill evidence from being applied twice after retries/double submits.
     const isNewAttempt = await repo.saveQuizAttempt(attempt);
+    if (isNewAttempt) {
+      setQuizAttempts((current) => [attempt, ...current]);
+    }
     if (!isNewAttempt) {
       const currentProgress = await repo.getLessonProgress(userId, lessonId);
       return {
@@ -302,6 +308,7 @@ export function useLesson(lessonId: string) {
     vocabulary,
     grammar,
     quizQuestions,
+    quizAttempts,
     userProgress,
     isLoading,
     saveSectionProgress,
