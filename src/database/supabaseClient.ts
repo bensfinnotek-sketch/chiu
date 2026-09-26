@@ -7,8 +7,8 @@ const forceMock = import.meta.env.VITE_USE_MOCK_AUTH === 'true' || import.meta.e
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && !forceMock);
 
-export const supabase: SupabaseClient<any> | null = isSupabaseConfigured
-  ? createClient<any>(supabaseUrl as string, supabaseAnonKey as string, {
+export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
+  ? createClient<Database>(supabaseUrl as string, supabaseAnonKey as string, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,

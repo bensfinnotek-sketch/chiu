@@ -58,7 +58,18 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async getSession(sessionId: string): Promise<ConversationSession | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('conversation_sessions').select('*').eq('id', sessionId).maybeSingle();
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) {
+      throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    const { data, error } = await supabase
+      .from('conversation_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('user_id', auth.data.user.id)
+      .maybeSingle();
+
     if (error) throw new Error(`Không thể tải phiên hội thoại: ${formatSupabaseError(error)}`);
     if (!data) return null;
     return { id: data.id, userId: data.user_id, title: data.title, topic: data.topic, learnerLevel: data.learner_level, summary: data.summary || '', keyFacts: (data.key_facts as any) || [], vocabulary: (data.vocabulary as any) || [], createdAt: data.created_at, updatedAt: data.updated_at };
@@ -132,7 +143,20 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async getSessionMessages(sessionId: string): Promise<ConversationMessage[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('conversation_messages').select('*').eq('session_id', sessionId).order('timestamp', { ascending: true });
+    const { data: session, error: sessionError } = await supabase
+      .from('conversation_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .maybeSingle();
+    if (sessionError) throw new Error(`Không thể xác thực phiên hội thoại: ${formatSupabaseError(sessionError)}`);
+    if (!session?.user_id) return [];
+    await this.assertAuthenticatedUser(session.user_id);
+    const { data, error } = await supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_id', session.user_id)
+      .order('timestamp', { ascending: true });
     if (error) throw new Error(`Không thể tải tin nhắn hội thoại: ${formatSupabaseError(error)}`);
     if (!data) return [];
     return data.map((m) => ({ id: m.id, sessionId: m.session_id, userId: m.user_id, role: m.role as any, chinese: m.chinese, pinyin: m.pinyin || undefined, translation: m.translation || undefined, timestamp: m.timestamp, corrections: m.analysis?.corrections || [], vocabulary: m.analysis?.vocabulary || [], grammarNote: m.analysis?.grammarNote || null, encouragement: m.analysis?.encouragement || undefined, followUpQuestion: m.analysis?.followUpQuestion || undefined, scores: m.analysis?.scores || undefined }));
@@ -140,27 +164,33 @@ export class SupabaseConversationRepository implements ConversationRepository {
 
   async updateSummary(sessionId: string, summary: string, keyFacts?: string[]): Promise<void> {
     if (!supabase) return;
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
     const updates: Record<string, any> = { summary, updated_at: new Date().toISOString() };
     if (keyFacts) updates.key_facts = keyFacts;
-    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (error) throw new Error(`Không thể cập nhật tóm tắt hội thoại: ${formatSupabaseError(error)}`);
   }
 
   async updateMemory(sessionId: string, memory: Partial<ConversationMemory>): Promise<void> {
     if (!supabase) return;
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (memory.summary !== undefined) updates.summary = memory.summary;
     if (memory.keyFacts !== undefined) updates.key_facts = memory.keyFacts;
     if (memory.vocabulary !== undefined) updates.vocabulary = memory.vocabulary;
-    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId);
+    const { error } = await supabase.from('conversation_sessions').update(updates).eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (error) throw new Error(`Không thể cập nhật bộ nhớ hội thoại: ${formatSupabaseError(error)}`);
   }
 
   async deleteSession(sessionId: string): Promise<void> {
     if (!supabase) return;
-    const { error: messageError } = await supabase.from('conversation_messages').delete().eq('session_id', sessionId);
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) throw new Error('Phiên đăng nhập Supabase đã hết hạn. Vui lòng đăng nhập lại.');
+    const { error: messageError } = await supabase.from('conversation_messages').delete().eq('session_id', sessionId).eq('user_id', auth.data.user.id);
     if (messageError) throw new Error(`Không thể xóa tin nhắn hội thoại: ${formatSupabaseError(messageError)}`);
-    const { error: sessionError } = await supabase.from('conversation_sessions').delete().eq('id', sessionId);
+    const { error: sessionError } = await supabase.from('conversation_sessions').delete().eq('id', sessionId).eq('user_id', auth.data.user.id);
     if (sessionError) throw new Error(`Không thể xóa phiên hội thoại: ${formatSupabaseError(sessionError)}`);
   }
 }

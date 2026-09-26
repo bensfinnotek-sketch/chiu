@@ -10,6 +10,11 @@ import {
 import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 import { ALL_VOCABULARY } from './vocabularyAndGrammarData';
 
+function normalizeHSKLevel(value: unknown, fallback: HSKLevelNumber = 1): HSKLevelNumber {
+  const level = Number(value);
+  return level >= 1 && level <= 6 && Number.isInteger(level) ? level as HSKLevelNumber : fallback;
+}
+
 const LOCAL_LESSON_PROGRESS_KEY = 'hanziai_curriculum_lesson_progress';
 const LOCAL_VOCAB_PROGRESS_KEY = 'hanziai_curriculum_vocab_progress';
 const LOCAL_GRAMMAR_PROGRESS_KEY = 'hanziai_curriculum_grammar_progress';
@@ -99,7 +104,8 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       if (existing.status === 'available' || existing.status === 'locked') {
         existing.status = 'in_progress';
       }
-      existing.attempts += 1;
+      // Opening/resuming a lesson is not a new attempt. Attempts are counted
+      // when the learner submits/completes an assessment, not on every render.
       existing.lastAccessedAt = new Date().toISOString();
       await this.saveProgress(existing);
       return existing;
@@ -111,7 +117,7 @@ export class LocalStorageLessonProgressRepository implements LessonProgressRepos
       levelNumber,
       status: 'in_progress',
       progressPercent: 10,
-      attempts: 1,
+      attempts: 0,
       startedAt: new Date().toISOString(),
       lastAccessedAt: new Date().toISOString(),
     };
@@ -308,12 +314,12 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return (data || []).map((d: any) => ({
       userId: d.user_id,
       lessonId: d.lesson_id,
-      levelNumber: d.level_number || 1,
+      levelNumber: normalizeHSKLevel(d.level_number),
       status: d.status as LessonProgressStatus,
       progressPercent: d.progress_percent || 0,
       currentSectionId: d.current_section_id,
       score: d.score,
-      attempts: d.attempts || 1,
+      attempts: d.attempts ?? 0,
       startedAt: d.started_at,
       completedAt: d.completed_at,
       lastAccessedAt: d.last_accessed_at,
@@ -339,12 +345,12 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
     return {
       userId: data.user_id,
       lessonId: data.lesson_id,
-      levelNumber: data.level_number || 1,
+      levelNumber: normalizeHSKLevel(data.level_number),
       status: data.status as LessonProgressStatus,
       progressPercent: data.progress_percent || 0,
       currentSectionId: data.current_section_id,
       score: data.score,
-      attempts: data.attempts || 1,
+      attempts: data.attempts ?? 0,
       startedAt: data.started_at,
       completedAt: data.completed_at,
       lastAccessedAt: data.last_accessed_at,
@@ -389,7 +395,8 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
           ...existing,
           status:
             existing.status === 'completed' ? 'completed' : 'in_progress',
-          attempts: existing.attempts + 1,
+          // Do not increment attempts when the lesson page is merely reopened.
+          attempts: existing.attempts,
           lastAccessedAt: now,
         }
       : {
@@ -398,7 +405,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
           levelNumber,
           status: 'in_progress',
           progressPercent: 10,
-          attempts: 1,
+          attempts: 0,
           startedAt: now,
           completedAt: null,
           lastAccessedAt: now,
@@ -463,7 +470,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
         progressPercent: row.progress_percent || 0,
         currentSectionId: row.current_section_id,
         score: row.score,
-        attempts: row.attempts || 1,
+        attempts: row.attempts ?? 0,
         startedAt: row.started_at,
         completedAt: row.completed_at,
         lastAccessedAt: row.last_accessed_at,
@@ -585,7 +592,7 @@ export class SupabaseLessonProgressRepository implements LessonProgressRepositor
         last_seen_at: now,
         mastered_at: status === 'mastered' ? existing?.mastered_at || now : existing?.mastered_at || null,
         created_at: existing?.created_at || now,
-        mastery_score: Math.max(0, Math.min(100, (existing?.mastery_score || 0) + (isCorrect === true ? 15 : isCorrect === false ? -10 : 0))),
+        mastery_score: Math.max(0, Math.min(100, Number(existing?.mastery_score || 0) + (isCorrect === true ? 15 : isCorrect === false ? -10 : 0))),
         updated_at: now,
       },
       { onConflict: 'user_id,vocabulary_id' }

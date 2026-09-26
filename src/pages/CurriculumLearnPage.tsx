@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
@@ -41,6 +41,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isSavingGeneratedVocabulary, setIsSavingGeneratedVocabulary] = useState(false);
   const [generatedVocabularySaved, setGeneratedVocabularySaved] = useState(false);
+  const hskAdvanceInFlightRef = useRef<number | null>(null);
 
   React.useEffect(() => {
     const profileLevel = Math.min(6, Math.max(1, Number(profile?.hskLevel || 1))) as HSKLevelNumber;
@@ -81,8 +82,13 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
     if (!profile || !completedLevel || !masteryReady || !canAdvance) return;
     if (currentProfileLevel !== selectedLevel) return;
     // Mastery, not lesson completion alone, controls automatic HSK progression.
+    // Guard against duplicate writes when React re-runs effects before the
+    // profile refresh arrives (for example in development Strict Mode).
+    if (hskAdvanceInFlightRef.current === selectedLevel) return;
+    hskAdvanceInFlightRef.current = selectedLevel;
 
     updateProfile({ hskLevel: selectedLevel + 1 }).catch((error) => {
+      hskAdvanceInFlightRef.current = null;
       console.warn('Could not advance HSK profile:', error);
     });
   }, [
@@ -90,7 +96,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
     selectedLevel,
     isPremium,
     levelCompletion?.completionPercent,
-    levelCompletion?.averageQuizScore,
+    levelCompletion?.masteryScore,
+    levelCompletion?.vocabularyMastery,
+    levelCompletion?.grammarMastery,
+    levelCompletion?.quizMastery,
+    levelCompletion?.weakVocabularyCount,
+    levelCompletion?.weakGrammarCount,
     updateProfile,
   ]);
 
@@ -350,6 +361,15 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                 return;
               }
 
+              // Grammar review is handled at the curriculum level. Returning
+              // to the current level keeps the learner in a valid route and
+              // lets the recommendation refresh after review.
+              if (recommendations[0].type === 'review_grammar' || targetId === 'grammar') {
+                setSelectedLevel(selectedLevel);
+                setSearchQuery('');
+                return;
+              }
+
               onSelectLesson(targetId);
             }}
             className="px-6 py-3.5 rounded-2xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-sm font-bold shadow-md shadow-[#E86F51]/25 transition-all flex items-center justify-center gap-2 cursor-pointer self-start md:self-center"
@@ -434,13 +454,21 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ) : (
         <div className="space-y-8">
           {units.map((unit) => {
+            const allUnitLessons = lessons.filter((l) => l.unitId === unit.id);
             const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
+            const completedUnitLessons = allUnitLessons.filter(
+              (lesson) => progressMap[lesson.id]?.status === 'completed',
+            ).length;
+            const unitProgress = allUnitLessons.length
+              ? Math.round((completedUnitLessons / allUnitLessons.length) * 100)
+              : 0;
+
             if (unitLessons.length === 0 && searchQuery) return null;
 
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-[#E86F51]/15">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-2 border-b border-[#E86F51]/15">
                   <div className="space-y-0.5">
                     <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
                       Unit {unit.order} · {unit.titleZh}
@@ -452,9 +480,23 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       {unit.description}
                     </p>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-xl bg-gray-100 dark:bg-[#342822] text-[#716761] dark:text-[#A89E97] font-semibold">
-                    {unitLessons.length} bài
-                  </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
+                        {completedUnitLessons}/{allUnitLessons.length} bài
+                      </p>
+                      <p className="text-xs font-black text-[#E86F51]">{unitProgress}%</p>
+                    </div>
+                    <div
+                      className="w-20 h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden"
+                      aria-label={`Tiến độ Unit ${unit.order}: ${unitProgress}%`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-[#E86F51] transition-all duration-500"
+                        style={{ width: `${unitProgress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Lessons Grid in Unit */}

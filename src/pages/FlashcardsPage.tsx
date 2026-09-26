@@ -29,6 +29,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [speakingReviews, setSpeakingReviews] = useState(() => storageService.getSpeakingReviewItems());
 
   // Load user flashcards from Supabase if authenticated
   useEffect(() => {
@@ -68,6 +69,11 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
       isMounted = false;
     };
   }, [user]);
+
+  const handleCompleteSpeakingReview = (id: string) => {
+    storageService.removeSpeakingReviewItem(id);
+    setSpeakingReviews((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const filteredCards =
     activeFilter === 'all'
@@ -181,6 +187,59 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
         <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-xs text-red-800 dark:text-red-200">
           Không thể tải dữ liệu flashcard từ tài khoản. Vui lòng thử lại. Chi tiết: {loadError}
         </div>
+      )}
+
+      {/* Speaking review queue */}
+      {speakingReviews.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-extrabold text-[#211A17] dark:text-white">
+                Câu từ Speaking cần luyện
+              </h2>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                Những câu Lina đã sửa từ chính lượt nói của bạn.
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">
+              {speakingReviews.length} câu
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {speakingReviews.slice(0, 5).map((item) => (
+              <article
+                key={item.id}
+                className="p-4 rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#E86F51]">
+                      {item.topic || 'Speaking'}
+                    </p>
+                    <p className="text-sm text-[#716761] dark:text-[#A89E97] line-through mt-1">
+                      {item.original}
+                    </p>
+                    <p className="text-base font-bold text-[#211A17] dark:text-white mt-1">
+                      {item.corrected}
+                    </p>
+                  </div>
+                  <AudioButton text={item.corrected} size="sm" label="Nghe câu sửa" />
+                </div>
+                <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                  {item.explanation}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleCompleteSpeakingReview(item.id)}
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl bg-[#211A17] text-white dark:bg-white dark:text-[#211A17] text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Đã luyện xong
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Progress indicators */}

@@ -10,6 +10,7 @@ import {
 import { mockGeminiService } from './mockGeminiService';
 import { ConversationMessage, SpeakingFeedback, TranslationResult, DictionaryEntry } from '../types';
 import { getAuthHeaders } from './flashcardService';
+import { PronunciationAssessment, PronunciationAudioInput, createUnavailablePronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 
 export interface AIService {
   generateConversation(params: any): Promise<any>;
@@ -25,8 +26,15 @@ export interface AIService {
   }): Promise<SpeakingAnalysis>;
   correctChinese?(sentence: string, level?: string, language?: string): Promise<any>;
   translateChinese?(text: string, from?: string, to?: string): Promise<any>;
-  explainGrammar?(point: string, level?: string): Promise<any>;
+  explainGrammar?(point: string, level?: string, language?: string): Promise<any>;
   summarizeMemory?(memory: any): Promise<{ summary: string; keyFacts: string[] }>;
+  assessPronunciation?(params: {
+    spokenText: string;
+    targetText?: string;
+    language?: string;
+    audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
+  }): Promise<PronunciationAssessment>;
 }
 
 export class GeminiServiceImpl implements AIService {
@@ -70,15 +78,17 @@ export class GeminiServiceImpl implements AIService {
           userText,
           targetLevel,
           topic,
-          conversationHistory: attempt === 1 ? conversationHistory : conversationHistory.slice(-6),
+          conversationHistory: conversationHistory.slice(-8).map((message) => ({
+            role: message.role,
+            chinese: message.chinese.slice(0, 500),
+          })),
           nativeLanguage,
           difficulty,
           memory: {
             summary: memory?.summary,
             keyFacts: memory?.keyFacts,
           },
-          attempt,
-        };
+                  };
 
         const authHeaders = await getAuthHeaders();
         const headers: Record<string, string> = {
@@ -285,28 +295,106 @@ export class GeminiServiceImpl implements AIService {
     }
   }
 
-  async evaluateSpeech(targetSentence: string, spokenText: string): Promise<{ accuracyScore: number; feedback: string }> {
-    try {
-      const res = await fetch('/api/gemini/speaking-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({ sentence: spokenText, targetPrompt: targetSentence }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          accuracyScore: data.pronunciationScore || 90,
-          feedback: data.feedback || 'Phát âm rất tốt!',
-        };
+  /**
+   * Acoustic pronunciation assessment is intentionally separate from transcript feedback.
+   * Until an audio-capable provider is wired in, return an explicit unavailable state.
+   */
+  async assessPronunciation(params: {
+    spokenText: string;
+    targetText?: string;
+    language?: string;
+    audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
+  }): Promise<PronunciationAssessment> {
+    const signal = params.signal;
+    const throwIfAborted = () => {
+      if (signal?.aborted) {
+        throw new DOMException('The request was aborted.', 'AbortError');
       }
-    } catch {
-      // fallback
-    }
-    return {
-      accuracyScore: 92,
-      feedback: 'Phát âm rõ ràng, nhịp điệu tự nhiên.',
     };
+
+    try {
+      throwIfAborted();
+
+      if (!params.audio) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
+      }
+
+      const blob = params.audio.blob;
+      // Vercel Functions cap incoming request bodies at 4.5 MB. Base64 expands
+      // the audio payload by roughly 4/3, so keep the raw recording below 3 MB
+      // to leave room for JSON and auth metadata.
+      const MAX_PRONUNCIATION_AUDIO_BYTES = 3 * 1024 * 1024;
+      if (!blob.size || blob.size > MAX_PRONUNCIATION_AUDIO_BYTES) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
+      }
+
+      throwIfAborted();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      throwIfAborted();
+
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        binary += String.fromCharCode(
+          ...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length))
+        );
+      }
+
+      const base64 = btoa(binary);
+      throwIfAborted();
+
+      const authHeaders = await getAuthHeaders();
+      throwIfAborted();
+      const res = await fetch('/api/ai/pronunciation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+      body: JSON.stringify({
+        spokenText: params.spokenText,
+        targetText: params.targetText,
+        language: params.language || 'vi',
+        audio: {
+          base64,
+          mimeType: params.audio.mimeType || blob.type || 'audio/webm',
+        },
+      }),
+      cache: 'no-store',
+      signal,
+    });
+
+      if (!res.ok) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+      const data = await res.json();
+      if (
+        (data?.source !== 'acoustic' && data?.source !== 'unavailable') ||
+        (data?.accuracyScore !== null &&
+          (typeof data?.accuracyScore !== 'number' ||
+            !Number.isFinite(data.accuracyScore) ||
+            data.accuracyScore < 0 ||
+            data.accuracyScore > 100))
+    ) {
+        return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
+
+      return {
+        source: data.source,
+        accuracyScore: data.accuracyScore,
+        feedback: typeof data.feedback === 'string' ? data.feedback : '',
+        suggestedImprovement:
+          typeof data.suggestedImprovement === 'string' ? data.suggestedImprovement : null,
+      };
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        throw error;
+      }
+      console.warn('[Pronunciation] Acoustic assessment unavailable:', error);
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
   }
 
   async translateChinese(text: string, from: string = 'zh', to: string = 'vi') {

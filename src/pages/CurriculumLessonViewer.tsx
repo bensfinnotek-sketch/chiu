@@ -16,7 +16,7 @@ import {
   X,
   Send,
 } from 'lucide-react';
-import { useLesson } from '../hooks/useCurriculum';
+import { useLesson } from '../hooks/useLesson';
 import { QuizAnswer, QuizAttempt, QuizQuestion, DialogueLine } from '../types/curriculum';
 import { LinaChatModal } from '../components/LinaChatModal';
 import { voiceService } from '../services/voiceService';
@@ -40,9 +40,11 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     vocabulary,
     grammar,
     quizQuestions,
+    quizAttempts,
     userProgress,
     isLoading,
     saveSectionProgress,
+    completeLesson,
     completeQuiz,
   } = useLesson(lessonId);
 
@@ -55,7 +57,87 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   const [quizScore, setQuizScore] = useState(0);
   const [quizStartedAt, setQuizStartedAt] = useState<string | null>(null);
   const [learningLoopResult, setLearningLoopResult] = useState<Awaited<ReturnType<typeof completeQuiz>>>(null);
+
+  interface LessonMission {
+    goal: string;
+    scenario: string;
+    challenge: string;
+    success: string;
+    skills: string[];
+  }
+
+  const lessonMissions: Record<string, LessonMission> = {
+    'lesson-hsk1-u1-l1': {
+      goal: 'Chào hỏi và kết thúc một cuộc gặp bằng tiếng Trung lịch sự.',
+      scenario: 'Bạn vừa gặp một người Trung Quốc lần đầu và muốn tạo ấn tượng thân thiện.',
+      challenge: 'Nói liền mạch: chào hỏi → cảm ơn → đáp lại → tạm biệt.',
+      success: 'Bạn có thể mở đầu và kết thúc một cuộc trò chuyện ngắn mà không cần dịch từng câu.',
+      skills: ['Chào hỏi tự nhiên', 'Đáp lại lịch sự', 'Kết thúc hội thoại']
+    },
+    'lesson-hsk1-u1-l2': {
+      goal: 'Hỏi thăm sức khỏe và phản hồi tự nhiên.',
+      scenario: 'Bạn gặp một người bạn vào buổi sáng và muốn hỏi thăm họ.',
+      challenge: 'Dùng 你好吗？→ 我很好。→ 你呢？ để duy trì ít nhất 3 lượt đối đáp.',
+      success: 'Bạn có thể hỏi thăm và phản hồi về tình trạng của mình trong một đoạn hội thoại ngắn.',
+      skills: ['Hỏi thăm sức khỏe', 'Phản xạ câu hỏi', 'Duy trì lượt đối đáp']
+    },
+    'lesson-hsk1-u2-l3': {
+      goal: 'Tự giới thiệu tên và hỏi tên người đối diện.',
+      scenario: 'Bạn làm quen với một bạn mới trong lớp tiếng Trung.',
+      challenge: 'Hỏi tên, nói “我叫…” và chủ động hỏi lại đối phương.',
+      success: 'Bạn có thể tự giới thiệu bản thân ngay khi gặp một người mới.',
+      skills: ['Tự giới thiệu', 'Hỏi tên', 'Chủ động hỏi lại']
+    },
+    'lesson-hsk1-u2-l4': {
+      goal: 'Nói mình đến từ đâu và hỏi quốc tịch của người khác.',
+      scenario: 'Bạn gặp một người bạn mới đến từ một quốc gia khác.',
+      challenge: 'Hỏi “你是哪国人？” rồi trả lời rõ ràng về quốc gia của mình.',
+      success: 'Bạn có thể thực hiện một đoạn làm quen ngắn xoay quanh quốc gia và nguồn gốc.',
+      skills: ['Hỏi quốc tịch', 'Nói nguồn gốc', 'Làm quen theo ngữ cảnh']
+    },
+    'lesson-hsk1-u3-l5': {
+      goal: 'Nói mình muốn ăn hoặc uống gì trong một tình huống đơn giản.',
+      scenario: 'Bạn bước vào một quán ăn Trung Quốc và cần gọi món.',
+      challenge: 'Nói món muốn gọi, hỏi/đáp về đồ ăn hoặc đồ uống và xác nhận lựa chọn.',
+      success: 'Bạn có thể xử lý một tình huống gọi món cơ bản mà không cần dùng tiếng Việt.',
+      skills: ['Gọi món', 'Nói nhu cầu', 'Xác nhận lựa chọn']
+    },
+    'lesson-hsk1-u3-l6': {
+      goal: 'Hỏi giá và phản hồi khi mua một món đồ.',
+      scenario: 'Bạn đang mua một món đồ nhỏ ở cửa hàng và cần hỏi giá.',
+      challenge: 'Dùng 多少钱？ để hỏi giá, nghe con số và xác nhận món mình muốn mua.',
+      success: 'Bạn có thể hỏi giá và hoàn tất một đoạn hội thoại mua sắm ngắn.',
+      skills: ['Hỏi giá', 'Nghe con số', 'Xác nhận khi mua hàng']
+    },
+    'lesson-hsk1-u2-l7': {
+      goal: 'Nói về gia đình và giới thiệu nhà của mình bằng câu đơn giản.',
+      scenario: 'Bạn mời một người bạn đến nhà và giới thiệu bố mẹ.',
+      challenge: 'Dùng 这是我的… và 我爸爸/妈妈… để giới thiệu ít nhất 2 thành viên.',
+      success: 'Bạn có thể giới thiệu gia đình gần gũi bằng các câu ngắn, rõ nghĩa.',
+      skills: ['Giới thiệu gia đình', 'Dùng 的 để nói sở hữu', 'Mô tả người thân']
+    },
+    'lesson-hsk1-u2-l8': {
+      goal: 'Hỏi ngày trong tuần và hẹn một hoạt động đơn giản.',
+      scenario: 'Bạn muốn hẹn bạn đi uống trà vào ngày mai.',
+      challenge: 'Hỏi hôm nay là thứ mấy, nói ngày mai và đề nghị một cuộc hẹn.',
+      success: 'Bạn có thể xác nhận ngày và tạo một cuộc hẹn ngắn bằng tiếng Trung.',
+      skills: ['Hỏi ngày', 'Nói thời gian', 'Đề nghị cuộc hẹn']
+    },
+    'lesson-hsk1-u3-l9': {
+      goal: 'Nói về sở thích và rủ người khác cùng làm một hoạt động.',
+      scenario: 'Cuối tuần, bạn muốn rủ một người bạn xem phim.',
+      challenge: 'Nói ít nhất 2 sở thích với 喜欢 rồi chuyển sang một lời mời.',
+      success: 'Bạn có thể nói mình thích gì và chủ động rủ bạn bè làm một hoạt động.',
+      skills: ['Nói sở thích', 'Dùng 喜欢', 'Đưa ra lời mời']
+    },
+  };
   const [quizPersistenceError, setQuizPersistenceError] = useState<string | null>(null);
+  const [missionCompleted, setMissionCompleted] = useState(false);
+
+  React.useEffect(() => {
+    if (!lesson) return;
+    setMissionCompleted(window.localStorage.getItem(`chiu-mini-mission:${lesson.id}`) === 'completed');
+  }, [lesson?.id]);
 
   if (isLoading || !lesson) {
     return (
@@ -67,14 +149,52 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
   }
 
   const currentSection = sections[activeSectionIndex] || sections[0];
-  const progressPercent = Math.round(((activeSectionIndex + 1) / Math.max(sections.length, 1)) * 100);
+  // The summary is a completion screen, not learning content. Keep it out of
+  // the required-section denominator so "all required sections" can actually
+  // reach 100% before the summary is shown.
+  const requiredSections = sections.filter(
+    (section) => section.isRequired && section.type !== 'summary'
+  );
+  const requiredSectionCount = requiredSections.length;
+  const completedRequiredCount = sections
+    .slice(0, activeSectionIndex + 1)
+    .filter(
+      (section) =>
+        section.isRequired &&
+        section.type !== 'summary'
+    ).length;
+  const progressPercent = Math.round(
+    (completedRequiredCount / Math.max(requiredSectionCount, 1)) * 100
+  );
+  const finalSectionId = sections[sections.length - 1]?.id;
+  const canFinishRequiredSections =
+    lesson.completionRule === 'all_required_sections' &&
+    activeSectionIndex >= sections.length - 1 &&
+    !!finalSectionId &&
+    (userProgress?.progressPercent ?? 0) >= 100;
 
   const handleNextSection = () => {
     if (activeSectionIndex < sections.length - 1) {
+      const currentSection = sections[activeSectionIndex];
       const nextIdx = activeSectionIndex + 1;
       setActiveSectionIndex(nextIdx);
-      const newPercent = Math.round(((nextIdx + 1) / sections.length) * 100);
-      saveSectionProgress(sections[nextIdx].id, newPercent);
+
+      // Persist the section the learner has just completed. This avoids the
+      // previous off-by-one behavior where entering the next section saved the
+      // section before the current one.
+      if (currentSection?.isRequired && currentSection.type !== 'summary') {
+        const completedRequiredCount = sections
+          .slice(0, activeSectionIndex + 1)
+          .filter(
+            (section) =>
+              section.isRequired &&
+              section.type !== 'summary'
+          ).length;
+        const completionPercent = Math.round(
+          (completedRequiredCount / Math.max(requiredSectionCount, 1)) * 100
+        );
+        saveSectionProgress(currentSection.id, completionPercent);
+      }
     }
   };
 
@@ -143,6 +263,13 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
     setQuizPersistenceError(null);
 
     try {
+      // The quiz is itself a required section. Persist it as completed even
+      // when the learner fails, so all_required_and_quiz can distinguish
+      // "all content visited" from "quiz passed".
+      const quizSection = sections.find((section) => section.type === 'quiz');
+      if (quizSection?.isRequired) {
+        await saveSectionProgress(quizSection.id, 100);
+      }
       const result = await completeQuiz(attempt);
       setLearningLoopResult(result);
     } catch (error) {
@@ -183,8 +310,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
           <div>
             <span className="text-xs font-black uppercase text-[#E86F51] tracking-wider">
               HSK {lesson.levelNumber} · Bài {lesson.order}
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white">
+            </span>            <h1 className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white">
               {lesson.title} · <span className="text-[#E86F51]">{lesson.titleZh}</span>
             </h1>
           </div>
@@ -210,8 +336,9 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                 key={sec.id}
                 type="button"
                 onClick={() => {
+                  // Navigation alone does not mark a section complete.
+                  // Completion is recorded only when the learner advances past it.
                   setActiveSectionIndex(idx);
-                  saveSectionProgress(sec.id, Math.round(((idx + 1) / sections.length) * 100));
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
@@ -257,6 +384,129 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                 ))}
               </ul>
             </div>
+
+            {lessonMissions[lesson.id] && (
+              <>
+              <div className="rounded-3xl bg-[#211A17] text-white border border-[#E86F51]/30 p-5 sm:p-6 space-y-5 shadow-md">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-[#E86F51] flex items-center justify-center shrink-0">
+                    <Award size={22} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Mini Mission · Nhiệm vụ thực chiến</span>
+                    <h3 className="text-lg sm:text-xl font-black mt-1">Cuối bài, bạn sẽ dùng tiếng Trung để làm được việc này</h3>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-4 rounded-2xl bg-white/10 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Mục tiêu giao tiếp</p>
+                    <p className="text-sm font-bold mt-1">{lessonMissions[lesson.id].goal}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/10 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Tình huống</p>
+                    <p className="text-sm font-medium mt-1 text-white/85">{lessonMissions[lesson.id].scenario}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#E86F51]/15 border border-[#E86F51]/30">
+                  <div className="flex items-center gap-2 text-sm font-black">
+                    <Star size={16} className="text-[#F6B39F]" />
+                    Thử thách cuối bài
+                  </div>
+                  <p className="text-sm text-white/90 mt-1.5">{lessonMissions[lesson.id].challenge}</p>
+                </div>
+
+                <div className="flex items-start gap-2 text-xs text-white/75">
+                  <CheckCircle2 size={15} className="text-[#F6B39F] shrink-0 mt-0.5" />
+                  <span><strong className="text-white">Dấu hiệu hoàn thành:</strong> {lessonMissions[lesson.id].success}</span>
+                </div>
+
+                <div className="pt-3 border-t border-white/10 space-y-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#F6B39F]">Bạn vừa luyện được</p>
+                    <p className="text-sm font-black mt-1">3 kỹ năng giao tiếp của bài học</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {lessonMissions[lesson.id].skills.map((skill) => (
+                      <span key={skill} className="px-3 py-1.5 rounded-full bg-green-500/15 border border-green-300/20 text-green-100 text-[11px] font-bold">
+                        ✓ {skill}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-white/75">
+                      Nhiệm vụ đã hoàn thành. Bạn có thể chuyển sang <strong className="text-white">Luyện nói</strong> để biến kỹ năng này thành phản xạ.
+                    </p>
+                  </div>
+                </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/10 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black text-white">Tự kiểm tra trước khi rời bài</p>
+                      <p className="text-[11px] text-white/60 mt-0.5">Chọn trạng thái thật của bạn, không cần đoán điểm.</p>
+                    </div>
+                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${missionCompleted ? 'bg-green-500/20 text-green-200' : 'bg-white/10 text-white/70'}`}>
+                      {missionCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.localStorage.setItem(`chiu-mini-mission:${lesson.id}`, 'completed');
+                        setMissionCompleted(true);
+                      }}
+                      className={`flex-1 px-4 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer ${missionCompleted ? 'bg-green-500/20 text-green-200 border border-green-400/30' : 'bg-[#E86F51] text-white hover:bg-[#D35B3E]'}`}
+                    >
+                      {missionCompleted ? '✓ Mình đã làm được' : '✓ Mình đã làm được'}
+                    </button>
+                    {onNavigateToSpeaking && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToSpeaking(lesson.title)}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-white text-xs font-black hover:bg-white/15 transition-all cursor-pointer"
+                      >
+                        🎙️ Thử cùng Lina
+                      </button>
+                    )}
+                  </div>
+
+                  {missionCompleted && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {sections.some((section) => section.type === 'speaking') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const speakingIndex = sections.findIndex((section) => section.type === 'speaking');
+                            if (speakingIndex >= 0) setActiveSectionIndex(speakingIndex);
+                          }}
+                          className="px-4 py-2.5 rounded-2xl bg-white/10 border border-white/15 text-white text-xs font-black hover:bg-white/15 transition-all cursor-pointer"
+                        >
+                          🎙️ Sang bước Luyện nói
+                        </button>
+                      )}
+                      {sections.some((section) => section.type === 'quiz') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const quizIndex = sections.findIndex((section) => section.type === 'quiz');
+                            if (quizIndex >= 0) setActiveSectionIndex(quizIndex);
+                          }}
+                          className="px-4 py-2.5 rounded-2xl bg-[#E86F51] text-white text-xs font-black hover:bg-[#D35B3E] transition-all cursor-pointer"
+                        >
+                          ✓ Sang bước Quiz
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              </>
+            )}
           </div>
         )}
 
@@ -410,8 +660,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                       {line.chinese}
                     </p>
                     <p className="text-xs font-semibold text-[#E86F51]">
-                      {line.pinyin}
-                    </p>
+                      {line.pinyin}                    </p>
                     <p className="text-xs text-[#716761] dark:text-[#A89E97]">
                       {line.translationVi}
                     </p>
@@ -480,6 +729,16 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                   Trả lời các câu hỏi trắc nghiệm và điền từ để mở khóa bài học kế tiếp.
                 </p>
               </div>
+              {!quizSubmitted && quizAttempts.length > 0 && (
+                <div className="px-3.5 py-2 rounded-xl bg-orange-50 dark:bg-[#342822] border border-[#E86F51]/10 text-xs text-[#716761] dark:text-[#A89E97]">
+                  <span className="font-bold text-[#E86F51]">Lịch sử quiz:</span>{' '}
+                  {quizAttempts.length} lần làm · điểm tốt nhất {Math.max(...quizAttempts.map((attempt) => attempt.score))}%.
+                  {Math.max(...quizAttempts.map((attempt) => attempt.score)) < lesson.passingScore
+                    ? ' Bạn có thể làm lại để cải thiện điểm.'
+                    : ' Bạn có thể ôn lại để củng cố phản xạ.'}
+                </div>
+              )}
+
               {quizSubmitted && (
                 <span
                   className={`text-sm font-black px-3.5 py-1 rounded-xl ${
@@ -623,6 +882,13 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                           onNavigate?.('learn', next.targetId);
                           return;
                         }
+                        // Grammar review is a level-level action, not a lesson id.
+                        // Keep the learner inside the curriculum instead of opening
+                        // a non-existent "grammar" lesson.
+                        if (next.type === 'review_grammar' || next.targetId === 'grammar') {
+                          onNavigate?.('learn', 'level:' + lesson.levelNumber);
+                          return;
+                        }
                         onNavigate?.('learn-detail', next.targetId);
                       }}
                       className="px-4 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-xs font-bold transition-all"
@@ -688,6 +954,45 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
               </p>
             </div>
 
+            {lessonMissions[lesson.id] && (
+              <div className="max-w-xl mx-auto p-5 rounded-2xl bg-[#FFF9F4] dark:bg-[#2A2320] border border-[#E86F51]/15 text-left space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Mini Mission</p>
+                    <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">
+                      {missionCompleted ? 'Nhiệm vụ thực chiến đã hoàn thành' : 'Nhiệm vụ thực chiến chưa được đánh dấu'}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${missionCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}>
+                    {missionCompleted ? 'Đã hoàn thành' : 'Chưa đánh dấu'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {lessonMissions[lesson.id].skills.map((skill) => (
+                    <span key={skill} className={`px-3 py-1.5 rounded-full text-[11px] font-bold ${missionCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-white text-[#716761] dark:bg-[#1E1917] dark:text-[#A89E97] border border-[#E86F51]/10'}`}>
+                      {missionCompleted ? '✓ ' : ''}{skill}
+                    </span>
+                  ))}
+                </div>
+                {missionCompleted ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                      Bạn đã nối được bài học với một tình huống giao tiếp thực tế.
+                    </p>
+                    {onNavigateToSpeaking && (
+                      <button type="button" onClick={() => onNavigateToSpeaking(lesson.title)} className="px-4 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-xs font-bold transition-all">
+                        🎙️ Luyện nói tiếp
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                    Bạn có thể quay lại phần mở đầu để đánh dấu nhiệm vụ sau khi thực hành xong.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="pt-4 flex justify-center gap-3">
               <button
                 type="button"
@@ -703,8 +1008,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
         {/* Navigation Footer Controls */}
         <div className="flex items-center justify-between pt-6 border-t border-[#E86F51]/15">
-          <button
-            type="button"
+          <button type="button"
             onClick={handlePrevSection}
             disabled={activeSectionIndex === 0}
             className="px-4 py-2 rounded-xl text-xs font-bold text-[#716761] dark:text-[#A89E97] hover:text-[#E86F51] disabled:opacity-40 disabled:hover:text-inherit transition-all flex items-center gap-1.5 cursor-pointer"
@@ -715,11 +1019,22 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
           <button
             type="button"
-            onClick={handleNextSection}
-            disabled={activeSectionIndex >= sections.length - 1}
+            onClick={async () => {
+              if (activeSectionIndex >= sections.length - 1) {
+                if (canFinishRequiredSections) {
+                  await completeLesson(100, { vocabulary: 0, grammar: 0 });
+                }
+                return;
+              }
+              handleNextSection();
+            }}
+            disabled={
+              activeSectionIndex >= sections.length - 1 &&
+              !canFinishRequiredSections
+            }
             className="px-5 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] disabled:opacity-40 disabled:hover:bg-[#E86F51] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
-            <span>Phần tiếp theo</span>
+            <span>{activeSectionIndex >= sections.length - 1 ? 'Hoàn thành bài học' : 'Phần tiếp theo'}</span>
             <ChevronRight size={16} />
           </button>
         </div>

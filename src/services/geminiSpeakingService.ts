@@ -4,6 +4,8 @@
 import { geminiService } from './geminiService';
 import type { ConversationMemory } from '../ai/memory/conversationMemory';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { PronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
+import { GeminiPronunciationProvider } from '../ai/pronunciation/pronunciationProvider';
 
 
 export interface SpeakingAnalysisInput {
@@ -108,7 +110,7 @@ export const TOPIC_STARTERS: Record<string, Record<string, { chinese: string; pi
       chinese: '去旅行的时候，你更喜欢坐飞机还是坐高铁？为什么？',
       pinyin: 'Qù lǚxíng de shíhou, nǐ gèng xǐhuan zuò fēijī háishì zuò gāotiě? Wèishénme?',
       vi: 'Khi đi du lịch, bạn thích đi máy bay hay đi tàu cao tốc hơn? Vì sao?',
-      en: 'When traveling, do you prefer taking a plane or high-speed rail? Why?',
+      en: 'When traveling, do you prefer taking a plane or high-speed rail?',
     },
   },
   'Work': {
@@ -154,6 +156,7 @@ export const TOPIC_STARTERS: Record<string, Record<string, { chinese: string; pi
 };
 
 class GeminiSpeakingService {
+  private readonly pronunciationProvider = new GeminiPronunciationProvider();
   public getInitialPrompt(
     topic: string,
     level: string = 'HSK 1',
@@ -184,6 +187,23 @@ class GeminiSpeakingService {
       nativeLanguage: input.nativeLanguage,
       difficulty: input.difficulty,
       memory: input.memory,
+    });
+  }
+
+  public async assessPronunciation(params: {
+    spokenText: string;
+    targetText?: string;
+    audio?: Blob | null;
+    signal?: AbortSignal;
+  }): Promise<PronunciationAssessment> {
+    return this.pronunciationProvider.assess({
+      spokenText: params.spokenText,
+      targetText: params.targetText,
+      language: 'vi',
+      signal: params.signal,
+      audio: params.audio
+        ? { blob: params.audio, mimeType: params.audio.type || 'audio/webm' }
+        : null,
     });
   }
 }

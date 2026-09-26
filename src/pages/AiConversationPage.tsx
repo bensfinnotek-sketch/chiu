@@ -34,6 +34,7 @@ import { speechRecognitionService } from '../services/speechRecognitionService';
 import { textToSpeechService } from '../services/textToSpeechService';
 import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { PronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
@@ -48,6 +49,7 @@ import {
 
 interface AiConversationPageProps {
   onBackToTopics?: () => void;
+  onReviewLesson?: (lessonId: string) => void;
   initialTopic?: string;
   initialLevel?: string;
   selectedSessionId?: string;
@@ -55,6 +57,7 @@ interface AiConversationPageProps {
 
 export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   onBackToTopics,
+  onReviewLesson,
   initialTopic,
   initialLevel,
   selectedSessionId,
@@ -73,6 +76,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     sessionStorage.getItem('selected_speaking_level') ||
     userProfile.chineseLevel ||
     'HSK 1';
+  const sourceLessonId = sessionStorage.getItem('selected_speaking_source_lesson') || '';
 
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
@@ -161,8 +165,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     vocabulary: 5,
     naturalness: 4,
   });
+  const [pronunciationAssessment, setPronunciationAssessment] = useState<PronunciationAssessment | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const latestTranscriptRef = useRef('');
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -274,7 +280,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   }, [micState, teacherState]);
 
   // Process user message with Gemini Speaking Engine
-  const processUserMessage = async (userText: string) => {
+  const processUserMessage = async (userText: string, pronunciationAudio?: Blob | null) => {
     if (!guestCanSpeak) {
       setGuestLimitReached(true);
       setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
@@ -283,6 +289,25 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
     const cleanText = userText.trim();
     if (!cleanText) return;
+
+    // Keep pronunciation feedback explicit and independent from transcript-based language scores.
+    const targetText = [...messages].reverse().find((message) => message.sender === 'lina')?.chinese;
+    try {
+      const pronunciationResult = await geminiSpeakingService.assessPronunciation({
+        spokenText: cleanText,
+        targetText,
+        audio: pronunciationAudio || null,
+      });
+      setPronunciationAssessment(pronunciationResult);
+    } catch (pronunciationError) {
+      console.warn('Pronunciation assessment unavailable:', pronunciationError);
+      setPronunciationAssessment({
+        source: 'unavailable',
+        accuracyScore: null,
+        feedback: 'Chưa thể đánh giá phát âm bằng âm thanh ở lượt nói này.',
+        suggestedImprovement: 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.',
+      });
+    }
 
     // Interrupt any ongoing speech
     stopLinaSpeech();
@@ -319,6 +344,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
       // Update user message with correction if any
       if (analysis.corrections && analysis.corrections.length > 0) {
+        analysis.corrections.forEach((correction, index) => {
+          storageService.saveSpeakingReviewItem({
+            id: `speaking-review-${userMsg.id}-${index}`,
+            sessionId: conversationSessionId || memory.sessionId,
+            topic: activeTopic,
+            original: correction.original,
+            corrected: correction.corrected,
+            explanation: correction.explanation,
+            createdAt: new Date().toISOString(),
+          });
+        });
+
         const firstCorrection = analysis.corrections[0];
         userMsg.correction = {
           hasMistake: true,
@@ -466,12 +503,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setInterimTranscript(interim);
       },
       onResult: (finalText, isFinal) => {
+        latestTranscriptRef.current = finalText;
         setInterimTranscript(finalText);
         if (isFinal && finalText.trim()) {
-          speechRecognitionService.stopListening();
           setMicState('PROCESSING');
-          setInterimTranscript('');
-          processUserMessage(finalText);
         }
       },
       onError: (errMsg) => {
@@ -482,17 +517,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setMicState('IDLE');
         }, 3000);
       },
-      onEnd: () => {
-        if (micState === 'LISTENING') {
-          // If ended with content, submit it
-          if (interimTranscript.trim()) {
-            processUserMessage(interimTranscript);
-            setInterimTranscript('');
-          } else {
-            setMicState('IDLE');
-            setTeacherState('idle');
-            setStatusMessage('Nhấn mic để nói');
-          }
+      onEnd: (finalText, audioBlob) => {
+        const transcript = (finalText || latestTranscriptRef.current).trim();
+        latestTranscriptRef.current = '';
+        setInterimTranscript('');
+
+        if (transcript) {
+          setMicState('PROCESSING');
+          void processUserMessage(transcript, audioBlob);
+        } else {
+          setMicState('IDLE');
+          setTeacherState('idle');
+          setStatusMessage('Nhấn mic để nói');
         }
       },
     });
@@ -510,15 +546,9 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       return;
     }
     if (micState === 'LISTENING') {
+      // Let SpeechRecognitionService.onEnd submit the final transcript together with captured audio.
       speechRecognitionService.stopListening();
-      if (interimTranscript.trim()) {
-        processUserMessage(interimTranscript);
-        setInterimTranscript('');
-      } else {
-        setMicState('IDLE');
-        setTeacherState('idle');
-        setStatusMessage('Nhấn mic để nói');
-      }
+      setMicState('PROCESSING');
     } else {
       handleStartListening();
     }
@@ -572,6 +602,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     const durationMinutes = (Date.now() - sessionStartTime) / 60000;
     const turnsCount = messages.filter((m) => m.sender === 'user').length;
     const correctionsCount = messages.filter((m) => m.correction?.hasMistake).length;
+
+    // Keep the lesson context through the speaking handoff so the
+    // session can return to the exact lesson for review.
+    if (sourceLessonId && turnsCount > 0) {
+      sessionStorage.setItem('selected_speaking_source_lesson', sourceLessonId);
+    }
 
     const sessionData = {
       topic: activeTopic,
@@ -1110,6 +1146,37 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             )}
           </div>
 
+          {/* Honest Pronunciation Assessment */}
+          {pronunciationAssessment && (
+            <div className="bg-[#FFF9F4] dark:bg-[#28201B] p-4 rounded-2xl border border-[#F0E4D8] dark:border-[#382E27] space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
+                  Đánh giá phát âm
+                </h4>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#8C8078]">
+                  {pronunciationAssessment.source === 'acoustic' ? 'Âm thanh' : 'Chưa khả dụng'}
+                </span>
+              </div>
+              {pronunciationAssessment.accuracyScore !== null ? (
+                <div className="text-lg font-bold text-[#E86F51]">
+                  {Math.round(pronunciationAssessment.accuracyScore)}/100
+                </div>
+              ) : (
+                <div className="text-sm font-semibold text-[#716761] dark:text-[#A89E97]">
+                  Chưa có điểm âm thanh
+                </div>
+              )}
+              <p className="text-xs leading-5 text-[#716761] dark:text-[#A89E97]">
+                {pronunciationAssessment.feedback}
+              </p>
+              {pronunciationAssessment.suggestedImprovement && (
+                <p className="text-[11px] leading-5 text-[#8C8078] dark:text-[#8C8078]">
+                  Gợi ý: {pronunciationAssessment.suggestedImprovement}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Honest Language Metrics (Section 19) */}
           <div className="bg-[#FFF9F4] dark:bg-[#28201B] p-4 rounded-2xl border border-[#F0E4D8] dark:border-[#382E27] space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97] flex items-center gap-1.5">
@@ -1205,6 +1272,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setSummaryOpen(false);
           handleGoBack();
         }}
+        onReviewLesson={sourceLessonId && onReviewLesson ? () => {
+          setSummaryOpen(false);
+          onReviewLesson(sourceLessonId);
+        } : undefined}
         onGoHome={() => {
           setSummaryOpen(false);
           window.location.hash = '#dashboard';
@@ -1218,6 +1289,13 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           topic: activeTopic,
           level: activeLevel,
           scores: sessionScores,
+          corrections: messages
+            .filter((message) => message.sender === 'user' && message.correction?.hasMistake && message.correction.userSentence && message.correction.naturalVersion)
+            .map((message) => ({
+              original: message.correction!.userSentence!,
+              corrected: message.correction!.naturalVersion!,
+              explanation: message.correction!.explanationVi || '',
+            })),
         }}
       />
     </div>

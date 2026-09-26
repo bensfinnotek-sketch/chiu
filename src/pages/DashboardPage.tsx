@@ -17,6 +17,7 @@ import { UserProfile, SupportedLanguage } from '../types';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useCurriculum } from '../hooks/useCurriculum';
 
 interface DashboardPageProps {
   user: UserProfile;
@@ -34,6 +35,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const streakDays = progress?.currentStreak ?? user.streakDays;
   const wordsLearned = progress?.wordsLearned ?? vocabularyCount;
   const minutesLearnedToday = progress?.totalStudyMinutes ?? user.minutesLearnedToday;
+  const currentHskLevel = Math.min(6, Math.max(1, Number(String(user.chineseLevel).match(/\d+/)?.[0] || 1))) as 1 | 2 | 3 | 4 | 5 | 6;
+  const streakMilestones = [7, 14, 30, 60, 100];
+  const nextStreakMilestone = streakMilestones.find((milestone) => milestone > streakDays) ?? Math.ceil(Math.max(streakDays, 1) / 100) * 100;
+  const previousStreakMilestone = streakMilestones.slice().reverse().find((milestone) => milestone <= streakDays) ?? 0;
+  const streakProgress = Math.min(
+    100,
+    Math.round(
+      ((streakDays - previousStreakMilestone) /
+        Math.max(nextStreakMilestone - previousStreakMilestone, 1)) *
+        100,
+    ),
+  );
+  const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
+  const nextRecommendation = recommendations[0];
+
+  const handleLearningRecommendation = () => {
+    if (!nextRecommendation) {
+      onNavigate('learn', `level:${currentHskLevel}`);
+      return;
+    }
+    if (nextRecommendation.targetId === 'flashcards') {
+      onNavigate('flashcards');
+      return;
+    }
+    if (nextRecommendation.targetId.startsWith('level:')) {
+      onNavigate('learn', nextRecommendation.targetId);
+      return;
+    }
+    if (nextRecommendation.targetId !== 'grammar') {
+      onNavigate('learn-detail', nextRecommendation.targetId);
+      return;
+    }
+    onNavigate('learn', `level:${currentHskLevel}`);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
@@ -115,59 +150,119 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* 3. Continue Learning Card */}
+      {/* 3. Learning Core recommendation */}
       <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">
-              Tiếp tục bài học dở dang
-            </span>
+            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">Bước học tiếp theo</span>
             <h2 className="text-2xl font-bold text-[#211A17] dark:text-white mt-1">
-              HSK 1 · Lesson 5: Ordering Food at a Restaurant
+              {curriculumLoading ? 'Đang phân tích tiến độ của bạn...' : nextRecommendation?.title || `Tiếp tục lộ trình HSK ${currentHskLevel}`}
             </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              {nextRecommendation?.description || 'Lộ trình sẽ được chọn từ dữ liệu tiến độ, quiz, từ vựng và ngữ pháp đã ghi nhận.'}
+            </p>
+            {nextRecommendation?.metadata?.decision && (
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="px-2.5 py-1 rounded-full bg-[#FFF5F1] dark:bg-[#342822] border border-[#E86F51]/15 text-[10px] font-bold text-[#E86F51]">
+                  {nextRecommendation.metadata.decision === 'review_srs'
+                    ? 'Ưu tiên · Ôn SRS'
+                    : nextRecommendation.metadata.decision === 'review_quiz'
+                      ? 'Ưu tiên · Củng cố quiz'
+                      : nextRecommendation.metadata.decision === 'learn_lesson'
+                        ? 'Ưu tiên · Học bài mới'
+                        : 'Ưu tiên · Chuyển HSK'}
+                </span>
+                {nextRecommendation.metadata.reason && (
+                  <span className="text-[10px] text-[#716761] dark:text-[#A89E97]">
+                    {nextRecommendation.metadata.reason}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('learn')}
-            className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <span>Lộ trình bài học</span>
+          <button type="button" onClick={handleLearningRecommendation} disabled={curriculumLoading}
+            className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-2 cursor-pointer">
+            <span>{nextRecommendation?.actionText || 'Mở lộ trình'}</span>
             <ArrowRight size={16} />
           </button>
         </div>
-
-        {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
-            <span>Tiến độ bài học: 3 / 8 phần</span>
-            <span className="text-[#E86F51]">HSK 2 — 42% tổng lộ trình</span>
+            <span>Tiến độ HSK {currentHskLevel}</span>
+            <span className="text-[#E86F51]">{levelCompletion?.completionPercent ?? 0}%</span>
           </div>
           <div className="w-full h-3 bg-[#FFF0EB] dark:bg-[#342822] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] rounded-full transition-all duration-500"
-              style={{ width: '42%' }}
-            />
+            <div className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] rounded-full transition-all duration-500" style={{ width: `${levelCompletion?.completionPercent ?? 0}%` }} />
           </div>
-        </div>
-
-        {/* Quick Preview Chips */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-          <span className="text-xs text-[#716761] dark:text-[#A89E97] self-center mr-1">
-            Từ vựng đang học:
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            饭 (fàn - cơm)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            水 (shuǐ - nước)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            好吃 (hǎochī - ngon)
-          </span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#716761] dark:text-[#A89E97]">
+            <span>{levelCompletion?.completedLessons ?? 0}/{levelCompletion?.totalRequiredLessons ?? 0} bài bắt buộc</span>
+            <span>Mastery {levelCompletion?.masteryScore ?? 0}/100</span>
+            <span>Quiz {levelCompletion?.quizMastery ?? 0}/100</span>
+          </div>
         </div>
       </div>
 
-      {/* 4. Quick Action Modules */}
+      {/* 4. Daily goal */}
+      <div className="rounded-3xl bg-[#211A17] dark:bg-[#2A2320] p-5 sm:p-6 text-white border border-[#E86F51]/20 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Flame size={17} className="text-[#F5A28E]" />
+              <span className="text-xs font-black uppercase tracking-wider text-[#F5A28E]">Mục tiêu hôm nay</span>
+            </div>
+            <h3 className="text-xl font-bold mt-1">{Math.min(minutesLearnedToday, user.dailyMinutes)} / {user.dailyMinutes} phút học</h3>
+            <p className="text-xs text-white/65 mt-1">
+              {minutesLearnedToday >= user.dailyMinutes ? 'Bạn đã hoàn thành mục tiêu hôm nay. Giữ nhịp học tiếp nhé!' : 'Một phiên học ngắn nữa là bạn chạm mục tiêu hôm nay.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('review')}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#E86F51] text-white text-xs font-bold hover:bg-[#d85f41] transition-colors cursor-pointer shrink-0"
+          >
+            {minutesLearnedToday >= user.dailyMinutes ? 'Ôn thêm' : 'Học tiếp'}
+            <ArrowRight size={15} />
+          </button>
+        </div>
+        <div className="mt-4 h-2.5 rounded-full bg-white/10 overflow-hidden" aria-label={`Tiến độ mục tiêu hôm nay: ${Math.min(100, Math.round((minutesLearnedToday / Math.max(user.dailyMinutes, 1)) * 100))}%`}>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] transition-all duration-500"
+            style={{ width: `${Math.min(100, Math.round((minutesLearnedToday / Math.max(user.dailyMinutes, 1)) * 100))}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 5. Streak milestone */}
+      <div className="rounded-3xl bg-white dark:bg-[#241F1C] p-5 sm:p-6 border border-[#E86F51]/15 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Flame size={17} className="text-[#E86F51]" />
+              <span className="text-xs font-black uppercase tracking-wider text-[#E86F51]">Cột mốc streak</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#211A17] dark:text-white mt-1">
+              {streakDays} ngày liên tiếp
+            </h3>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
+              {streakDays >= nextStreakMilestone
+                ? 'Bạn vừa chạm một cột mốc mới. Hãy giữ nhịp học đều mỗi ngày!'
+                : 'Còn ' + (nextStreakMilestone - streakDays) + ' ngày để chạm mốc ' + nextStreakMilestone + ' ngày.'}
+            </p>
+          </div>
+          <div className="text-left sm:text-right shrink-0">
+            <p className="text-xs font-bold text-[#716761] dark:text-[#A89E97]">Mục tiêu tiếp theo</p>
+            <p className="text-lg font-black text-[#E86F51]">{nextStreakMilestone} ngày</p>
+          </div>
+        </div>
+        <div className="mt-4 h-2.5 rounded-full bg-[#FFF0EB] dark:bg-[#342822] overflow-hidden" aria-label={`Tiến độ cột mốc streak: ${streakProgress}%`}>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] transition-all duration-500"
+            style={{ width: `${streakProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 6. Quick Action Modules */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold text-[#211A17] dark:text-white">Luyện tập hôm nay</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

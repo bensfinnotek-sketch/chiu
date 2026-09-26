@@ -8,6 +8,7 @@ interface SessionSummaryModalProps {
   onClose: () => void;
   onPracticeAgain: () => void;
   onGoHome: () => void;
+  onReviewLesson?: () => void;
   stats: {
     durationMinutes: number;
     turnsCount: number;
@@ -21,6 +22,7 @@ interface SessionSummaryModalProps {
       vocabulary: number;
       naturalness: number;
     };
+    corrections: Array<{ original: string; corrected: string; explanation: string }>;
   };
 }
 
@@ -29,6 +31,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   onClose,
   onPracticeAgain,
   onGoHome,
+  onReviewLesson,
   stats,
 }) => {
   if (!isOpen) return null;
@@ -185,7 +188,33 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             </p>
           </div>
 
-          {/* New Vocabulary Section */}
+          {/* Actionable Speaking Review */}
+          {stats.corrections.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={14} className="text-[#E86F51]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
+                  Câu nên luyện lại
+                </h4>
+              </div>
+              <div className="space-y-2">
+                {stats.corrections.slice(0, 3).map((correction, idx) => (
+                  <div key={correction.original + idx} className="p-3 rounded-xl bg-[#FFF9F4] dark:bg-[#28201B] border border-[#F0E4D8] dark:border-[#3A2F28]">
+                    <p className="text-xs text-[#8C8078] dark:text-[#A89E97] line-through">{correction.original}</p>
+                    <p className="mt-1 text-sm font-serif font-semibold text-[#211A17] dark:text-white">{correction.corrected}</p>
+                    {correction.explanation && (
+                      <p className="mt-1 text-[11px] leading-5 text-[#716761] dark:text-[#A89E97]">{correction.explanation}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-[#8C8078] dark:text-[#8C8078]">
+                Đây là bằng chứng từ chính các lượt nói của bạn trong phiên, để dùng khi ôn lại.
+              </p>
+            </div>
+          )}
+
+          {/* New Vocabulary Section */
           {stats.wordsLearned.length > 0 && (
             <div className="space-y-2.5">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
@@ -226,6 +255,16 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
           </button>
 
           <div className="flex gap-2">
+            {onReviewLesson && (
+              <button
+                type="button"
+                onClick={onReviewLesson}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#E86F51]/30 bg-white dark:bg-[#28201B] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] text-[#E86F51] text-sm font-medium transition-colors cursor-pointer"
+              >
+                <BookOpen size={16} />
+                Xem lại bài học
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
