@@ -374,9 +374,12 @@ export class GeminiServiceImpl implements AIService {
         suggestedImprovement:
           typeof data.suggestedImprovement === 'string' ? data.suggestedImprovement : null,
       };
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        throw error;
+      }
       console.warn('[Pronunciation] Acoustic assessment unavailable:', error);
-        return createUnavailablePronunciationAssessment(params.language || 'vi');
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
   }
 
