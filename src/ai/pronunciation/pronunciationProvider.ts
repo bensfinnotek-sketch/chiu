@@ -11,6 +11,7 @@ export interface PronunciationProvider {
     targetText?: string;
     language?: string;
     audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
   }): Promise<PronunciationAssessment>;
 }
 
@@ -20,6 +21,7 @@ export class GeminiPronunciationProvider implements PronunciationProvider {
     targetText?: string;
     language?: string;
     audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
   }): Promise<PronunciationAssessment> {
     if (!geminiService.assessPronunciation) {
       throw new Error('Pronunciation assessment is not available.');
