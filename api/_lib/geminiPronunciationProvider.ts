@@ -1,12 +1,12 @@
-import { generateContentSafely, getAI } from "./geminiHandlers";
+import { generateContentSafely, getAI } from "./geminiHandlers.js";
 import {
   createUnavailablePronunciationAssessment,
   type PronunciationAssessment,
-} from "../../src/ai/pronunciation/pronunciationTypes";
+} from "../../src/ai/pronunciation/pronunciationTypes.js";
 import type {
   PronunciationProvider,
   PronunciationProviderInput,
-} from "./pronunciationProvider";
+} from "./pronunciationProvider.js";
 
 const MAX_INLINE_AUDIO_BYTES = 15 * 1024 * 1024;
 
