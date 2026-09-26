@@ -19,7 +19,6 @@ import { MicrophoneButton } from '../components/common/MicrophoneButton';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { storageService } from '../services/storageService';
 import { voiceService } from '../services/voiceService';
-import { geminiService } from '../services/geminiService';
 import { flashcardService } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 
@@ -187,8 +186,6 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
 
     setIsListening(true);
     setSpeechResult(null);
-
-    const targetSentence = lesson.dialogue[speakingIndex]?.chinese || lesson.vocabulary[0]?.chinese || '';
 
     voiceService.startListening({
       onResult: async (transcript: string) => {
