@@ -296,6 +296,43 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         </p>
       </div>
 
+      {/* Lesson progress rail */}
+      <div className="rounded-2xl bg-white/80 dark:bg-[#241F1C]/80 border border-[#E86F51]/10 px-3 py-3 shadow-xs">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <span className="text-xs font-black uppercase tracking-wide text-[#716761] dark:text-[#A89E97]">Tiến trình bài học</span>
+          <span className="text-xs font-bold text-[#E86F51]">
+            {(['vocabulary', 'grammar', 'dialogue', 'speaking', 'quiz'] as const).indexOf(activeTab as any) >= 0
+              ? `Phần ${(['vocabulary', 'grammar', 'dialogue', 'speaking', 'quiz'] as const).indexOf(activeTab as any) + 1}/5`
+              : 'Mục tiêu'}
+          </span>
+        </div>
+        <div className="grid grid-cols-5 gap-1.5" aria-label="Tiến trình các phần học">
+          {[
+            { id: 'vocabulary', label: 'Từ vựng' },
+            { id: 'grammar', label: 'Ngữ pháp' },
+            { id: 'dialogue', label: 'Hội thoại' },
+            { id: 'speaking', label: 'Luyện nói' },
+            { id: 'quiz', label: 'Kiểm tra' },
+          ].map((step, index) => {
+            const stepIndex = ['vocabulary', 'grammar', 'dialogue', 'speaking', 'quiz'].indexOf(activeTab);
+            const isActive = activeTab === step.id;
+            const isDone = stepIndex > index;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => setActiveTab(step.id as any)}
+                className="group min-w-0 cursor-pointer text-left"
+                aria-current={isActive ? 'step' : undefined}
+              >
+                <div className={`h-1.5 rounded-full transition-colors ${isActive ? 'bg-[#E86F51]' : isDone ? 'bg-[#E86F51]/45' : 'bg-[#E86F51]/10 dark:bg-white/10'}`} />
+                <span className={`mt-1 block truncate text-[10px] sm:text-[11px] font-bold transition-colors ${isActive ? 'text-[#E86F51]' : 'text-[#716761] dark:text-[#A89E97] group-hover:text-[#E86F51]'}`}>{step.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-100 dark:border-white/10 scrollbar-none">
         {[
