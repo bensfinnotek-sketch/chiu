@@ -290,7 +290,7 @@ export class RecommendationService {
             .reduce((best, attempt) => Math.max(best, attempt.score), 0),
         }))
         .filter((item: { lesson: Lesson; score: number }) =>
-          quizAttempts.some((attempt) => attempt.lessonId === item.lesson.id) && item.score < 80
+          quizAttempts.some((attempt) => attempt.lessonId === item.lesson.id) && item.score < item.lesson.passingScore
         )
         .sort((a: { score: number }, b: { score: number }) => a.score - b.score)[0];
 
@@ -298,7 +298,7 @@ export class RecommendationService {
         recommendations.push({
           type: 'retry_quiz',
           title: `Luyện lại quiz: ${weakQuiz.lesson.title}`,
-          description: `Điểm quiz HSK ${currentLevelNumber} đang ở ${currentMastery.quizScore}/100. Ôn lại bài kiểm tra để củng cố điểm yếu.`,
+          description: `Điểm quiz HSK ${currentLevelNumber} đang ở ${currentMastery.quizScore}/100. Ôn lại bài kiểm tra có điểm dưới mức đạt để củng cố điểm yếu.`,
           targetId: weakQuiz.lesson.id,
           priority: 1,
           actionText: 'Luyện lại',
