@@ -304,7 +304,8 @@ export class GeminiServiceImpl implements AIService {
     language?: string;
     audio?: PronunciationAudioInput | null;
   }): Promise<PronunciationAssessment> {
-    if (!params.audio) {
+    try {
+      if (!params.audio) {
       return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
@@ -356,13 +357,17 @@ export class GeminiServiceImpl implements AIService {
       return createUnavailablePronunciationAssessment(params.language || 'vi');
     }
 
-    return {
-      source: data.source,
-      accuracyScore: data.accuracyScore,
-      feedback: typeof data.feedback === 'string' ? data.feedback : '',
-      suggestedImprovement:
-        typeof data.suggestedImprovement === 'string' ? data.suggestedImprovement : null,
-    };
+      return {
+        source: data.source,
+        accuracyScore: data.accuracyScore,
+        feedback: typeof data.feedback === 'string' ? data.feedback : '',
+        suggestedImprovement:
+          typeof data.suggestedImprovement === 'string' ? data.suggestedImprovement : null,
+      };
+    } catch (error) {
+      console.warn('[Pronunciation] Acoustic assessment unavailable:', error);
+      return createUnavailablePronunciationAssessment(params.language || 'vi');
+    }
   }
 
   async translateChinese(text: string, from: string = 'zh', to: string = 'vi') {
