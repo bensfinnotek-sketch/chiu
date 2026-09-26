@@ -149,6 +149,15 @@ export const storageService = {
     return item;
   },
 
+  removeSpeakingReviewItem(id: string): void {
+    try {
+      const items = this.getSpeakingReviewItems().filter((item) => item.id !== id);
+      localStorage.setItem(SPEAKING_REVIEW_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
   recordQuizAttempt(params: {
     lessonId: string;
     score: number;
