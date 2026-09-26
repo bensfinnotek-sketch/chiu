@@ -58,8 +58,10 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [speechResult, setSpeechResult] = useState<{
+    source: 'acoustic' | 'unavailable';
     accuracyScore: number | null;
     feedback: string;
+    suggestedImprovement: string | null;
     transcription: string;
   } | null>(null);
 
@@ -202,8 +204,10 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         if (!transcript) {
           setIsEvaluating(false);
           setSpeechResult({
+            source: 'unavailable',
             accuracyScore: null,
             feedback: 'Chưa nhận được câu nói để đánh giá.',
+            suggestedImprovement: 'Hãy nói lại trọn câu sau khi nhấn mic để Lina có dữ liệu âm thanh.',
             transcription: '',
           });
           return;
@@ -218,15 +222,19 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
           })
           .then((assessment) => {
             setSpeechResult({
+              source: assessment.source,
               accuracyScore: assessment.accuracyScore,
               feedback: assessment.feedback,
+              suggestedImprovement: assessment.suggestedImprovement,
               transcription: transcript,
             });
           })
           .catch(() => {
             setSpeechResult({
+              source: 'unavailable',
               accuracyScore: null,
               feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
+              suggestedImprovement: 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.',
               transcription: transcript,
             });
           })
@@ -595,17 +603,30 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             {/* Speech Result Feedback Box */}
             {speechResult && (
               <div className="max-w-md mx-auto p-5 rounded-2xl bg-[#FFF9F4] dark:bg-[#342822] border border-[#E86F51]/20 space-y-2 text-left animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#716761]">Điểm phát âm:</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-[#716761]">Đánh giá phát âm</span>
+                    <p className="text-[11px] text-[#8A7F78] mt-0.5">
+                      {speechResult.source === 'acoustic' ? 'Đã phân tích từ dữ liệu âm thanh' : 'Chưa thể đánh giá bằng âm thanh'}
+                    </p>
+                  </div>
                   <span className="text-lg font-black text-[#E86F51]">
-                    {speechResult.accuracyScore !== null ? speechResult.accuracyScore + '/100' : 'Chưa có điểm âm thanh'}
+                    {speechResult.accuracyScore !== null ? speechResult.accuracyScore + '/100' : 'Chưa có điểm'}
                   </span>
                 </div>
                 <p className="text-xs text-[#716761]">
                   Bạn vừa nói: <span className="font-chinese font-bold text-[#211A17] dark:text-white">"{speechResult.transcription}"</span>
                 </p>
-                <div className="pt-2 border-t border-[#E86F51]/10 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  {speechResult.feedback}
+                <div className="pt-2 border-t border-[#E86F51]/10 space-y-2">
+                  <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    {speechResult.feedback}
+                  </div>
+                  {speechResult.suggestedImprovement && (
+                    <div className="rounded-xl bg-white/70 dark:bg-black/10 border border-[#E86F51]/10 px-3 py-2 text-xs text-[#716761] dark:text-[#A89E97]">
+                      <span className="font-bold text-[#E86F51]">Gợi ý cải thiện: </span>
+                      {speechResult.suggestedImprovement}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
