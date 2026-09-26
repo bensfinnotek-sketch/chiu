@@ -70,42 +70,42 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
       goal: 'Chào hỏi và kết thúc một cuộc gặp bằng tiếng Trung lịch sự.',
       scenario: 'Bạn vừa gặp một người Trung Quốc lần đầu và muốn tạo ấn tượng thân thiện.',
       challenge: 'Nói liền mạch: chào hỏi → cảm ơn → đáp lại → tạm biệt.',
-      success: 'Bạn có thể mở đầu và kết thúc một cuộc trò chuyện ngắn mà không cần dịch từng câu.',,
+      success: 'Bạn có thể mở đầu và kết thúc một cuộc trò chuyện ngắn mà không cần dịch từng câu.',
       skills: ['Chào hỏi tự nhiên', 'Đáp lại lịch sự', 'Kết thúc hội thoại']
     },
     'lesson-hsk1-u1-l2': {
       goal: 'Hỏi thăm sức khỏe và phản hồi tự nhiên.',
       scenario: 'Bạn gặp một người bạn vào buổi sáng và muốn hỏi thăm họ.',
       challenge: 'Dùng 你好吗？→ 我很好。→ 你呢？ để duy trì ít nhất 3 lượt đối đáp.',
-      success: 'Bạn có thể hỏi thăm và phản hồi về tình trạng của mình trong một đoạn hội thoại ngắn.',,
+      success: 'Bạn có thể hỏi thăm và phản hồi về tình trạng của mình trong một đoạn hội thoại ngắn.',
       skills: ['Hỏi thăm sức khỏe', 'Phản xạ câu hỏi', 'Duy trì lượt đối đáp']
     },
     'lesson-hsk1-u2-l3': {
       goal: 'Tự giới thiệu tên và hỏi tên người đối diện.',
       scenario: 'Bạn làm quen với một bạn mới trong lớp tiếng Trung.',
       challenge: 'Hỏi tên, nói “我叫…” và chủ động hỏi lại đối phương.',
-      success: 'Bạn có thể tự giới thiệu bản thân ngay khi gặp một người mới.',,
+      success: 'Bạn có thể tự giới thiệu bản thân ngay khi gặp một người mới.',
       skills: ['Tự giới thiệu', 'Hỏi tên', 'Chủ động hỏi lại']
     },
     'lesson-hsk1-u2-l4': {
       goal: 'Nói mình đến từ đâu và hỏi quốc tịch của người khác.',
       scenario: 'Bạn gặp một người bạn mới đến từ một quốc gia khác.',
       challenge: 'Hỏi “你是哪国人？” rồi trả lời rõ ràng về quốc gia của mình.',
-      success: 'Bạn có thể thực hiện một đoạn làm quen ngắn xoay quanh quốc gia và nguồn gốc.',,
+      success: 'Bạn có thể thực hiện một đoạn làm quen ngắn xoay quanh quốc gia và nguồn gốc.',
       skills: ['Hỏi quốc tịch', 'Nói nguồn gốc', 'Làm quen theo ngữ cảnh']
     },
     'lesson-hsk1-u3-l5': {
       goal: 'Nói mình muốn ăn hoặc uống gì trong một tình huống đơn giản.',
       scenario: 'Bạn bước vào một quán ăn Trung Quốc và cần gọi món.',
       challenge: 'Nói món muốn gọi, hỏi/đáp về đồ ăn hoặc đồ uống và xác nhận lựa chọn.',
-      success: 'Bạn có thể xử lý một tình huống gọi món cơ bản mà không cần dùng tiếng Việt.',,
+      success: 'Bạn có thể xử lý một tình huống gọi món cơ bản mà không cần dùng tiếng Việt.',
       skills: ['Gọi món', 'Nói nhu cầu', 'Xác nhận lựa chọn']
     },
     'lesson-hsk1-u3-l6': {
       goal: 'Hỏi giá và phản hồi khi mua một món đồ.',
       scenario: 'Bạn đang mua một món đồ nhỏ ở cửa hàng và cần hỏi giá.',
       challenge: 'Dùng 多少钱？ để hỏi giá, nghe con số và xác nhận món mình muốn mua.',
-      success: 'Bạn có thể hỏi giá và hoàn tất một đoạn hội thoại mua sắm ngắn.',,
+      success: 'Bạn có thể hỏi giá và hoàn tất một đoạn hội thoại mua sắm ngắn.',
       skills: ['Hỏi giá', 'Nghe con số', 'Xác nhận khi mua hàng']
     },
     'lesson-hsk1-u2-l7': {
@@ -119,14 +119,14 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
       goal: 'Hỏi ngày trong tuần và hẹn một hoạt động đơn giản.',
       scenario: 'Bạn muốn hẹn bạn đi uống trà vào ngày mai.',
       challenge: 'Hỏi hôm nay là thứ mấy, nói ngày mai và đề nghị một cuộc hẹn.',
-      success: 'Bạn có thể xác nhận ngày và tạo một cuộc hẹn ngắn bằng tiếng Trung.',,
+      success: 'Bạn có thể xác nhận ngày và tạo một cuộc hẹn ngắn bằng tiếng Trung.',
       skills: ['Hỏi ngày', 'Nói thời gian', 'Đề nghị cuộc hẹn']
     },
     'lesson-hsk1-u3-l9': {
       goal: 'Nói về sở thích và rủ người khác cùng làm một hoạt động.',
       scenario: 'Cuối tuần, bạn muốn rủ một người bạn xem phim.',
       challenge: 'Nói ít nhất 2 sở thích với 喜欢 rồi chuyển sang một lời mời.',
-      success: 'Bạn có thể nói mình thích gì và chủ động rủ bạn bè làm một hoạt động.',,
+      success: 'Bạn có thể nói mình thích gì và chủ động rủ bạn bè làm một hoạt động.',
       skills: ['Nói sở thích', 'Dùng 喜欢', 'Đưa ra lời mời']
     },
   };
@@ -912,6 +912,45 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
               </p>
             </div>
 
+            {lessonMissions[lesson.id] && (
+              <div className="max-w-xl mx-auto p-5 rounded-2xl bg-[#FFF9F4] dark:bg-[#2A2320] border border-[#E86F51]/15 text-left space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Mini Mission</p>
+                    <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">
+                      {missionCompleted ? 'Nhiệm vụ thực chiến đã hoàn thành' : 'Nhiệm vụ thực chiến chưa được đánh dấu'}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${missionCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}>
+                    {missionCompleted ? 'Đã hoàn thành' : 'Chưa đánh dấu'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {lessonMissions[lesson.id].skills.map((skill) => (
+                    <span key={skill} className={`px-3 py-1.5 rounded-full text-[11px] font-bold ${missionCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-white text-[#716761] dark:bg-[#1E1917] dark:text-[#A89E97] border border-[#E86F51]/10'}`}>
+                      {missionCompleted ? '✓ ' : ''}{skill}
+                    </span>
+                  ))}
+                </div>
+                {missionCompleted ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                      Bạn đã nối được bài học với một tình huống giao tiếp thực tế.
+                    </p>
+                    {onNavigateToSpeaking && (
+                      <button type="button" onClick={() => onNavigateToSpeaking(lesson.title)} className="px-4 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D35B3E] text-white text-xs font-bold transition-all">
+                        🎙️ Luyện nói tiếp
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                    Bạn có thể quay lại phần mở đầu để đánh dấu nhiệm vụ sau khi thực hành xong.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="pt-4 flex justify-center gap-3">
               <button
                 type="button"
@@ -927,7 +966,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
 
         {/* Navigation Footer Controls */}
         <div className="flex items-center justify-between pt-6 border-t border-[#E86F51]/15">
-          <button            type="button"
+          <button type="button"
             onClick={handlePrevSection}
             disabled={activeSectionIndex === 0}
             className="px-4 py-2 rounded-xl text-xs font-bold text-[#716761] dark:text-[#A89E97] hover:text-[#E86F51] disabled:opacity-40 disabled:hover:text-inherit transition-all flex items-center gap-1.5 cursor-pointer"
