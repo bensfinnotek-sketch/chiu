@@ -1,5 +1,5 @@
-import { extractBearerToken, requireAuth, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware";
-import { parseBody, sendJson } from "./httpUtils";
+import { extractBearerToken, requireAuth, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.js";
+import { parseBody, sendJson } from "./httpUtils.js";
 
 export interface FlashcardItem {
   id: string;
