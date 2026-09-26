@@ -58,7 +58,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [speechResult, setSpeechResult] = useState<{
-    accuracyScore: number;
+    accuracyScore: number | null;
     feedback: string;
     transcription: string;
   } | null>(null);
@@ -195,16 +195,9 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         setIsListening(false);
         setIsEvaluating(true);
         try {
-          const evalRes = await geminiService.evaluateSpeech(targetSentence, transcript);
           setSpeechResult({
-            accuracyScore: evalRes.accuracyScore,
-            feedback: evalRes.feedback,
-            transcription: transcript,
-          });
-        } catch {
-          setSpeechResult({
-            accuracyScore: 88,
-            feedback: 'Phát âm rất rõ ràng, thanh điệu chuẩn!',
+            accuracyScore: null,
+            feedback: 'Chưa thể đánh giá phát âm bằng dữ liệu âm thanh ở lượt nói này.',
             transcription: transcript,
           });
         } finally {
@@ -570,7 +563,7 @@ export const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#716761]">Điểm phát âm:</span>
                   <span className="text-lg font-black text-[#E86F51]">
-                    {speechResult.accuracyScore}/100
+                    {speechResult.accuracyScore !== null ? speechResult.accuracyScore + '/100' : 'Chưa có điểm âm thanh'}
                   </span>
                 </div>
                 <p className="text-xs text-[#716761]">
