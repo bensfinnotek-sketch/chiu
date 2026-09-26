@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
-import { parseBody, sendJson } from "./httpUtils";
-import { extractBearerToken, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware";
-import { PLAN_ENTITLEMENTS, normalizePlan } from "../../src/config/planEntitlements";
-import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers";
+import { parseBody, sendJson } from "./httpUtils.js";
+import { extractBearerToken, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.js";
+import { PLAN_ENTITLEMENTS, normalizePlan } from "../../src/config/planEntitlements.js";
+import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers.js";
 
 
 const GUEST_SPEAKING_LIMIT_MS = 5 * 60 * 1000;
