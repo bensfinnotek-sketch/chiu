@@ -5,8 +5,23 @@ const USER_KEY = 'hanziai_user_profile';
 const SAVED_WORDS_KEY = 'hanziai_saved_words';
 const CONVERSATION_KEY = 'hanziai_conversation_history';
 const COMPLETED_LESSONS_KEY = 'hanziai_completed_lessons';
+const QUIZ_ATTEMPTS_KEY = 'hanziai_quiz_attempts';
 const LANG_KEY = 'hanziai_lang';
 const THEME_KEY = 'hanziai_theme';
+
+export interface QuizAttemptRecord {
+  id: string;
+  lessonId: string;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  answers: Record<string, number>;
+  submittedAt: string;
+  submissionKey: string;
+}
+
+const createQuizSubmissionKey = (lessonId: string, answers: Record<string, number>): string =>
+  `${lessonId}:${Object.keys(answers).sort().map((id) => `${id}=${answers[id]}`).join('|')}`;
 
 export const storageService = {
   getUserProfile(): UserProfile {
@@ -84,6 +99,49 @@ export const storageService = {
     return list;
   },
 
+  getQuizAttempts(lessonId?: string): QuizAttemptRecord[] {
+    try {
+      const stored = localStorage.getItem(QUIZ_ATTEMPTS_KEY);
+      if (!stored) return [];
+      const attempts = JSON.parse(stored) as QuizAttemptRecord[];
+      return lessonId ? attempts.filter((attempt) => attempt.lessonId === lessonId) : attempts;
+    } catch {
+      return [];
+    }
+  },
+
+  recordQuizAttempt(params: {
+    lessonId: string;
+    score: number;
+    correctCount: number;
+    totalQuestions: number;
+    answers: Record<string, number>;
+  }): QuizAttemptRecord {
+    const submissionKey = createQuizSubmissionKey(params.lessonId, params.answers);
+    const existing = this.getQuizAttempts().find((attempt) => attempt.submissionKey === submissionKey);
+    if (existing) return existing;
+
+    const attempt: QuizAttemptRecord = {
+      id: `quiz_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      lessonId: params.lessonId,
+      score: params.score,
+      correctCount: params.correctCount,
+      totalQuestions: params.totalQuestions,
+      answers: { ...params.answers },
+      submittedAt: new Date().toISOString(),
+      submissionKey,
+    };
+
+    try {
+      const attempts = [attempt, ...this.getQuizAttempts()].slice(0, 100);
+      localStorage.setItem(QUIZ_ATTEMPTS_KEY, JSON.stringify(attempts));
+    } catch (e) {
+      console.error(e);
+    }
+
+    return attempt;
+  },
+
   getConversationHistory(): ConversationMessage[] {
     try {
       const stored = localStorage.getItem(CONVERSATION_KEY);
@@ -122,8 +180,8 @@ export const storageService = {
   setLanguage(lang: SupportedLanguage): void {
     try {
       localStorage.setItem(LANG_KEY, lang);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   },
 
@@ -138,8 +196,8 @@ export const storageService = {
   setTheme(theme: 'light' | 'dark'): void {
     try {
       localStorage.setItem(THEME_KEY, theme);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   },
 };
