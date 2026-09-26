@@ -34,6 +34,7 @@ import { speechRecognitionService } from '../services/speechRecognitionService';
 import { textToSpeechService } from '../services/textToSpeechService';
 import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { PronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
@@ -161,6 +162,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     vocabulary: 5,
     naturalness: 4,
   });
+  const [pronunciationAssessment, setPronunciationAssessment] = useState<PronunciationAssessment | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const latestTranscriptRef = useRef('');
@@ -285,11 +287,20 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     const cleanText = userText.trim();
     if (!cleanText) return;
 
-    // Pass captured audio into the pronunciation layer without deriving an acoustic score from transcript text.
-    if (pronunciationAudio) {
-      await geminiSpeakingService.assessPronunciation({
+    // Keep pronunciation feedback explicit and independent from transcript-based language scores.
+    try {
+      const pronunciationResult = await geminiSpeakingService.assessPronunciation({
         spokenText: cleanText,
-        audio: pronunciationAudio,
+        audio: pronunciationAudio || null,
+      });
+      setPronunciationAssessment(pronunciationResult);
+    } catch (pronunciationError) {
+      console.warn('Pronunciation assessment unavailable:', pronunciationError);
+      setPronunciationAssessment({
+        source: 'unavailable',
+        accuracyScore: null,
+        feedback: 'Chưa thể đánh giá phát âm bằng âm thanh ở lượt nói này.',
+        suggestedImprovement: 'Hãy thử ghi âm lại câu nói để tiếp tục kiểm tra phát âm.',
       });
     }
 
@@ -1117,6 +1128,37 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               </div>
             )}
           </div>
+
+          {/* Honest Pronunciation Assessment */}
+          {pronunciationAssessment && (
+            <div className="bg-[#FFF9F4] dark:bg-[#28201B] p-4 rounded-2xl border border-[#F0E4D8] dark:border-[#382E27] space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
+                  Đánh giá phát âm
+                </h4>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#8C8078]">
+                  {pronunciationAssessment.source === 'acoustic' ? 'Âm thanh' : 'Chưa khả dụng'}
+                </span>
+              </div>
+              {pronunciationAssessment.accuracyScore !== null ? (
+                <div className="text-lg font-bold text-[#E86F51]">
+                  {Math.round(pronunciationAssessment.accuracyScore)}/100
+                </div>
+              ) : (
+                <div className="text-sm font-semibold text-[#716761] dark:text-[#A89E97]">
+                  Chưa có điểm âm thanh
+                </div>
+              )}
+              <p className="text-xs leading-5 text-[#716761] dark:text-[#A89E97]">
+                {pronunciationAssessment.feedback}
+              </p>
+              {pronunciationAssessment.suggestedImprovement && (
+                <p className="text-[11px] leading-5 text-[#8C8078] dark:text-[#8C8078]">
+                  Gợi ý: {pronunciationAssessment.suggestedImprovement}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Honest Language Metrics (Section 19) */}
           <div className="bg-[#FFF9F4] dark:bg-[#28201B] p-4 rounded-2xl border border-[#F0E4D8] dark:border-[#382E27] space-y-3">
