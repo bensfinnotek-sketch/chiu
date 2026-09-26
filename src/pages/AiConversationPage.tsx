@@ -288,9 +288,11 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     if (!cleanText) return;
 
     // Keep pronunciation feedback explicit and independent from transcript-based language scores.
+    const targetText = [...messages].reverse().find((message) => message.sender === 'lina')?.chinese;
     try {
       const pronunciationResult = await geminiSpeakingService.assessPronunciation({
         spokenText: cleanText,
+        targetText,
         audio: pronunciationAudio || null,
       });
       setPronunciationAssessment(pronunciationResult);
@@ -529,15 +531,9 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       return;
     }
     if (micState === 'LISTENING') {
+      // Let SpeechRecognitionService.onEnd submit the final transcript together with captured audio.
       speechRecognitionService.stopListening();
-      if (interimTranscript.trim()) {
-        processUserMessage(interimTranscript);
-        setInterimTranscript('');
-      } else {
-        setMicState('IDLE');
-        setTeacherState('idle');
-        setStatusMessage('Nhấn mic để nói');
-      }
+      setMicState('PROCESSING');
     } else {
       handleStartListening();
     }
