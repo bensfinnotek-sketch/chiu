@@ -166,6 +166,7 @@ export class SpeechRecognitionService {
         stream?.getTracks().forEach((track) => track.stop());
         this.mediaStream = null;
         this.audioCaptureStartPromise = null;
+        this.audioFinalizationPromise = null;
         resolve(null);
         return;
       }
