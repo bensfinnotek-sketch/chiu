@@ -33,6 +33,7 @@ export interface AIService {
     targetText?: string;
     language?: string;
     audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
   }): Promise<PronunciationAssessment>;
 }
 
@@ -303,7 +304,9 @@ export class GeminiServiceImpl implements AIService {
     targetText?: string;
     language?: string;
     audio?: PronunciationAudioInput | null;
+    signal?: AbortSignal;
   }): Promise<PronunciationAssessment> {
+    const signal = params.signal;
     try {
       if (!params.audio) {
         return createUnavailablePronunciationAssessment(params.language || 'vi');
@@ -343,6 +346,7 @@ export class GeminiServiceImpl implements AIService {
         },
       }),
       cache: 'no-store',
+      signal,
     });
 
       if (!res.ok) {
