@@ -385,6 +385,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
             </div>
 
             {lessonMissions[lesson.id] && (
+              <>
               <div className="rounded-3xl bg-[#211A17] text-white border border-[#E86F51]/30 p-5 sm:p-6 space-y-5 shadow-md">
                 <div className="flex items-start gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-[#E86F51] flex items-center justify-center shrink-0">
@@ -503,6 +504,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                   )}
                 </div>
               </div>
+              </>
             )}
           </div>
         )}
