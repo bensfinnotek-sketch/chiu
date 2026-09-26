@@ -36,6 +36,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const wordsLearned = progress?.wordsLearned ?? vocabularyCount;
   const minutesLearnedToday = progress?.totalStudyMinutes ?? user.minutesLearnedToday;
   const currentHskLevel = Math.min(6, Math.max(1, Number(String(user.chineseLevel).match(/\d+/)?.[0] || 1))) as 1 | 2 | 3 | 4 | 5 | 6;
+  const streakMilestones = [7, 14, 30, 60, 100];
+  const nextStreakMilestone = streakMilestones.find((milestone) => milestone > streakDays) ?? Math.ceil(Math.max(streakDays, 1) / 100) * 100;
+  const previousStreakMilestone = streakMilestones.slice().reverse().find((milestone) => milestone <= streakDays) ?? 0;
+  const streakProgress = Math.min(
+    100,
+    Math.round(
+      ((streakDays - previousStreakMilestone) /
+        Math.max(nextStreakMilestone - previousStreakMilestone, 1)) *
+        100,
+    ),
+  );
   const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
   const nextRecommendation = recommendations[0];
 
@@ -203,7 +214,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* 4. Quick Action Modules */}
+      {/* 5. Streak milestone */}
+      <div className="rounded-3xl bg-white dark:bg-[#241F1C] p-5 sm:p-6 border border-[#E86F51]/15 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Flame size={17} className="text-[#E86F51]" />
+              <span className="text-xs font-black uppercase tracking-wider text-[#E86F51]">Cột mốc streak</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#211A17] dark:text-white mt-1">
+              {streakDays} ngày liên tiếp
+            </h3>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
+              {streakDays >= nextStreakMilestone
+                ? 'Bạn vừa chạm một cột mốc mới. Hãy giữ nhịp học đều mỗi ngày!'
+                : 'Còn ' + (nextStreakMilestone - streakDays) + ' ngày để chạm mốc ' + nextStreakMilestone + ' ngày.'}
+            </p>
+          </div>
+          <div className="text-left sm:text-right shrink-0">
+            <p className="text-xs font-bold text-[#716761] dark:text-[#A89E97]">Mục tiêu tiếp theo</p>
+            <p className="text-lg font-black text-[#E86F51]">{nextStreakMilestone} ngày</p>
+          </div>
+        </div>
+        <div className="mt-4 h-2.5 rounded-full bg-[#FFF0EB] dark:bg-[#342822] overflow-hidden" aria-label={`Tiến độ cột mốc streak: ${streakProgress}%`}>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] transition-all duration-500"
+            style={{ width: `${streakProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* 6. Quick Action Modules */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold text-[#211A17] dark:text-white">Luyện tập hôm nay</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
