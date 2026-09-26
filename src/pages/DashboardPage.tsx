@@ -161,6 +161,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
               {nextRecommendation?.description || 'Lộ trình sẽ được chọn từ dữ liệu tiến độ, quiz, từ vựng và ngữ pháp đã ghi nhận.'}
             </p>
+            {nextRecommendation?.metadata?.decision && (
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="px-2.5 py-1 rounded-full bg-[#FFF5F1] dark:bg-[#342822] border border-[#E86F51]/15 text-[10px] font-bold text-[#E86F51]">
+                  {nextRecommendation.metadata.decision === 'review_srs'
+                    ? 'Ưu tiên · Ôn SRS'
+                    : nextRecommendation.metadata.decision === 'review_quiz'
+                      ? 'Ưu tiên · Củng cố quiz'
+                      : nextRecommendation.metadata.decision === 'learn_lesson'
+                        ? 'Ưu tiên · Học bài mới'
+                        : 'Ưu tiên · Chuyển HSK'}
+                </span>
+                {nextRecommendation.metadata.reason && (
+                  <span className="text-[10px] text-[#716761] dark:text-[#A89E97]">
+                    {nextRecommendation.metadata.reason}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button type="button" onClick={handleLearningRecommendation} disabled={curriculumLoading}
             className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all flex items-center gap-2 cursor-pointer">
