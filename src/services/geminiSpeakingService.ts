@@ -5,6 +5,7 @@ import { geminiService } from './geminiService';
 import type { ConversationMemory } from '../ai/memory/conversationMemory';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 import type { PronunciationAssessment } from '../ai/pronunciation/pronunciationTypes';
+import { GeminiPronunciationProvider } from '../ai/pronunciation/pronunciationProvider';
 
 
 export interface SpeakingAnalysisInput {
@@ -155,6 +156,7 @@ export const TOPIC_STARTERS: Record<string, Record<string, { chinese: string; pi
 };
 
 class GeminiSpeakingService {
+  private readonly pronunciationProvider = new GeminiPronunciationProvider();
   public getInitialPrompt(
     topic: string,
     level: string = 'HSK 1',
@@ -193,11 +195,7 @@ class GeminiSpeakingService {
     targetText?: string;
     audio?: Blob | null;
   }): Promise<PronunciationAssessment> {
-    if (!geminiService.assessPronunciation) {
-      throw new Error('Pronunciation assessment is not available.');
-    }
-
-    return geminiService.assessPronunciation({
+    return this.pronunciationProvider.assess({
       spokenText: params.spokenText,
       targetText: params.targetText,
       language: 'vi',
