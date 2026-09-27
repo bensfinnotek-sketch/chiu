@@ -131,6 +131,18 @@ export const storageService = {
     }
   },
 
+  getSpeakingReviewQueue(limit = 3): SpeakingReviewItem[] {
+    const safeLimit = Math.max(1, Math.min(10, Math.floor(limit)));
+    return this.getSpeakingReviewItems()
+      .filter((item) => item.corrected.trim().length > 0)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(0, safeLimit);
+  },
+
+  getSpeakingReviewCount(): number {
+    return this.getSpeakingReviewItems().length;
+  },
+
   saveSpeakingReviewItem(item: SpeakingReviewItem): SpeakingReviewItem {
     try {
       const items = this.getSpeakingReviewItems().filter(
