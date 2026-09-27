@@ -20,6 +20,7 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { useCurriculum } from '../hooks/useCurriculum';
 import { flashcardService, Flashcard } from '../services/flashcardService';
 import { storageService } from '../services/storageService';
+import { getDailyPlanPersonalization } from '../curriculum/dailyPlanPersonalization';
 
 interface DashboardPageProps {
   user: UserProfile;
@@ -51,6 +52,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
   const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
   const nextRecommendation = recommendations[0];
+  const dailyPlan = getDailyPlanPersonalization(user.learningGoal);
   const [dueReviewCount, setDueReviewCount] = useState(0);
   const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
   const [speakingReviewNext, setSpeakingReviewNext] = useState(() => storageService.getSpeakingReviewSummary().next);
@@ -249,7 +251,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               3–4 bước ngắn, đi theo đúng điểm cần luyện
             </h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
-              Lina ghép ôn lại, học tiếp và luyện nói từ dữ liệu thật hiện có của bạn.
+              {dailyPlan.description}
             </p>
           </div>
           <span className="shrink-0 px-3 py-1.5 rounded-full bg-[#FFF5F1] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">
@@ -297,13 +299,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             {
               key: 'speaking',
               label: speakingReviewCount > 0 || dueReviewCount > 0 || nextRecommendation ? '4' : '1',
-              title: 'Luyện 5 phút với Lina',
-              description: 'Chuyển kiến thức vừa ôn thành phản xạ hội thoại thực tế.',
+              title: dailyPlan.speakingTitle,
+              description: dailyPlan.speakingDescription,
               action: 'Bắt đầu Speaking',
               onClick: () => onNavigate('practice-conversation'),
               icon: Mic,
             },
-          ].filter(Boolean).map((step) => {
+          ].filter(Boolean)
+          .sort((a, b) => {
+            const aIndex = dailyPlan.stepOrder.indexOf(a.key);
+            const bIndex = dailyPlan.stepOrder.indexOf(b.key);
+            return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex);
+          })
+          .map((step) => {
             if (!step) return null;
             const Icon = step.icon;
             return (
