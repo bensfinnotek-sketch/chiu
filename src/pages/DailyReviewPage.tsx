@@ -369,6 +369,14 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
               </p>
             </div>
           </div>
+          {speakingReviews.length > 0 && (
+            <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#D5A85C]/15 text-left space-y-2">
+              <p className="text-xs font-bold text-[#D5A85C]">Speaking Review còn lại: {speakingReviews.length} câu</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                Bạn có thể luyện tiếp các câu Lina đã sửa ngay trong Daily Review.
+              </p>
+            </div>
+          )}
           <button
             type="button"
             onClick={onComplete}
