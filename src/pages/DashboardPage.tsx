@@ -80,9 +80,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       }
     };
     window.addEventListener('storage', refreshSpeakingReviews);
+    window.addEventListener('focus', refreshSpeakingReviews);
     return () => {
       mounted = false;
       window.removeEventListener('storage', refreshSpeakingReviews);
+      window.removeEventListener('focus', refreshSpeakingReviews);
     };
   }, []);
 
