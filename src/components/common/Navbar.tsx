@@ -215,9 +215,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={onToggleTheme}
             aria-label={theme === 'dark' ? t.lightMode : t.darkMode}
-            className="p-2 rounded-xl text-[#716761] dark:text-[#A89E97] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            title={theme === 'dark' ? t.lightMode : t.darkMode}
+            className="min-h-10 min-w-10 px-2.5 sm:px-3 rounded-xl text-[#716761] dark:text-[#A89E97] hover:text-[#211A17] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51]/50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
           >
             {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
+            <span className="hidden sm:inline text-xs font-semibold">{theme === 'dark' ? 'Sáng' : 'Tối'}</span>
           </button>
 
           {/* Authenticated User Menu or Guest Login / Register */}
