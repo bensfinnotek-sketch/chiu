@@ -76,7 +76,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     const refreshSpeakingReviews = () => {
       if (mounted) {
         setSpeakingReviewCount(storageService.getSpeakingReviewCount());
-    setSpeakingReviewNext(storageService.getSpeakingReviewSummary().next);
         setSpeakingReviewNext(storageService.getSpeakingReviewSummary().next);
       }
     };
