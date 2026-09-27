@@ -122,7 +122,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     if (!currentSpeakingReview) return;
     storageService.completeSpeakingReviewItem(currentSpeakingReview.id);
     setSpeakingReviews((items) => items.filter((item) => item.id !== currentSpeakingReview.id));
-    setSpeakingReviewStep((value) => Math.min(value, Math.max(speakingReviews.length - 2, 0)));
+    setSpeakingReviewStep(0);
   };
 
 
@@ -226,14 +226,14 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
     );
   }
 
-  if (cards.length === 0) {
+  if (cards.length === 0 && speakingReviews.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-8 text-center border border-[#E86F51]/15 shadow-xl space-y-5">
           <RotateCcw size={40} className="mx-auto text-[#E86F51]" />
-          <h1 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Chưa có thẻ cần ôn</h1>
+          <h1 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Chưa có nội dung cần ôn</h1>
           <p className="text-sm text-[#716761] dark:text-[#A89E97]">
-            Hãy học một bài HSK hoặc trò chuyện với Lina để tạo thêm flashcards cá nhân.
+            Hãy học một bài HSK hoặc trò chuyện với Lina để tạo thêm nội dung ôn tập cá nhân.
           </p>
           <button
             type="button"
@@ -357,7 +357,9 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           <div className="space-y-2">
             <h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Hoàn thành phiên ôn tập</h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97]">
-              Bạn đã ôn {cards.length} từ và đạt <span className="font-bold text-[#E86F51]">{Math.round((score / Math.max(cards.length, 1)) * 100)} / 100 điểm</span>.
+              {cards.length > 0
+                ? <>Bạn đã ôn {cards.length} từ và đạt <span className="font-bold text-[#E86F51]">{Math.round((score / Math.max(cards.length, 1)) * 100)} / 100 điểm</span>.</>
+                : 'Bạn đã hoàn tất phần Speaking Review trong phiên này.'}
             </p>
           </div>
           <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 flex items-center gap-3 text-left">
