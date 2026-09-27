@@ -214,7 +214,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             </div>
           )}
 
-          {/* New Vocabulary Section */
+          {/* New Vocabulary Section */}
           {stats.wordsLearned.length > 0 && (
             <div className="space-y-2.5">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
