@@ -52,6 +52,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
   const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
   const nextRecommendation = recommendations[0];
+  const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
+  const [speakingReviewNext, setSpeakingReviewNext] = useState(() => storageService.getSpeakingReviewSummary().next);
   const dailyPlan = getDailyPlanPersonalization(user.learningGoal, {
     dueReviewCount,
     speakingReviewCount,
@@ -60,9 +63,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     quizMastery: levelCompletion?.quizMastery,
     completionPercent: levelCompletion?.completionPercent,
   });
-  const [dueReviewCount, setDueReviewCount] = useState(0);
-  const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
-  const [speakingReviewNext, setSpeakingReviewNext] = useState(() => storageService.getSpeakingReviewSummary().next);
 
   useEffect(() => {
     let mounted = true;
