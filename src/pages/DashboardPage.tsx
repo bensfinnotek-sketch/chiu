@@ -52,7 +52,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
   const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
   const nextRecommendation = recommendations[0];
-  const dailyPlan = getDailyPlanPersonalization(user.learningGoal);
+  const dailyPlan = getDailyPlanPersonalization(user.learningGoal, {
+    dueReviewCount,
+    speakingReviewCount,
+    weakVocabularyCount: levelCompletion?.weakVocabularyCount,
+    weakGrammarCount: levelCompletion?.weakGrammarCount,
+    quizMastery: levelCompletion?.quizMastery,
+    completionPercent: levelCompletion?.completionPercent,
+  });
   const [dueReviewCount, setDueReviewCount] = useState(0);
   const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
   const [speakingReviewNext, setSpeakingReviewNext] = useState(() => storageService.getSpeakingReviewSummary().next);
