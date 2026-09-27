@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Trophy, RotateCcw, CheckCircle2, XCircle, LogIn } from 'lucide-react';
+import { Trophy, RotateCcw, CheckCircle2, XCircle, LogIn, MessageSquare, ArrowRight } from 'lucide-react';
 import { AudioButton } from '../components/common/AudioButton';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { flashcardService, Flashcard } from '../services/flashcardService';
@@ -9,6 +9,7 @@ import { getLessonProgressRepository } from '../curriculum/lessonProgressReposit
 import { curriculumRepository } from '../curriculum/curriculumRepository';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getDailyReviewPriority } from '../curriculum/dailyReviewRanking';
+import { storageService, SpeakingReviewItem } from '../services/storageService';
 
 export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (route: string) => void }> = ({
   onComplete,
@@ -23,6 +24,8 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [speakingReviews, setSpeakingReviews] = useState<SpeakingReviewItem[]>(() => storageService.getSpeakingReviewQueue(3));
+  const [speakingReviewStep, setSpeakingReviewStep] = useState(0);
   const answerInFlightRef = useRef<string | null>(null);
   const lessonProgressRepository = useMemo(() => getLessonProgressRepository(user?.id || null), [user?.id]);
 
@@ -113,6 +116,15 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   }, [user, lessonProgressRepository, profile]);
 
   const current = cards[step] || null;
+  const currentSpeakingReview = speakingReviews[speakingReviewStep] || null;
+
+  const handleCompleteSpeakingReview = () => {
+    if (!currentSpeakingReview) return;
+    storageService.completeSpeakingReviewItem(currentSpeakingReview.id);
+    setSpeakingReviews((items) => items.filter((item) => item.id !== currentSpeakingReview.id));
+    setSpeakingReviewStep((value) => Math.min(value, Math.max(speakingReviews.length - 2, 0)));
+  };
+
 
   const options = useMemo(() => {
     if (!current) return [];
@@ -246,6 +258,42 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           Bộ ôn tập lấy trực tiếp từ flashcards cá nhân của bạn.
         </p>
       </div>
+
+      {currentSpeakingReview && (
+        <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-5 sm:p-6 border border-[#D5A85C]/25 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-[#D5A85C]">Speaking Review</span>
+              <h2 className="text-lg font-bold text-[#211A17] dark:text-white mt-1">Ôn lại câu Lina đã sửa</h2>
+            </div>
+            <span className="text-xs font-bold text-[#716761] dark:text-[#A89E97]">{speakingReviewStep + 1}/{speakingReviews.length}</span>
+          </div>
+          <div className="p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#D5A85C]/15 space-y-2">
+            <p className="text-xs text-[#716761] dark:text-[#A89E97]">{currentSpeakingReview.topic || 'Hội thoại với Lina'}</p>
+            <p className="text-sm text-[#8A7F78] line-through">{currentSpeakingReview.original}</p>
+            <p className="text-base font-bold text-[#211A17] dark:text-white">{currentSpeakingReview.corrected}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97]">{currentSpeakingReview.explanation}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={handleCompleteSpeakingReview}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#D5A85C] text-white text-xs font-bold hover:opacity-90 transition-opacity"
+            >
+              <CheckCircle2 size={15} /> Đã luyện xong
+            </button>
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('practice-conversation')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#D5A85C]/20 text-[#D5A85C] text-xs font-bold"
+              >
+                <MessageSquare size={15} /> Luyện với Lina <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {!isDone && current ? (
         <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-xl space-y-6">
