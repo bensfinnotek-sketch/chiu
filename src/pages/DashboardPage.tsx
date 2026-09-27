@@ -120,7 +120,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
       {/* 1. Header Greeting & Lina Callout */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-white via-[#FFF8F4] to-[#FFF0EB] dark:from-[#241F1C] dark:via-[#2A2320] dark:to-[#322722] p-6 sm:p-8 rounded-3xl border border-[#E86F51]/15 shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-white via-[#FFF8F4] to-[#FFF0EB] dark:from-[#241F1C] dark:via-[#2A2320] dark:to-[#322722] p-5 sm:p-8 rounded-3xl border border-[#E86F51]/15 shadow-sm">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-bold">
             <Sparkles size={14} />
@@ -253,7 +253,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">Kế hoạch học hôm nay</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#E86F51] uppercase tracking-wider">
+              <Target size={13} />
+              Kế hoạch học hôm nay
+            </span>
             <h2 className="text-2xl font-bold text-[#211A17] dark:text-white mt-1">
               3–4 bước ngắn, đi theo đúng điểm cần luyện
             </h2>
@@ -326,7 +329,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 key={step.key}
                 type="button"
                 onClick={step.onClick}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[#E86F51]/10 bg-[#FFF9F4] dark:bg-[#181412] text-left hover:border-[#E86F51]/40 hover:shadow-sm transition-all"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[#E86F51]/10 bg-[#FFF9F4] dark:bg-[#181412] text-left hover:border-[#E86F51]/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51]/40 transition-all"
               >
                 <span className="w-9 h-9 rounded-xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#E86F51] flex items-center justify-center text-xs font-black shrink-0">
                   {step.label}
@@ -423,7 +426,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
               Nhấn mic, nói câu tiếng Trung theo chủ đề và nhận đánh giá sao cùng mẹo phát âm từ Lina.
             </p>
-          </div>
+          </button>
 
           {/* AI Voice Conversation */}
           <div
@@ -439,7 +442,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
               Trò chuyện bằng giọng nói hoặc tin nhắn. Tự động phát hiện lỗi sai và gợi ý cách diễn đạt tự nhiên hơn.
             </p>
-          </div>
+          </button>
 
           {/* Daily 10-Minute Review */}
           <div
@@ -455,7 +458,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
               5 từ vựng, 3 bài nghe và 2 bài luyện nói tổng hợp để duy trì phản xạ và giữ vững chuỗi Streak.
             </p>
-          </div>
+          </button>
         </div>
       </div>
     </div>
