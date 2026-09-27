@@ -504,7 +504,6 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
               </>
             )}
           </div>
