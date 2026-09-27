@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Flame,
   BookOpen,
@@ -18,6 +18,8 @@ import { LinaAvatar } from '../components/common/LinaAvatar';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useCurriculum } from '../hooks/useCurriculum';
+import { flashcardService, Flashcard } from '../services/flashcardService';
+import { storageService } from '../services/storageService';
 
 interface DashboardPageProps {
   user: UserProfile;
@@ -49,6 +51,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
   const { levelCompletion, recommendations, isLoading: curriculumLoading } = useCurriculum(currentHskLevel);
   const nextRecommendation = recommendations[0];
+  const [dueReviewCount, setDueReviewCount] = useState(0);
+  const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
+
+  useEffect(() => {
+    let mounted = true;
+
+    flashcardService.getFlashcards()
+      .then((cards: Flashcard[]) => {
+        if (!mounted) return;
+        const now = Date.now();
+        const dueCount = cards.filter((card) => {
+          if (!card.next_review_at) return true;
+          const dueAt = Date.parse(card.next_review_at);
+          return Number.isFinite(dueAt) && dueAt <= now;
+        }).length;
+        setDueReviewCount(dueCount);
+      })
+      .catch(() => {
+        if (mounted) setDueReviewCount(0);
+      });
+
+    const refreshSpeakingReviews = () => {
+      if (mounted) setSpeakingReviewCount(storageService.getSpeakingReviewCount());
+    };
+    window.addEventListener('storage', refreshSpeakingReviews);
+    return () => {
+      mounted = false;
+      window.removeEventListener('storage', refreshSpeakingReviews);
+    };
+  }, []);
 
   const handleLearningRecommendation = () => {
     if (!nextRecommendation) {
@@ -199,6 +231,94 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <span>Mastery {levelCompletion?.masteryScore ?? 0}/100</span>
             <span>Quiz {levelCompletion?.quizMastery ?? 0}/100</span>
           </div>
+        </div>
+      </div>
+
+      {/* 4. Daily learning plan */}
+      <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">Kế hoạch học hôm nay</span>
+            <h2 className="text-2xl font-bold text-[#211A17] dark:text-white mt-1">
+              3–4 bước ngắn, đi theo đúng điểm cần luyện
+            </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              Lina ghép ôn lại, học tiếp và luyện nói từ dữ liệu thật hiện có của bạn.
+            </p>
+          </div>
+          <span className="shrink-0 px-3 py-1.5 rounded-full bg-[#FFF5F1] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">
+            Rule-based · không tạo tiến độ giả
+          </span>
+        </div>
+
+        <div className="grid gap-3">
+          {[
+            speakingReviewCount > 0
+              ? {
+                  key: 'speaking-review',
+                  label: '1',
+                  title: `Ôn ${speakingReviewCount} câu Speaking cần luyện`,
+                  description: 'Xem lại chính những câu Lina đã sửa từ các lượt nói trước.',
+                  action: 'Mở ôn Speaking',
+                  onClick: () => onNavigate('flashcards'),
+                  icon: MessageSquare,
+                }
+              : null,
+            dueReviewCount > 0 && nextRecommendation?.targetId !== 'flashcards'
+              ? {
+                  key: 'daily-review',
+                  label: speakingReviewCount > 0 ? '2' : '1',
+                  title: `Ôn ${Math.min(dueReviewCount, 10)} flashcards đến hạn`,
+                  description: 'Daily Review sẽ ưu tiên các thẻ yếu và đã đến lịch SRS.',
+                  action: 'Ôn ngay',
+                  onClick: () => onNavigate('review'),
+                  icon: RotateCcw,
+                }
+              : null,
+            nextRecommendation
+              ? {
+                  key: 'next-step',
+                  label: speakingReviewCount > 0 ? (dueReviewCount > 0 && nextRecommendation.targetId !== 'flashcards' ? '3' : '2') : (dueReviewCount > 0 && nextRecommendation.targetId !== 'flashcards' ? '2' : '1'),
+                  title: nextRecommendation.title,
+                  description: nextRecommendation.description,
+                  action: nextRecommendation.actionText || 'Mở bước tiếp theo',
+                  onClick: handleLearningRecommendation,
+                  icon: BookOpen,
+                }
+              : null,
+            {
+              key: 'speaking',
+              label: speakingReviewCount > 0 || dueReviewCount > 0 || nextRecommendation ? '4' : '1',
+              title: 'Luyện 5 phút với Lina',
+              description: 'Chuyển kiến thức vừa ôn thành phản xạ hội thoại thực tế.',
+              action: 'Bắt đầu Speaking',
+              onClick: () => onNavigate('practice-conversation'),
+              icon: Mic,
+            },
+          ].filter(Boolean).map((step) => {
+            if (!step) return null;
+            const Icon = step.icon;
+            return (
+              <button
+                key={step.key}
+                type="button"
+                onClick={step.onClick}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[#E86F51]/10 bg-[#FFF9F4] dark:bg-[#181412] text-left hover:border-[#E86F51]/40 hover:shadow-sm transition-all"
+              >
+                <span className="w-9 h-9 rounded-xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#E86F51] flex items-center justify-center text-xs font-black shrink-0">
+                  {step.label}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <Icon size={16} className="text-[#E86F51] shrink-0" />
+                    <span className="font-bold text-sm text-[#211A17] dark:text-white">{step.title}</span>
+                  </span>
+                  <span className="block text-xs text-[#716761] dark:text-[#A89E97] mt-1">{step.description}</span>
+                </span>
+                <ArrowRight size={16} className="text-[#8A7F78] shrink-0" />
+              </button>
+            );
+          })}
         </div>
       </div>
 
