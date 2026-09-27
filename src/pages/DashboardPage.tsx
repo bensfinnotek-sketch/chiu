@@ -53,6 +53,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const nextRecommendation = recommendations[0];
   const [dueReviewCount, setDueReviewCount] = useState(0);
   const [speakingReviewCount, setSpeakingReviewCount] = useState(() => storageService.getSpeakingReviewCount());
+  const [speakingReviewNext, setSpeakingReviewNext] = useState(() => storageService.getSpeakingReviewSummary().next);
 
   useEffect(() => {
     let mounted = true;
@@ -73,7 +74,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       });
 
     const refreshSpeakingReviews = () => {
-      if (mounted) setSpeakingReviewCount(storageService.getSpeakingReviewCount());
+      if (mounted) {
+        setSpeakingReviewCount(storageService.getSpeakingReviewCount());
+    setSpeakingReviewNext(storageService.getSpeakingReviewSummary().next);
+        setSpeakingReviewNext(storageService.getSpeakingReviewSummary().next);
+      }
     };
     window.addEventListener('storage', refreshSpeakingReviews);
     return () => {
@@ -258,9 +263,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   key: 'speaking-review',
                   label: '1',
                   title: `Ôn ${speakingReviewCount} câu Speaking cần luyện`,
-                  description: 'Xem lại chính những câu Lina đã sửa từ các lượt nói trước.',
+                  description: speakingReviewNext
+                    ? `Ví dụ: “${speakingReviewNext.corrected}”`
+                    : 'Xem lại chính những câu Lina đã sửa từ các lượt nói trước.',
                   action: 'Mở ôn Speaking',
-                  onClick: () => onNavigate('flashcards'),
+                  onClick: () => onNavigate('review'),
                   icon: MessageSquare,
                 }
               : null,
