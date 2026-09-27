@@ -305,7 +305,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               onClick: () => onNavigate('practice-conversation'),
               icon: Mic,
             },
-          ].filter(Boolean)
+          ].filter((step): step is NonNullable<typeof step> => Boolean(step))
           .sort((a, b) => {
             const aIndex = dailyPlan.stepOrder.indexOf(a.key);
             const bIndex = dailyPlan.stepOrder.indexOf(b.key);
