@@ -143,6 +143,14 @@ export const storageService = {
     return this.getSpeakingReviewItems().length;
   },
 
+  getSpeakingReviewSummary(): { count: number; next: SpeakingReviewItem | null } {
+    const queue = this.getSpeakingReviewQueue(1);
+    return {
+      count: this.getSpeakingReviewCount(),
+      next: queue[0] || null,
+    };
+  },
+
   saveSpeakingReviewItem(item: SpeakingReviewItem): SpeakingReviewItem {
     try {
       const items = this.getSpeakingReviewItems().filter(
@@ -168,6 +176,10 @@ export const storageService = {
     } catch (e) {
       console.error(e);
     }
+  },
+
+  completeSpeakingReviewItem(id: string): void {
+    this.removeSpeakingReviewItem(id);
   },
 
   recordQuizAttempt(params: {
@@ -215,7 +227,7 @@ export const storageService = {
         sender: 'lina',
         chinese: '你好！我是Lina，你的AI中文老师。今天想和我聊些什么呢？',
         pinyin: 'Nǐ hǎo! Wǒ shì Lina, nǐ de AI zhōngwén lǎoshī. Jīntiān xiǎng hé wǒ liáo xiē shénme ne?',
-        translation: 'Xin chào! Mình là Lina, giáo viên tiếng Trung AI của bạn. Hôm nay bạn muốn trò chuyện về chủ đề gì nào?',
+        translation: 'Xin chào! Mình là Lina, giáo viên tiếng Trung AI của bạn. Hôm nay bạn muốn trò chuyện chủ đề gì nào?',
         timestamp: '10:00 AM',
       },
     ];
