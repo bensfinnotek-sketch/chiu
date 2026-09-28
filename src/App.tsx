@@ -228,6 +228,7 @@ function AppContent() {
                 const speakingLevel = levelMatch ? `HSK ${levelMatch[1]}` : 'HSK 1';
                 sessionStorage.setItem('selected_speaking_topic', topic);
                 sessionStorage.setItem('selected_speaking_level', speakingLevel);
+                sessionStorage.setItem('selected_speaking_source_lesson', selectedLessonId);
                 setSelectedSessionId(undefined);
                 handleNavigate('practice-conversation');
               }}
@@ -249,6 +250,7 @@ function AppContent() {
             <AiConversationPage
               selectedSessionId={selectedSessionId}
               onBackToTopics={() => handleNavigate('practice-speaking')}
+              onReviewLesson={(lessonId) => handleNavigate('learn-detail', lessonId)}
             />
           )}
 

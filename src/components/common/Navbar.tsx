@@ -214,10 +214,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? t.lightMode : t.darkMode}
-            className="p-2 rounded-xl text-[#716761] dark:text-[#A89E97] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            aria-label={theme === 'dark' ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
+            title={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
+            aria-pressed={theme === 'dark'}
+            className="min-h-10 min-w-10 px-2.5 sm:px-3 rounded-xl border border-[#E86F51]/15 bg-[#FFF7F2] dark:bg-[#2C211A] dark:border-white/10 text-[#716761] dark:text-[#E7D9D0] hover:text-[#211A17] dark:hover:text-white hover:border-[#E86F51]/30 hover:bg-[#FFF0EB] dark:hover:bg-[#342822] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51]/50 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
+            {theme === 'dark' ? <Sun size={18} className="text-amber-400 transition-transform duration-200 rotate-0" /> : <Moon size={18} className="transition-transform duration-200" />}
+            <span className="hidden sm:inline text-xs font-semibold">{theme === 'dark' ? 'Sáng' : 'Tối'}</span>
           </button>
 
           {/* Authenticated User Menu or Guest Login / Register */}

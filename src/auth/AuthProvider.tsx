@@ -27,6 +27,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isGuest, setIsGuest] = useState<boolean>(() => {
+    // Keep guest mode explicit, but never let a stale guest flag hide an
+    // already-restored authenticated session during startup.
     return localStorage.getItem('hanzi_ai_is_guest') === 'true';
   });
 

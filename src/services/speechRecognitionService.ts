@@ -1,11 +1,13 @@
 // Web Speech Recognition Service for HanziAI
 // Target language: zh-CN (Mandarin)
 
+import { pronunciationAudioTransport } from '../ai/pronunciation/audioTransport';
+
 export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
   onInterimResult?: (interim: string) => void;
   onError?: (error: string) => void;
-  onEnd?: () => void;
+  onEnd?: (finalTranscript?: string, audioBlob?: Blob | null) => void;
   onStart?: () => void;
 }
 
@@ -56,6 +58,7 @@ export class SpeechRecognitionService {
     }
 
     let finalAccumulated = '';
+    void pronunciationAudioTransport.start();
 
     this.recognition.onstart = () => {
       this.isListeningActive = true;
@@ -100,9 +103,10 @@ export class SpeechRecognitionService {
       if (callbacks.onError) callbacks.onError(userMsg);
     };
 
-    this.recognition.onend = () => {
+    this.recognition.onend = async () => {
       this.isListeningActive = false;
-      if (callbacks.onEnd) callbacks.onEnd();
+      const audioInput = await pronunciationAudioTransport.stop();
+      if (callbacks.onEnd) callbacks.onEnd(finalAccumulated, audioInput?.blob || null);
     };
 
     try {
@@ -110,11 +114,16 @@ export class SpeechRecognitionService {
       return true;
     } catch (err: any) {
       this.isListeningActive = false;
+      pronunciationAudioTransport.cancel();
       if (callbacks.onError) {
         callbacks.onError(err?.message || 'Không thể khởi động micro.');
       }
       return false;
     }
+  }
+
+  public getLastAudioCapture(): Blob | null {
+    return null;
   }
 
   public stopListening(): void {
@@ -137,6 +146,7 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    pronunciationAudioTransport.cancel();
   }
 }
 

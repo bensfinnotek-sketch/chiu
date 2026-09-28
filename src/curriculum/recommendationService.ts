@@ -36,23 +36,30 @@ export class RecommendationService {
     const progressMap = new Map<string, UserLessonProgress>();
     userProgressList.forEach((p) => progressMap.set(p.lessonId, p));
 
-    const inProgress = levelLessons.find((l) => progressMap.get(l.id)?.status === 'in_progress');
+    // Never resume an in-progress lesson whose prerequisite is no longer
+    // satisfied. This keeps stale/legacy progress from bypassing the
+    // curriculum dependency graph.
+    const hasSatisfiedPrerequisite = (lesson: Lesson) =>
+      !lesson.prerequisiteLessonId ||
+      progressMap.get(lesson.prerequisiteLessonId)?.status === 'completed';
+
+    const inProgress = levelLessons.find(
+      (l) => progressMap.get(l.id)?.status === 'in_progress' && hasSatisfiedPrerequisite(l)
+    );
     if (inProgress) return inProgress;
 
     for (const lesson of levelLessons) {
       const p = progressMap.get(lesson.id);
-      if (!p || p.status !== 'completed') {
-        if (!lesson.prerequisiteLessonId || progressMap.get(lesson.prerequisiteLessonId)?.status === 'completed') {
-          return lesson;
-        }
+      if ((!p || p.status !== 'completed') && hasSatisfiedPrerequisite(lesson)) {
+        return lesson;
       }
     }
 
     return levelLessons
       .map((lesson) => ({ lesson, progress: progressMap.get(lesson.id) }))
-      .filter(({ progress }) => progress?.status === 'completed')
+      .filter(({ progress, lesson }) => progress?.status === 'completed' && hasSatisfiedPrerequisite(lesson))
       .sort((a, b) => (a.progress?.score ?? 100) - (b.progress?.score ?? 100))[0]?.lesson
-      || levelLessons[0]
+      || levelLessons.find(hasSatisfiedPrerequisite)
       || null;
   }
 
@@ -85,8 +92,6 @@ export class RecommendationService {
     const allGrammar = ALL_GRAMMAR_POINTS;
     const nextLesson = this.findNextLesson(currentLevelNumber, allLessons, userProgressList);
 
-    // Mastery profile is the main decision signal. It combines repeated
-    // vocabulary/grammar evidence with quiz performance for this HSK level.
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const vocabularyLevels = new Map(allVocabulary.map((vocab) => [vocab.id, vocab.hskLevel]));
     const grammarLevels = new Map(allGrammar.map((grammar) => [grammar.id, grammar.level]));
@@ -117,10 +122,9 @@ export class RecommendationService {
       vocabularyProgress: vocabProgress,
       grammarProgress,
       skillProgress,
+      quizAttempts,
     });
 
-    // One decision engine now coordinates SRS, quiz/grammar reinforcement,
-    // lesson progression, and HSK advancement.
     const flashcards = await flashcardService.getFlashcards();
     const now = Date.now();
     const dueCards = flashcards.filter((card) => {
@@ -157,8 +161,6 @@ export class RecommendationService {
       highPriorityDueCards: rankedDueCards.filter((item) => item.priority.score >= 70).length,
     });
 
-    // Route lesson and quiz recommendations only after the unified decision is known.
-    // This prevents lower-priority suggestions from conflicting with SRS/HSK decisions.
     if (decision.decision === 'learn_lesson' && nextLesson && levelCompletion.completionPercent < 100) {
       const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
       const isResume = userProgress?.status === 'in_progress';
@@ -203,9 +205,6 @@ export class RecommendationService {
       });
     }
 
-    // HSK progression now requires both curriculum completion and real mastery.
-    // A missing quiz is allowed for learners who have not reached assessment yet,
-    // but once quizzes exist they must also meet the assessment threshold.
     const quizReady = currentMastery.quizAttempts === 0 || currentMastery.quizScore >= 80;
     const masteryReady =
       currentMastery.overallScore >= 80 &&
@@ -238,13 +237,19 @@ export class RecommendationService {
       });
     }
 
-    // Weakest component of the current HSK has priority over generic
-    // "learn something new" suggestions.
     const componentScores = [
-      { key: 'vocabulary' as const, score: currentMastery.vocabularyScore },
-      { key: 'grammar' as const, score: currentMastery.grammarScore },
-      { key: 'quiz' as const, score: currentMastery.quizScore },
-    ].sort((a, b) => a.score - b.score);
+      currentMastery.weakVocabularyCount > 0
+        ? { key: 'vocabulary' as const, score: currentMastery.vocabularyScore }
+        : null,
+      currentMastery.weakGrammarCount > 0
+        ? { key: 'grammar' as const, score: currentMastery.grammarScore }
+        : null,
+      currentMastery.quizAttempts > 0
+        ? { key: 'quiz' as const, score: currentMastery.quizScore }
+        : null,
+    ]
+      .filter((component): component is NonNullable<typeof component> => component !== null)
+      .sort((a, b) => a.score - b.score);
     const weakestComponent = componentScores[0];
 
     if (decision.decision === 'review_quiz' && weakestComponent.key === 'vocabulary' && currentMastery.weakVocabularyCount > 0) {
@@ -293,14 +298,16 @@ export class RecommendationService {
             .filter((attempt) => attempt.lessonId === lesson.id)
             .reduce((best, attempt) => Math.max(best, attempt.score), 0),
         }))
-        .filter((item: { lesson: Lesson; score: number }) => item.score > 0 && item.score < 80)
+        .filter((item: { lesson: Lesson; score: number }) =>
+          quizAttempts.some((attempt) => attempt.lessonId === item.lesson.id) && item.score < item.lesson.passingScore
+        )
         .sort((a: { score: number }, b: { score: number }) => a.score - b.score)[0];
 
       if (weakQuiz) {
         recommendations.push({
           type: 'retry_quiz',
           title: `Luyện lại quiz: ${weakQuiz.lesson.title}`,
-          description: `Điểm quiz HSK ${currentLevelNumber} đang ở ${currentMastery.quizScore}/100. Ôn lại bài kiểm tra để củng cố điểm yếu.`,
+          description: `Điểm quiz HSK ${currentLevelNumber} đang ở ${currentMastery.quizScore}/100. Ôn lại bài kiểm tra có điểm dưới mức đạt để củng cố điểm yếu.`,
           targetId: weakQuiz.lesson.id,
           priority: 1,
           actionText: 'Luyện lại',
@@ -314,8 +321,6 @@ export class RecommendationService {
       }
     }
 
-    // Fallback: if the profile has no weak component with actionable evidence,
-    // continue the curriculum. This keeps new learners moving forward.
     if (recommendations.length === 0 && nextLesson && levelCompletion.completionPercent < 100) {
       const userProgress = await repo.getLessonProgress(userId, nextLesson.id);
       recommendations.push({
@@ -378,7 +383,7 @@ export class RecommendationService {
     const lessonLevels = new Map(allLessons.map((lesson) => [lesson.id, lesson.levelNumber]));
     const vocabularyLevels = snapshot?.vocabularyLevels ?? new Map((await curriculumRepository.getAllVocabulary()).map((item) => [item.id, item.hskLevel]));
     const grammarLevels = snapshot?.grammarLevels ?? new Map(ALL_GRAMMAR_POINTS.map((item) => [item.id, item.level]));
-    const quizAttempts = (
+    const quizAttempts = snapshot?.quizAttempts ?? (
       await Promise.all(levelLessons.map((lesson) => repo.getQuizAttempts(userId, lesson.id)))
     ).flat();
     const profile = getHskMasteryProfile(

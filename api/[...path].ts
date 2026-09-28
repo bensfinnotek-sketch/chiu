@@ -10,9 +10,10 @@ import {
   handleLesson,
   handleQuiz,
   sendJson,
-} from "./_lib/geminiHandlers.ts";
-import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.ts";
-import { handleGeneratePersonalizedLesson } from "./_lib/personalizedLessonHandlers.ts";
+} from "./_lib/geminiHandlers.js";
+import { handlePronunciation } from "./_lib/pronunciationHandlers.js";
+import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.js";
+import { handleGeneratePersonalizedLesson } from "./_lib/personalizedLessonHandlers.js";
 import {
   handleGetFlashcards,
   handleCreateFlashcard,
@@ -20,7 +21,7 @@ import {
   handleDeleteFlashcard,
   handleGetUserProfile,
   handleReviewFlashcard,
-} from "./_lib/flashcardHandlers.ts";
+} from "./_lib/flashcardHandlers.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
@@ -30,7 +31,6 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  // Extract path from req.query.path or req.url
   let segments: string[] = [];
   if (req.query?.path) {
     segments = Array.isArray(req.query.path) ? req.query.path : [req.query.path];
@@ -43,37 +43,50 @@ export default async function handler(req: any, res: any) {
   const fullSubPath = segments.join("/");
 
   if (fullSubPath === "health") {
+    if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
     return handleHealth(req, res);
   }
   if (fullSubPath === "ai/speaking" || fullSubPath === "gemini/speaking-analyze") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSpeakingAnalyze(req, res);
   }
   if (fullSubPath === "ai/summarize") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSummarize(req, res);
   }
+  if (fullSubPath === "ai/pronunciation") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
+    return handlePronunciation(req, res);
+  }
   if (fullSubPath === "gemini/conversation") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleConversation(req, res);
   }
   if (fullSubPath === "gemini/correct") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleCorrect(req, res);
   }
   if (fullSubPath === "gemini/speaking-feedback") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleSpeakingFeedback(req, res);
   }
   if (fullSubPath === "gemini/translate") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleTranslate(req, res);
   }
   if (fullSubPath === "gemini/dictionary") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleDictionaryLookup(req, res);
   }
   if (fullSubPath === "gemini/lesson") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleLesson(req, res);
   }
   if (fullSubPath === "gemini/quiz") {
+    if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
     return handleQuiz(req, res);
   }
 
-  // Personalized learning endpoints (Protected)
   if (fullSubPath === "learning/plan" && req.method === "GET") {
     return handleGetLearningPlan(req, res);
   }
@@ -81,7 +94,6 @@ export default async function handler(req: any, res: any) {
     return handleGeneratePersonalizedLesson(req, res);
   }
 
-  // Flashcards CRUD endpoints (Protected)
   if (fullSubPath === "flashcards") {
     if (req.method === "GET") return handleGetFlashcards(req, res);
     if (req.method === "POST") return handleCreateFlashcard(req, res);
@@ -95,7 +107,6 @@ export default async function handler(req: any, res: any) {
     if (req.method === "DELETE") return handleDeleteFlashcard(req, res, cardId);
   }
 
-  // User Profile endpoint (Protected)
   if (fullSubPath === "user/profile") {
     if (req.method === "GET") return handleGetUserProfile(req, res);
   }

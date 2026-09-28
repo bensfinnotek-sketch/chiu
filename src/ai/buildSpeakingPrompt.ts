@@ -50,6 +50,12 @@ export function buildSpeakingRequest(params: BuildSpeakingRequestParams): BuiltS
 
   // 2. Format memory context (summary + key facts + recent turns)
   const memoryContext = formatMemoryForPrompt(conversationMemory);
+  const turnCount = conversationMemory.recentTurns?.length ?? 0;
+  const steeringStage =
+    turnCount <= 1 ? 'OPEN / EXPLORE: ask one easy question grounded in the learner response.' :
+    turnCount <= 3 ? 'EXPLORE / DEEPEN: pick one detail from the learner response and develop it.' :
+    turnCount <= 6 ? 'DEEPEN / PRACTICE: vary the angle or introduce a small realistic scenario.' :
+    'PRACTICE / WRAP: move toward a practical outcome or concise recap when the learner signals completion.';
 
   // 3. Assemble dynamic context payload
   const promptParts: string[] = [
@@ -58,6 +64,8 @@ export function buildSpeakingRequest(params: BuildSpeakingRequestParams): BuiltS
     `TARGET LEVEL: ${learnerProfile.level || 'HSK 1'}`,
     `NATIVE LANGUAGE: ${learnerProfile.nativeLanguage || 'vi'}`,
     `DIFFICULTY: ${settings?.difficulty || 'normal'}`,
+    `CONVERSATION STEERING STAGE: ${steeringStage}`,
+    `STEERING RULE: Lead naturally from the learner's latest answer; do not repeat generic topic questions.`,
   ];
 
   if (memoryContext) {

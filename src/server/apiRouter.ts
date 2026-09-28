@@ -13,6 +13,7 @@ import {
   getAI,
   generateContentSafely,
 } from "../../api/_lib/geminiHandlers.ts";
+import { handlePronunciation } from "../../api/_lib/pronunciationHandlers.ts";
 import {
   handleGetFlashcards,
   handleCreateFlashcard,
@@ -76,6 +77,7 @@ export function createApiRouter(): Router {
 
   // AI Speaking Feedback
   router.post("/gemini/speaking-feedback", handleSpeakingFeedback);
+  router.post("/ai/pronunciation", handlePronunciation);
 
   // AI Translator with nuances and formal/casual variations
   router.post("/gemini/translate", handleTranslate);

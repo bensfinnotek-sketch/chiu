@@ -1,4 +1,5 @@
-import { handleSpeakingAnalyze, handleSummarize, sendJson } from "../_lib/geminiHandlers.ts";
+import { handleSpeakingAnalyze, handleSummarize, sendJson } from "../_lib/geminiHandlers.js";
+import { handlePronunciation } from "../_lib/pronunciationHandlers.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
@@ -16,6 +17,13 @@ export default async function handler(req: any, res: any) {
 
   if (action === "summarize") {
     return handleSummarize(req, res);
+  }
+
+  if (action === "pronunciation") {
+    if (req.method !== "POST") {
+      return sendJson(res, 405, { error: "Method not allowed" });
+    }
+    return handlePronunciation(req, res);
   }
 
   return sendJson(res, 404, { error: `Endpoint /api/ai/${action} not found` });

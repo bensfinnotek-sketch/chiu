@@ -47,6 +47,18 @@ function normalizedScore(values: number[], fallback: number): number {
   return values.length > 0 ? average(values) : fallback;
 }
 
+function bestQuizScorePerLesson(quizzes: QuizAttempt[]): number {
+  if (quizzes.length === 0) return 0;
+
+  const bestByLesson = new Map<string, number>();
+  for (const attempt of quizzes) {
+    const currentBest = bestByLesson.get(attempt.lessonId) ?? 0;
+    bestByLesson.set(attempt.lessonId, Math.max(currentBest, attempt.score));
+  }
+
+  return average(Array.from(bestByLesson.values()));
+}
+
 /**
  * Builds a live HSK mastery profile from the learner's strongest evidence:
  * per-word mastery, per-grammar-point mastery, and quiz performance.
@@ -85,7 +97,10 @@ export function buildHskMasteryProfile(input: MasteryProfileInput): HSKMasteryPr
       grammar.map((item) => item.masteryScore),
       levelGrammarProgress.length === 0 ? (grammarSkill?.score ?? 0) : 0
     );
-    const quizScore = average(quizzes.map((attempt) => attempt.score));
+    // A retry should improve or preserve mastery, not lower it because an
+    // earlier weaker attempt is still present in history. Keep the strongest
+    // attempt for each lesson, then average across lessons in the HSK level.
+    const quizScore = bestQuizScorePerLesson(quizzes);
 
     // With no quiz attempts, do not let the missing assessment drag down the
     // profile. Once quiz evidence exists it contributes 25% to the level score.

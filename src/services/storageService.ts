@@ -5,8 +5,34 @@ const USER_KEY = 'hanziai_user_profile';
 const SAVED_WORDS_KEY = 'hanziai_saved_words';
 const CONVERSATION_KEY = 'hanziai_conversation_history';
 const COMPLETED_LESSONS_KEY = 'hanziai_completed_lessons';
+const QUIZ_ATTEMPTS_KEY = 'hanziai_quiz_attempts';
+const SPEAKING_REVIEW_KEY = 'hanziai_speaking_review_v1';
 const LANG_KEY = 'hanziai_lang';
 const THEME_KEY = 'hanziai_theme';
+
+export interface QuizAttemptRecord {
+  id: string;
+  lessonId: string;
+  score: number;
+  correctCount: number;
+  totalQuestions: number;
+  answers: Record<string, number>;
+  submittedAt: string;
+  submissionKey: string;
+}
+
+export interface SpeakingReviewItem {
+  id: string;
+  sessionId: string;
+  topic: string;
+  original: string;
+  corrected: string;
+  explanation: string;
+  createdAt: string;
+}
+
+const createQuizSubmissionKey = (lessonId: string, answers: Record<string, number>): string =>
+  `${lessonId}:${Object.keys(answers).sort().map((id) => `${id}=${answers[id]}`).join('|')}`;
 
 export const storageService = {
   getUserProfile(): UserProfile {
@@ -84,6 +110,110 @@ export const storageService = {
     return list;
   },
 
+  getQuizAttempts(lessonId?: string): QuizAttemptRecord[] {
+    try {
+      const stored = localStorage.getItem(QUIZ_ATTEMPTS_KEY);
+      if (!stored) return [];
+      const attempts = JSON.parse(stored) as QuizAttemptRecord[];
+      return lessonId ? attempts.filter((attempt) => attempt.lessonId === lessonId) : attempts;
+    } catch {
+      return [];
+    }
+  },
+
+  getSpeakingReviewItems(sessionId?: string): SpeakingReviewItem[] {
+    try {
+      const stored = localStorage.getItem(SPEAKING_REVIEW_KEY);
+      const items = stored ? (JSON.parse(stored) as SpeakingReviewItem[]) : [];
+      return sessionId ? items.filter((item) => item.sessionId === sessionId) : items;
+    } catch {
+      return [];
+    }
+  },
+
+  getSpeakingReviewQueue(limit = 3): SpeakingReviewItem[] {
+    const safeLimit = Math.max(1, Math.min(10, Math.floor(limit)));
+    return this.getSpeakingReviewItems()
+      .filter((item) => item.corrected.trim().length > 0)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(0, safeLimit);
+  },
+
+  getSpeakingReviewCount(): number {
+    return this.getSpeakingReviewItems().length;
+  },
+
+  getSpeakingReviewSummary(): { count: number; next: SpeakingReviewItem | null } {
+    const queue = this.getSpeakingReviewQueue(1);
+    return {
+      count: this.getSpeakingReviewCount(),
+      next: queue[0] || null,
+    };
+  },
+
+  saveSpeakingReviewItem(item: SpeakingReviewItem): SpeakingReviewItem {
+    try {
+      const items = this.getSpeakingReviewItems().filter(
+        (existing) =>
+          !(
+            existing.sessionId === item.sessionId &&
+            existing.original === item.original &&
+            existing.corrected === item.corrected
+          )
+      );
+      const next = [item, ...items].slice(0, 100);
+      localStorage.setItem(SPEAKING_REVIEW_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.error(e);
+    }
+    return item;
+  },
+
+  removeSpeakingReviewItem(id: string): void {
+    try {
+      const items = this.getSpeakingReviewItems().filter((item) => item.id !== id);
+      localStorage.setItem(SPEAKING_REVIEW_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  completeSpeakingReviewItem(id: string): void {
+    this.removeSpeakingReviewItem(id);
+  },
+
+  recordQuizAttempt(params: {
+    lessonId: string;
+    score: number;
+    correctCount: number;
+    totalQuestions: number;
+    answers: Record<string, number>;
+  }): QuizAttemptRecord {
+    const submissionKey = createQuizSubmissionKey(params.lessonId, params.answers);
+    const existing = this.getQuizAttempts().find((attempt) => attempt.submissionKey === submissionKey);
+    if (existing) return existing;
+
+    const attempt: QuizAttemptRecord = {
+      id: `quiz_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      lessonId: params.lessonId,
+      score: params.score,
+      correctCount: params.correctCount,
+      totalQuestions: params.totalQuestions,
+      answers: { ...params.answers },
+      submittedAt: new Date().toISOString(),
+      submissionKey,
+    };
+
+    try {
+      const attempts = [attempt, ...this.getQuizAttempts()].slice(0, 100);
+      localStorage.setItem(QUIZ_ATTEMPTS_KEY, JSON.stringify(attempts));
+    } catch (e) {
+      console.error(e);
+    }
+
+    return attempt;
+  },
+
   getConversationHistory(): ConversationMessage[] {
     try {
       const stored = localStorage.getItem(CONVERSATION_KEY);
@@ -97,7 +227,7 @@ export const storageService = {
         sender: 'lina',
         chinese: '你好！我是Lina，你的AI中文老师。今天想和我聊些什么呢？',
         pinyin: 'Nǐ hǎo! Wǒ shì Lina, nǐ de AI zhōngwén lǎoshī. Jīntiān xiǎng hé wǒ liáo xiē shénme ne?',
-        translation: 'Xin chào! Mình là Lina, giáo viên tiếng Trung AI của bạn. Hôm nay bạn muốn trò chuyện về chủ đề gì nào?',
+        translation: 'Xin chào! Mình là Lina, giáo viên tiếng Trung AI của bạn. Hôm nay bạn muốn trò chuyện chủ đề gì nào?',
         timestamp: '10:00 AM',
       },
     ];
@@ -122,8 +252,8 @@ export const storageService = {
   setLanguage(lang: SupportedLanguage): void {
     try {
       localStorage.setItem(LANG_KEY, lang);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   },
 
@@ -138,8 +268,8 @@ export const storageService = {
   setTheme(theme: 'light' | 'dark'): void {
     try {
       localStorage.setItem(THEME_KEY, theme);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   },
 };

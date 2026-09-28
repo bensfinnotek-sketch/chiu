@@ -170,6 +170,34 @@ export const ALL_CURRICULUM_LESSONS: Lesson[] = [
     updatedAt: '2026-03-18T00:00:00Z',
   },
 
+
+  // HSK 1 Extension — Unit 2
+  {
+    id: 'lesson-hsk1-u2-l7', unitId: 'unit-hsk1-u2', levelId: 'hsk-level-1', levelNumber: 1, order: 5,
+    slug: 'hsk1-u2-l7-family-and-home', title: 'Gia đình & Nhà của tôi', titleZh: '这是我的家',
+    description: 'Giới thiệu gia đình và nhà ở bằng những câu gần gũi, đồng thời luyện mẫu sở hữu 的.',
+    objectives: ['Gọi tên thành viên gia đình cơ bản', 'Dùng 的 để nói "của tôi/của bạn"', 'Tự giới thiệu gia đình bằng 3–4 câu đơn giản'],
+    estimatedMinutes: 16, difficulty: 'easy', status: 'published', isPublished: true, isRequired: true, prerequisiteLessonId: 'lesson-hsk1-u2-l4',
+    completionRule: 'all_required_and_quiz', passingScore: 80, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  {
+    id: 'lesson-hsk1-u2-l8', unitId: 'unit-hsk1-u2', levelId: 'hsk-level-1', levelNumber: 1, order: 6,
+    slug: 'hsk1-u2-l8-days-and-time', title: 'Ngày trong tuần & Lịch hẹn', titleZh: '今天星期几',
+    description: 'Hỏi thứ, nói hôm nay/ngày mai và tạo một cuộc hẹn đơn giản với bạn bè.',
+    objectives: ['Hỏi và trả lời thứ trong tuần', 'Phân biệt 今天 và 明天', 'Đặt một lịch hẹn ngắn bằng tiếng Trung'],
+    estimatedMinutes: 17, difficulty: 'easy', status: 'published', isPublished: true, isRequired: true, prerequisiteLessonId: 'lesson-hsk1-u2-l7',
+    completionRule: 'all_required_and_quiz', passingScore: 80, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+  // HSK 1 Extension — Unit 3
+  {
+    id: 'lesson-hsk1-u3-l9', unitId: 'unit-hsk1-u3', levelId: 'hsk-level-1', levelNumber: 1, order: 7,
+    slug: 'hsk1-u3-l9-hobbies', title: 'Sở thích & Cuối tuần', titleZh: '你喜欢做什么',
+    description: 'Biến vốn từ HSK1 thành hội thoại đời thực: nói mình thích gì và lên ý tưởng cho cuối tuần.',
+    objectives: ['Dùng 喜欢 để nói sở thích', 'Kết hợp 喜欢 + hoạt động như 看电影, 听音乐', 'Nói 4–5 câu về cuối tuần của bản thân'],
+    estimatedMinutes: 18, difficulty: 'easy', status: 'published', isPublished: true, isRequired: true, prerequisiteLessonId: 'lesson-hsk1-u3-l6',
+    completionRule: 'all_required_and_quiz', passingScore: 80, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-03-18T00:00:00Z',
+  },
+
   // ===================== HSK 2 =====================
   {
     id: 'lesson-hsk2-u1-l1',
@@ -357,6 +385,21 @@ export const LESSON_VOCABULARY_MAP: LessonVocabulary[] = [
   { lessonId: 'lesson-hsk1-u3-l6', vocabularyId: 'vocab-hsk1-015', order: 1, isCore: true },
   { lessonId: 'lesson-hsk1-u3-l6', vocabularyId: 'vocab-hsk1-016', order: 2, isCore: true },
 
+
+  // HSK 1 Extension
+  { lessonId: 'lesson-hsk1-u2-l7', vocabularyId: 'vocab-hsk1-017', order: 1, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l7', vocabularyId: 'vocab-hsk1-018', order: 2, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l7', vocabularyId: 'vocab-hsk1-019', order: 3, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l7', vocabularyId: 'vocab-hsk1-020', order: 4, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l8', vocabularyId: 'vocab-hsk1-021', order: 1, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l8', vocabularyId: 'vocab-hsk1-022', order: 2, isCore: true },
+  { lessonId: 'lesson-hsk1-u2-l8', vocabularyId: 'vocab-hsk1-023', order: 3, isCore: true },
+  { lessonId: 'lesson-hsk1-u3-l9', vocabularyId: 'vocab-hsk1-024', order: 1, isCore: true },
+  { lessonId: 'lesson-hsk1-u3-l9', vocabularyId: 'vocab-hsk1-025', order: 2, isCore: true },
+  { lessonId: 'lesson-hsk1-u3-l9', vocabularyId: 'vocab-hsk1-026', order: 3, isCore: true },
+  { lessonId: 'lesson-hsk1-u3-l9', vocabularyId: 'vocab-hsk1-027', order: 4, isCore: true },
+  { lessonId: 'lesson-hsk1-u3-l9', vocabularyId: 'vocab-hsk1-028', order: 5, isCore: true },
+
   // HSK 2 Lesson 1
   { lessonId: 'lesson-hsk2-u1-l1', vocabularyId: 'vocab-hsk2-001', order: 1, isCore: true },
   { lessonId: 'lesson-hsk2-u1-l1', vocabularyId: 'vocab-hsk2-002', order: 2, isCore: true },
@@ -455,6 +498,26 @@ export const LESSON_DIALOGUES: Record<string, DialogueLine[]> = {
       translationVi: 'Tôi tên là Lina. Rất vui được biết bạn!',
     },
   ],
+
+  'lesson-hsk1-u2-l7': [
+    { id: 'd7-1', speaker: 'Lina 老师', chinese: '这是你的家吗？', pinyin: 'Zhè shì nǐ de jiā ma?', translationVi: 'Đây là nhà của bạn à?' },
+    { id: 'd7-2', speaker: 'Học viên', chinese: '是，这是我的家。', pinyin: 'Shì, zhè shì wǒ de jiā.', translationVi: 'Đúng, đây là nhà của tôi.' },
+    { id: 'd7-3', speaker: 'Lina 老师', chinese: '你爸爸妈妈好吗？', pinyin: 'Nǐ bàba māma hǎo ma?', translationVi: 'Bố mẹ bạn khỏe không?' },
+    { id: 'd7-4', speaker: 'Học viên', chinese: '他们很好，谢谢！', pinyin: 'Tāmen hěn hǎo, xièxie!', translationVi: 'Họ rất khỏe, cảm ơn cô!' },
+  ],
+  'lesson-hsk1-u2-l8': [
+    { id: 'd8-1', speaker: 'Tiểu Minh', chinese: '今天星期几？', pinyin: 'Jīntiān xīngqī jǐ?', translationVi: 'Hôm nay là thứ mấy?' },
+    { id: 'd8-2', speaker: 'Học viên', chinese: '今天星期六。', pinyin: 'Jīntiān xīngqī liù.', translationVi: 'Hôm nay là thứ Bảy.' },
+    { id: 'd8-3', speaker: 'Tiểu Minh', chinese: '明天一起喝茶吗？', pinyin: 'Míngtiān yìqǐ hē chá ma?', translationVi: 'Ngày mai cùng đi uống trà nhé?' },
+    { id: 'd8-4', speaker: 'Học viên', chinese: '好啊，明天见！', pinyin: 'Hǎo a, míngtiān jiàn!', translationVi: 'Được chứ, hẹn gặp ngày mai!' },
+  ],
+  'lesson-hsk1-u3-l9': [
+    { id: 'd9-1', speaker: 'Lina 老师', chinese: '周末你喜欢做什么？', pinyin: 'Zhōumò nǐ xǐhuan zuò shénme?', translationVi: 'Cuối tuần bạn thích làm gì?' },
+    { id: 'd9-2', speaker: 'Học viên', chinese: '我喜欢看电影，也喜欢听音乐。', pinyin: 'Wǒ xǐhuan kàn diànyǐng, yě xǐhuan tīng yīnyuè.', translationVi: 'Tôi thích xem phim và cũng thích nghe nhạc.' },
+    { id: 'd9-3', speaker: 'Lina 老师', chinese: '明天一起看电影吗？', pinyin: 'Míngtiān yìqǐ kàn diànyǐng ma?', translationVi: 'Ngày mai cùng xem phim nhé?' },
+    { id: 'd9-4', speaker: 'Học viên', chinese: '好啊！', pinyin: 'Hǎo a!', translationVi: 'Được chứ!' },
+  ],
+
 };
 
 export const LESSON_QUIZZES: Record<string, QuizQuestion[]> = {
@@ -610,4 +673,39 @@ export const LESSON_QUIZZES: Record<string, QuizQuestion[]> = {
       difficulty: 'easy',
     },
   ],
+
+  'lesson-hsk1-u2-l7': [
+    { id: 'q-hsk1-l7-01', lessonId: 'lesson-hsk1-u2-l7', type: 'multiple_choice', order: 1, question: 'Câu nào có nghĩa "Đây là nhà của tôi"?', options: [
+      { id: 'opt-1', text: '这是我的家。', isCorrect: true }, { id: 'opt-2', text: '我喜欢喝茶。', isCorrect: false }, { id: 'opt-3', text: '今天星期几？', isCorrect: false }, { id: 'opt-4', text: '你叫什么名字？', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '我的 = của tôi, 家 = nhà/gia đình.', vocabularyIds: ['vocab-hsk1-019'], grammarPointIds: ['grammar-hsk1-005'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l7-02', lessonId: 'lesson-hsk1-u2-l7', type: 'translation', order: 2, question: 'Dịch: "Mẹ tôi rất khỏe."', options: [
+      { id: 'opt-1', text: '我妈妈很好。', isCorrect: true }, { id: 'opt-2', text: '我爸爸很好。', isCorrect: false }, { id: 'opt-3', text: '我是学生。', isCorrect: false }, { id: 'opt-4', text: '我家很好。', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '我妈妈 = mẹ tôi; 很好 = rất khỏe/tốt.', vocabularyIds: ['vocab-hsk1-018'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l7-03', lessonId: 'lesson-hsk1-u2-l7', type: 'fill_blank', order: 3, question: 'Điền từ: 这是___爸爸。', options: [
+      { id: 'opt-1', text: '我', isCorrect: false }, { id: 'opt-2', text: '我的', isCorrect: true }, { id: 'opt-3', text: '吗', isCorrect: false }, { id: 'opt-4', text: '什么', isCorrect: false },
+    ], correctAnswer: 'opt-2', explanation: 'Mẫu sở hữu: 我 + 的 + 爸爸 → 我的爸爸.', grammarPointIds: ['grammar-hsk1-005'], points: 10, difficulty: 'easy' },
+  ],
+  'lesson-hsk1-u2-l8': [
+    { id: 'q-hsk1-l8-01', lessonId: 'lesson-hsk1-u2-l8', type: 'multiple_choice', order: 1, question: 'Hỏi "Hôm nay là thứ mấy?" bằng câu nào?', options: [
+      { id: 'opt-1', text: '今天星期几？', isCorrect: true }, { id: 'opt-2', text: '明天好吗？', isCorrect: false }, { id: 'opt-3', text: '你是哪国人？', isCorrect: false }, { id: 'opt-4', text: '你喜欢什么？', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '今天 = hôm nay, 星期几 = thứ mấy.', vocabularyIds: ['vocab-hsk1-021', 'vocab-hsk1-023'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l8-02', lessonId: 'lesson-hsk1-u2-l8', type: 'translation', order: 2, question: 'Dịch: "Ngày mai gặp lại."', options: [
+      { id: 'opt-1', text: '明天见！', isCorrect: true }, { id: 'opt-2', text: '今天见！', isCorrect: false }, { id: 'opt-3', text: '明天好！', isCorrect: false }, { id: 'opt-4', text: '再见今天！', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '明天 = ngày mai, 见 = gặp.', vocabularyIds: ['vocab-hsk1-022'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l8-03', lessonId: 'lesson-hsk1-u2-l8', type: 'ordering', order: 3, question: 'Sắp xếp thành câu đúng: "Hôm nay là thứ Hai."', options: [
+      { id: 'opt-1', text: '今天', isCorrect: true }, { id: 'opt-2', text: '星期一', isCorrect: true },
+    ], correctAnswer: ['opt-1', 'opt-2'], explanation: 'Trật tự: 今天 + 星期一.', vocabularyIds: ['vocab-hsk1-021', 'vocab-hsk1-023'], points: 10, difficulty: 'easy' },
+  ],
+  'lesson-hsk1-u3-l9': [
+    { id: 'q-hsk1-l9-01', lessonId: 'lesson-hsk1-u3-l9', type: 'multiple_choice', order: 1, question: 'Câu nào có nghĩa "Tôi thích xem phim"?', options: [
+      { id: 'opt-1', text: '我喜欢看电影。', isCorrect: true }, { id: 'opt-2', text: '我喜欢喝茶。', isCorrect: false }, { id: 'opt-3', text: '我爸爸看电影。', isCorrect: false }, { id: 'opt-4', text: '我很好。', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '喜欢 + 看电影 diễn đạt sở thích xem phim.', vocabularyIds: ['vocab-hsk1-024', 'vocab-hsk1-025', 'vocab-hsk1-026'], grammarPointIds: ['grammar-hsk1-006'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l9-02', lessonId: 'lesson-hsk1-u3-l9', type: 'translation', order: 2, question: 'Dịch: "Tôi thích nghe nhạc."', options: [
+      { id: 'opt-1', text: '我喜欢听音乐。', isCorrect: true }, { id: 'opt-2', text: '我喜欢看电影。', isCorrect: false }, { id: 'opt-3', text: '我想喝茶。', isCorrect: false }, { id: 'opt-4', text: '我听见音乐。', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: '喜欢 + 听音乐 = thích nghe nhạc.', vocabularyIds: ['vocab-hsk1-024', 'vocab-hsk1-027', 'vocab-hsk1-028'], grammarPointIds: ['grammar-hsk1-006'], points: 10, difficulty: 'easy' },
+    { id: 'q-hsk1-l9-03', lessonId: 'lesson-hsk1-u3-l9', type: 'multiple_choice', order: 3, question: 'Chọn câu hỏi tự nhiên để hỏi sở thích:', options: [
+      { id: 'opt-1', text: '你喜欢看电影吗？', isCorrect: true }, { id: 'opt-2', text: '你是看电影吗？', isCorrect: false }, { id: 'opt-3', text: '你叫什么电影？', isCorrect: false }, { id: 'opt-4', text: '你哪喜欢电影？', isCorrect: false },
+    ], correctAnswer: 'opt-1', explanation: 'Câu trần thuật + 吗 tạo câu hỏi Có/Không.', grammarPointIds: ['grammar-hsk1-002', 'grammar-hsk1-006'], points: 10, difficulty: 'easy' },
+  ],
+
 };

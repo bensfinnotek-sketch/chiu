@@ -8,7 +8,7 @@ import {
   handleLesson,
   handleQuiz,
   sendJson,
-} from "../_lib/geminiHandlers.ts";
+} from "../_lib/geminiHandlers.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

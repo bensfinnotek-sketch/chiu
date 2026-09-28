@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Keep the existing app-level theme toggle authoritative in Tailwind v4. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-heading: 'Outfit', sans-serif;
