@@ -362,7 +362,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
 
       {/* Level Completion Overview Card */}
       {activeLevelInfo && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm space-y-4">
+        <section aria-labelledby="curriculum-level-overview-title" className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -373,7 +373,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                   Ước tính ~{activeLevelInfo.estimatedHours} giờ học
                 </span>
               </div>
-              <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+              <h2 id="curriculum-level-overview-title" className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
                 {activeLevelInfo.title} · {activeLevelInfo.descriptionVi}
               </h2>
             </div>
@@ -386,7 +386,14 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                   {levelCompletion?.completionPercent || 0}%
                 </p>
               </div>
-              <div className="w-24 h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="w-24 h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-label={`Tiến độ HSK ${selectedLevel}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={levelCompletion?.completionPercent || 0}
+              >
                 <div
                   className="h-full bg-[#E86F51] rounded-full transition-all duration-500"
                   style={{ width: `${levelCompletion?.completionPercent || 0}%` }}
@@ -404,7 +411,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Search & Filter bar */}
@@ -413,6 +420,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
+            aria-label="Tìm kiếm bài học trong giáo trình"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm bài học, Hán tự, chủ đề..."
@@ -432,7 +440,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <p className="text-sm text-[#716761] dark:text-[#A89E97]">Đang tải cấu trúc bài học HSK...</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8" aria-label={`Các unit trong HSK ${selectedLevel}`}>
           {units.map((unit) => {
             const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
             if (unitLessons.length === 0 && searchQuery) return null;
