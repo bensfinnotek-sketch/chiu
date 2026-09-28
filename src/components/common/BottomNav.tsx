@@ -25,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#181412]/95 backdrop-blur-lg border-t border-[#E86F51]/15 dark:border-white/10 px-2 py-1.5 shadow-2xl safe-area-bottom">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#181412]/95 backdrop-blur-lg border-t border-[#E86F51]/15 dark:border-white/10 px-2 py-2 shadow-[0_-12px_35px_rgba(60,40,30,0.10)] safe-area-bottom">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = currentRoute === tab.id;
@@ -36,9 +36,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => onNavigate(tab.id)}
-                className="relative -top-3 flex flex-col items-center group cursor-pointer focus:outline-none"
+                className="relative -top-3 flex flex-col items-center group cursor-pointer focus:outline-none" aria-current={isActive ? "page" : undefined} aria-label={tab.label}
               >
-                <div className={`w-13 h-13 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
                   isActive
                     ? 'bg-[#E86F51] text-white ring-4 ring-[#E86F51]/20 shadow-[#E86F51]/40'
                     : 'bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] text-white hover:scale-105 shadow-[#E86F51]/30'
@@ -59,7 +59,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               key={tab.id}
               type="button"
               onClick={() => onNavigate(tab.id)}
-              className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+              aria-current={isActive ? "page" : undefined}
+              aria-label={tab.label}
+              className={`flex flex-col items-center py-2 px-3 rounded-xl transition-all cursor-pointer ${
                 isActive
                   ? 'text-[#E86F51]'
                   : 'text-[#716761] dark:text-[#A89E97] hover:text-[#211A17] dark:hover:text-white'

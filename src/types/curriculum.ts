@@ -305,5 +305,16 @@ export interface LearningRecommendation {
     wordCount?: number;
     decision?: 'review_srs' | 'review_quiz' | 'learn_lesson' | 'advance_hsk';
     reason?: string;
+    diagnosticFocus?: 'vocabulary' | 'grammar' | 'quiz' | 'balanced';
+    diagnosticTargets?: Array<{ kind: 'vocabulary' | 'grammar'; id: string; accuracy: number }>;
+    diagnosticLessonId?: string;
+    diagnosticTargetLabels?: string[];
+    coachReason?: string;
+    coachGoal?: string;
+    coachOutcome?: string;
+    coachCheckpoint?: string;
+    diagnosticConfidence?: number;
+    diagnosticEvidenceCount?: number;
+    diagnosticAgingNote?: string;
   };
 }

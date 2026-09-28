@@ -1,17 +1,7 @@
 import React from 'react';
 import {
-  Flame,
-  BookOpen,
-  Target,
-  Clock,
-  ArrowRight,
-  Mic,
-  MessageSquare,
-  RotateCcw,
-  Layers,
-  Sparkles,
-  TrendingUp,
-  Volume2,
+  Flame, BookOpen, Target, Clock, ArrowRight, Mic, MessageSquare,
+  RotateCcw, Sparkles, CheckCircle2, Circle, LockKeyhole
 } from 'lucide-react';
 import { UserProfile, SupportedLanguage } from '../types';
 import { LinaAvatar } from '../components/common/LinaAvatar';
@@ -24,201 +14,210 @@ interface DashboardPageProps {
   language: SupportedLanguage;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({
-  user,
-  onNavigate,
-}) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }) => {
   const { profile, isLoading: profileLoading } = useUserProfile();
   const { progress, vocabularyCount } = useDashboardData();
+
   const displayName = profile?.displayName?.trim() || (profileLoading ? '...' : 'bạn');
   const streakDays = progress?.currentStreak ?? user.streakDays;
   const wordsLearned = progress?.wordsLearned ?? vocabularyCount;
   const minutesLearnedToday = progress?.totalStudyMinutes ?? user.minutesLearnedToday;
+  const dailyGoal = Math.max(user.dailyMinutes, 1);
+  const todayPercent = Math.min(100, Math.round((minutesLearnedToday / dailyGoal) * 100));
+
+  const steps = [
+    { title: 'Ôn SRS', label: 'Cần làm', icon: RotateCcw, action: () => onNavigate('review'), done: minutesLearnedToday >= 3 },
+    { title: 'Củng cố', label: 'Khuyến nghị', icon: Target, action: () => onNavigate('learn'), done: false },
+    { title: 'Học bài mới', label: 'Tiếp theo', icon: BookOpen, action: () => onNavigate('learn'), done: false },
+    { title: 'Speaking', label: 'Luyện nói', icon: Mic, action: () => onNavigate('practice-speaking'), done: false },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
-      {/* 1. Header Greeting & Lina Callout */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-white via-[#FFF8F4] to-[#FFF0EB] dark:from-[#241F1C] dark:via-[#2A2320] dark:to-[#322722] p-6 sm:p-8 rounded-3xl border border-[#E86F51]/15 shadow-sm">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-bold">
-            <Sparkles size={14} />
-            <span>Kế hoạch học cá nhân hóa</span>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-white via-[#FFF8F4] to-[#FFEDE6] dark:from-[#241F1C] dark:via-[#2A2320] dark:to-[#322722] border border-[#E86F51]/15 shadow-sm p-6 sm:p-8 md:p-10">
+        <div className="absolute -right-16 -top-20 w-52 h-52 rounded-full bg-[#E86F51]/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-7">
+          <div className="max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-bold">
+              <Sparkles size={14} /> Lina đã chuẩn bị lộ trình hôm nay
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[#211A17] dark:text-white">
+              你好, {displayName} 👋
+            </h1>
+            <p className="text-sm sm:text-base text-[#716761] dark:text-[#A89E97] max-w-xl">
+              Học ít nhưng đều. Hôm nay Lina sẽ dẫn bạn qua vài bước ngắn để tiến gần mục tiêu tiếng Trung.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className="px-3 py-1.5 rounded-full bg-white/80 dark:bg-[#181412]/70 text-xs font-bold text-[#716761] dark:text-[#C7BCB5] border border-[#E86F51]/10">
+                HSK {user.chineseLevel}
+              </span>
+              <span className="px-3 py-1.5 rounded-full bg-white/80 dark:bg-[#181412]/70 text-xs font-bold text-[#716761] dark:text-[#C7BCB5] border border-[#E86F51]/10">
+                Mục tiêu {user.targetHsk}
+              </span>
+            </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#211A17] dark:text-white tracking-tight">
-            你好, {displayName} 👋
-          </h1>
-          <p className="text-base text-[#716761] dark:text-[#A89E97]">
-            Ready for today's Chinese practice? Hãy cùng Lina luyện nói 10 phút nhé!
-          </p>
-        </div>
 
-        <div className="flex items-center gap-4 bg-white dark:bg-[#181412] p-3 rounded-2xl border border-[#E86F51]/10 shadow-xs">
-          <LinaAvatar size="md" />
-          <div className="text-left">
-            <p className="text-xs text-[#716761] dark:text-[#A89E97]">Cô giáo AI</p>
-            <p className="text-sm font-bold text-[#211A17] dark:text-white">Lina đang online</p>
+          <div className="shrink-0 flex items-center gap-3 p-3.5 rounded-2xl bg-white/90 dark:bg-[#181412]/80 border border-[#E86F51]/10 shadow-sm">
+            <LinaAvatar size="md" />
+            <div>
+              <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">Cô giáo AI</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white">Lina đang online</p>
+            </div>
+            <button type="button" onClick={() => onNavigate('practice-conversation')} className="chiu-btn chiu-btn-primary px-3.5 text-xs ml-1">
+              Chat ngay
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('practice-conversation')}
-            className="px-3.5 py-2 rounded-xl bg-[#E86F51] text-white text-xs font-bold hover:bg-[#d85f41] transition-colors cursor-pointer ml-1"
-          >
-            Chat ngay
-          </button>
         </div>
-      </div>
+      </section>
 
-      {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Streak */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 shadow-xs space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-500 flex items-center justify-center">
-            <Flame size={22} className="fill-orange-500" />
-          </div>
+      {/* Today's plan — primary content */}
+      <section className="chiu-card p-5 sm:p-7 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{streakDays} ngày</p>
-            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Chuỗi học liên tiếp (Streak)</p>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Kế hoạch học hôm nay</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white mt-1">Lina đề xuất cho bạn</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Một vòng học ngắn, rõ ràng — bạn luôn biết bước tiếp theo.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="chiu-ring shrink-0" style={{ '--value': todayPercent } as React.CSSProperties}>
+              <span className="text-center"><strong className="block text-lg font-black text-[#211A17] dark:text-white">{todayPercent}%</strong><small className="text-[10px] text-[#716761] dark:text-[#A89E97]">hôm nay</small></span>
+            </div>
           </div>
         </div>
 
-        {/* Words Learned */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 shadow-xs space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
-            <BookOpen size={22} />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-0">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <button
+                key={step.title}
+                type="button"
+                onClick={step.action}
+                className="chiu-step group text-left p-4 md:p-3 rounded-2xl md:rounded-none hover:bg-[#FFF9F4] dark:hover:bg-[#2A2320] transition-colors"
+              >
+                <div className="flex md:flex-col items-center md:items-start gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${step.done ? 'bg-[#EAF5EC] border-[#65A873]/20 text-[#65A873]' : index === 0 ? 'bg-[#E86F51] border-[#E86F51] text-white shadow-md shadow-[#E86F51]/20' : 'bg-[#FFF0EB] dark:bg-[#342822] border-[#E86F51]/10 text-[#E86F51]'}`}>
+                    {step.done ? <CheckCircle2 size={18} /> : <Icon size={18} />}
+                  </div>
+                  <div className="min-w-0 flex-1 md:pt-3">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">Bước {index + 1}</p>
+                    <p className="text-sm font-black text-[#211A17] dark:text-white mt-0.5">{step.title}</p>
+                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${step.done ? 'bg-[#EAF5EC] text-[#65A873]' : index === 0 ? 'bg-[#FFF0EB] text-[#E86F51]' : 'bg-gray-100 dark:bg-white/10 text-[#716761] dark:text-[#A89E97]'}`}>{step.done ? 'Đã xong' : step.label}</span>
+                  </div>
+                  <ArrowRight size={15} className="text-[#B7AAA2] group-hover:text-[#E86F51] group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Snapshot */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[
+          { icon: Flame, value: `${streakDays} ngày`, label: 'Chuỗi hiện tại', note: 'Giữ nhịp mỗi ngày' },
+          { icon: BookOpen, value: String(wordsLearned), label: 'Từ đã nắm', note: 'Từ vựng cá nhân' },
+          { icon: Target, value: user.targetHsk, label: 'Mục tiêu', note: `Đang học ${user.chineseLevel}` },
+          { icon: Clock, value: `${minutesLearnedToday} phút`, label: 'Hôm nay', note: `Mục tiêu ${dailyGoal} phút` },
+        ].map(({ icon: Icon, value, label, note }) => (
+          <div key={label} className="chiu-card p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="w-10 h-10 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center"><Icon size={20} /></div>
+              <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97] text-right">{note}</span>
+            </div>
+            <p className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-4">{value}</p>
+            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97] mt-0.5">{label}</p>
           </div>
-          <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{wordsLearned}</p>
-            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Từ vựng đã nắm vững</p>
+        ))}
+      </section>
+
+      {/* Continue learning */}
+      <section className="chiu-card overflow-hidden">
+        <div className="p-5 sm:p-7 bg-gradient-to-r from-[#FFF8F4] to-white dark:from-[#2A2320] dark:to-[#241F1C]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E86F51]">
+                <BookOpen size={14} /> Tiếp tục học
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-2">HSK 1 · Lesson 5: Ordering Food at a Restaurant</h2>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {['饭 · cơm', '水 · nước', '好吃 · ngon'].map((word) => (
+                  <span key={word} className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#181412] border border-[#E86F51]/10 text-xs font-bold font-chinese text-[#E86F51]">{word}</span>
+                ))}
+              </div>
+            </div>
+            <div className="w-full lg:w-72 shrink-0">
+              <div className="flex items-center justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97] mb-2">
+                <span>3 / 8 phần</span><span className="text-[#E86F51]">42%</span>
+              </div>
+              <div className="chiu-progress"><span style={{ width: '42%' }} /></div>
+              <button type="button" onClick={() => onNavigate('learn')} className="chiu-btn chiu-btn-primary w-full mt-3 px-4 text-sm flex items-center justify-center gap-2">
+                Tiếp tục lộ trình <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Current HSK Target */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 shadow-xs space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-[#65A873] flex items-center justify-center">
-            <Target size={22} />
-          </div>
-          <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{user.chineseLevel}</p>
-            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Mục tiêu: {user.targetHsk}</p>
-          </div>
-        </div>
-
-        {/* Minutes Today */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 shadow-xs space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-500 flex items-center justify-center">
-            <Clock size={22} />
-          </div>
-          <div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{minutesLearnedToday} phút</p>
-            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">Thời gian hôm nay (Mục tiêu {user.dailyMinutes}m)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Continue Learning Card */}
-      <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-xs font-bold text-[#E86F51] uppercase tracking-wider">
-              Tiếp tục bài học dở dang
-            </span>
-            <h2 className="text-2xl font-bold text-[#211A17] dark:text-white mt-1">
-              HSK 1 · Lesson 5: Ordering Food at a Restaurant
+      {/* Lina Coach — daily coaching layer built from existing dashboard signals */}
+      <section className="chiu-card p-5 sm:p-6 bg-gradient-to-br from-[#FFF4EE] via-white to-[#FFF9F4] dark:from-[#2A211D] dark:via-[#241F1C] dark:to-[#2A2320]">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          <LinaAvatar size="md" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Lina Coach · Hôm nay</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Không đổi learning engine</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">
+              {todayPercent < 50 ? 'Giữ nhịp nhẹ nhưng đều' : streakDays >= 7 ? 'Bạn đang giữ nhịp rất tốt' : 'Tiếp tục biến tiến bộ thành thói quen'}
             </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">
+              {todayPercent < 50 ? `Bạn mới hoàn thành ${todayPercent}% mục tiêu hôm nay. Lina gợi ý một phiên học ngắn trước khi tăng tải.` : streakDays >= 7 ? `Chuỗi ${streakDays} ngày cho thấy bạn đang duy trì thói quen. Hãy dùng phần thời gian còn lại để luyện phản xạ.` : `Bạn đã học ${minutesLearnedToday} phút hôm nay. Một bước tiếp theo rõ ràng sẽ giúp buổi học không bị đứt quãng.`}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button type="button" onClick={() => onNavigate(todayPercent < 50 ? 'learn' : 'practice-speaking')} className="chiu-btn chiu-btn-primary px-4 text-xs inline-flex items-center gap-2">
+                {todayPercent < 50 ? <BookOpen size={15} /> : <Mic size={15} />}
+                {todayPercent < 50 ? 'Học một phiên ngắn' : 'Luyện phản xạ với Lina'}
+              </button>
+              <button type="button" onClick={() => onNavigate('review')} className="chiu-btn chiu-btn-secondary px-4 text-xs inline-flex items-center gap-2">
+                <RotateCcw size={15} /> Ôn SRS
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('learn')}
-            className="px-6 py-3 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md shadow-[#E86F51]/20 hover:bg-[#d85f41] hover:scale-105 transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <span>Lộ trình bài học</span>
-            <ArrowRight size={16} />
+        </div>
+      </section>
+      {/* Recommendation + speaking */}
+      <section className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-4">
+        <div className="rounded-[1.5rem] p-5 sm:p-6 bg-gradient-to-br from-[#E86F51] to-[#F5A28E] text-white shadow-lg shadow-[#E86F51]/15">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0"><Sparkles size={20} /></div>
+            <div>
+              <p className="text-xs font-bold text-white/80 uppercase tracking-wider">Lina recommendation</p>
+              <h3 className="text-xl font-black mt-1">Luyện nói 5 phút với Lina</h3>
+              <p className="text-sm text-white/85 mt-1">Ôn lại chủ đề vừa học và biến từ vựng mới thành phản xạ.</p>
+            </div>
+          </div>
+          <button type="button" onClick={() => onNavigate('practice-speaking')} className="chiu-btn mt-5 px-5 bg-white text-[#E86F51] hover:bg-white/90 text-sm inline-flex items-center gap-2">
+            <Mic size={16} /> Luyện với Lina
           </button>
         </div>
 
-        {/* Progress bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
-            <span>Tiến độ bài học: 3 / 8 phần</span>
-            <span className="text-[#E86F51]">HSK 2 — 42% tổng lộ trình</span>
+        <button type="button" onClick={() => onNavigate('review')} className="chiu-card p-5 sm:p-6 text-left group hover:-translate-y-0.5 transition-transform">
+          <div className="flex items-center justify-between">
+            <div className="w-11 h-11 rounded-xl bg-[#65A873]/10 text-[#65A873] flex items-center justify-center"><RotateCcw size={20} /></div>
+            <ArrowRight size={17} className="text-[#B7AAA2] group-hover:text-[#65A873]" />
           </div>
-          <div className="w-full h-3 bg-[#FFF0EB] dark:bg-[#342822] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] rounded-full transition-all duration-500"
-              style={{ width: '42%' }}
-            />
-          </div>
-        </div>
+          <p className="text-xs font-black text-[#65A873] uppercase tracking-wider mt-4">Daily Review</p>
+          <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">Ôn đúng phần bạn đang yếu</h3>
+          <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">Flashcards cá nhân + SRS, không thay đổi learning engine.</p>
+        </button>
+      </section>
 
-        {/* Quick Preview Chips */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-          <span className="text-xs text-[#716761] dark:text-[#A89E97] self-center mr-1">
-            Từ vựng đang học:
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            饭 (fàn - cơm)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            水 (shuǐ - nước)
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs font-bold font-chinese border border-[#E86F51]/15 text-[#E86F51]">
-            好吃 (hǎochī - ngon)
-          </span>
-        </div>
-      </div>
-
-      {/* 4. Quick Action Modules */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold text-[#211A17] dark:text-white">Luyện tập hôm nay</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Speaking Practice */}
-          <div
-            onClick={() => onNavigate('practice-speaking')}
-            className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 hover:border-[#E86F51] hover:shadow-lg transition-all cursor-pointer space-y-3 group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] text-white flex items-center justify-center shadow-md shadow-[#E86F51]/25 group-hover:scale-105 transition-transform">
-              <Mic size={22} />
-            </div>
-            <h4 className="text-lg font-bold text-[#211A17] dark:text-white group-hover:text-[#E86F51] transition-colors">
-              Luyện phát âm giọng nói
-            </h4>
-            <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
-              Nhấn mic, nói câu tiếng Trung theo chủ đề và nhận đánh giá sao cùng mẹo phát âm từ Lina.
-            </p>
-          </div>
-
-          {/* AI Voice Conversation */}
-          <div
-            onClick={() => onNavigate('practice-conversation')}
-            className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 hover:border-[#E86F51] hover:shadow-lg transition-all cursor-pointer space-y-3 group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#D5A85C] to-[#E5BE79] text-white flex items-center justify-center shadow-md shadow-[#D5A85C]/25 group-hover:scale-105 transition-transform">
-              <MessageSquare size={22} />
-            </div>
-            <h4 className="text-lg font-bold text-[#211A17] dark:text-white group-hover:text-[#D5A85C] transition-colors">
-              Hội thoại tự do với Lina
-            </h4>
-            <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
-              Trò chuyện bằng giọng nói hoặc tin nhắn. Tự động phát hiện lỗi sai và gợi ý cách diễn đạt tự nhiên hơn.
-            </p>
-          </div>
-
-          {/* Daily 10-Minute Review */}
-          <div
-            onClick={() => onNavigate('review')}
-            className="p-6 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 hover:border-[#E86F51] hover:shadow-lg transition-all cursor-pointer space-y-3 group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#65A873] to-[#88C695] text-white flex items-center justify-center shadow-md shadow-[#65A873]/25 group-hover:scale-105 transition-transform">
-              <RotateCcw size={22} />
-            </div>
-            <h4 className="text-lg font-bold text-[#211A17] dark:text-white group-hover:text-[#65A873] transition-colors">
-              Ôn tập ngày 10 phút
-            </h4>
-            <p className="text-xs text-[#716761] dark:text-[#A89E97] leading-relaxed">
-              5 từ vựng, 3 bài nghe và 2 bài luyện nói tổng hợp để duy trì phản xạ và giữ vững chuỗi Streak.
-            </p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[#716761] dark:text-[#A89E97]">
+        <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-[#65A873]" /> Dữ liệu học tập giữ nguyên</div>
+        <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-[#65A873]" /> AI-9 không thay đổi logic</div>
+        <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-[#65A873]" /> Routing & database giữ nguyên</div>
       </div>
     </div>
   );

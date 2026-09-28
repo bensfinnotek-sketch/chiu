@@ -237,7 +237,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
           <div className="space-y-3 text-center md:text-left max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-semibold tracking-wide">
               <Sparkles size={14} />
-              AI SPEAKING PRACTICE • HANZI AI
+              AI SPEAKING PRACTICE • BENTALK AI
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#211A17] dark:text-[#FAF5F1]">

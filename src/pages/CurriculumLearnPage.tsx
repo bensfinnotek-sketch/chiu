@@ -18,8 +18,8 @@ import { HSKLevelNumber } from '../types/curriculum';
 import { useCurriculum } from '../hooks/useCurriculum';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { useSubscription } from '../hooks/useSubscription';
 import { getAuthHeaders } from '../services/flashcardService';
+import { buildPersonalizedLearningPlan, calculateLearningMomentum } from '../curriculum/learningDecisionEngine';
 
 interface CurriculumLearnPageProps {
   initialLevel?: HSKLevelNumber;
@@ -33,7 +33,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   onNavigate,
 }) => {
   const { profile, updateProfile } = useUserProfile();
-  const { isPremium } = useSubscription();
   const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatedLesson, setGeneratedLesson] = useState<any | null>(null);
@@ -48,8 +47,8 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ? Math.min(6, Math.max(1, Number(initialLevel))) as HSKLevelNumber
       : null;
     const nextLevel = requestedLevel ?? profileLevel;
-    setSelectedLevel(isPremium ? nextLevel : Math.min(nextLevel, 2) as HSKLevelNumber);
-  }, [profile?.hskLevel, isPremium, initialLevel]);
+    setSelectedLevel(nextLevel);
+  }, [profile?.hskLevel, initialLevel]);
 
   const {
     levels,
@@ -63,9 +62,41 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
 
   const activeLevelInfo = levels.find((l) => l.level === selectedLevel) || levels[0];
 
+  const personalizedPlan = React.useMemo(() => {
+    const progressItems = Object.values(progressMap || {});
+    const momentum = calculateLearningMomentum(progressItems);
+    const recentCompletionRate = progressItems.length
+      ? Math.round(progressItems.reduce((sum, item) => sum + Number(item.progressPercent || 0), 0) / progressItems.length)
+      : 50;
+    const recentCompleted = progressItems
+      .filter((item) => item.status === 'completed' && item.completedAt)
+      .sort((a, b) => Date.parse(String(b.completedAt)) - Date.parse(String(a.completedAt)))[0];
+    const recentOutcomeAgeDays = recentCompleted?.completedAt
+      ? Math.max(0, Math.round((Date.now() - Date.parse(recentCompleted.completedAt)) / 86400000))
+      : undefined;
+
+    return buildPersonalizedLearningPlan({
+      dailyMinutes: profile?.dailyMinutes || 15,
+      learningGoal: profile?.learningGoal || 'general',
+      decision: recommendations[0]?.metadata?.decision || 'learn_lesson',
+      completionPercent: levelCompletion?.completionPercent || 0,
+      vocabularyScore: levelCompletion?.vocabularyMastery || 0,
+      grammarScore: levelCompletion?.grammarMastery || 0,
+      quizScore: levelCompletion?.quizMastery || 0,
+      diagnosticFocus: recommendations[0]?.metadata?.diagnosticFocus,
+      momentumScore: momentum.score,
+      recentCompletionRate,
+      momentumTrend: momentum.trend,
+      consistencyScore: momentum.consistency,
+      recentOutcomeScore: recentCompleted?.score ?? undefined,
+      recentOutcomeAgeDays,
+    });
+  }, [profile?.dailyMinutes, profile?.learningGoal, recommendations, levelCompletion, progressMap]);
+
   // Progress the learner's target HSK automatically only after the current
-  // level is fully completed with a passing average. Free accounts stop at
-  // HSK 2; premium accounts can progress through HSK 6.
+  // level is fully completed with the existing mastery thresholds.
+  // HSK access remains open in the learning UI; subscription logic is preserved
+  // elsewhere for future entitlement changes.
   React.useEffect(() => {
     const currentProfileLevel = Number(profile?.hskLevel || 1);
     const completedLevel = levelCompletion?.completionPercent === 100;
@@ -76,7 +107,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ((levelCompletion?.quizMastery || 0) >= 80 || (levelCompletion?.quizMastery || 0) === 0) &&
       (levelCompletion?.weakVocabularyCount || 0) <= 5 &&
       (levelCompletion?.weakGrammarCount || 0) <= 2;
-    const canAdvance = selectedLevel < 6 && (isPremium || selectedLevel < 2);
+    const canAdvance = selectedLevel < 6;
 
     if (!profile || !completedLevel || !masteryReady || !canAdvance) return;
     if (currentProfileLevel !== selectedLevel) return;
@@ -88,7 +119,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   }, [
     profile,
     selectedLevel,
-    isPremium,
     levelCompletion?.completionPercent,
     levelCompletion?.averageQuizScore,
     updateProfile,
@@ -128,16 +158,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
           {[1, 2, 3, 4, 5, 6].map((lvl) => {
             const isSelected = selectedLevel === lvl;
-            const locked = !isPremium && lvl >= 3;
+            const locked = false;
             return (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => {
-                  if (locked) {
-                    onNavigate?.('pricing');
-                    return;
-                  }
                   setSelectedLevel(lvl as HSKLevelNumber);
                 }}
                 className={`px-4 py-2.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -145,7 +171,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                     ? 'bg-[#E86F51] text-white shadow-md shadow-[#E86F51]/25 scale-102'
                     : 'bg-white dark:bg-[#241F1C] text-[#716761] dark:text-[#A89E97] border border-[#E86F51]/15 hover:border-[#E86F51]'
                 }`}
-                title={locked ? 'HSK 3–6 dành cho tài khoản PRO' : undefined}
+
               >
                 <span>HSK {lvl}{locked ? ' 🔒' : ''}</span>
               </button>
@@ -154,18 +180,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
       </div>
 
-      {!isPremium && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200">
-          Tài khoản Free học theo lộ trình HSK 1–2. Nâng cấp PRO để mở HSK 3–6 và lộ trình cá nhân hóa đầy đủ.
-        </div>
-      )}
-
       {profile && (
         <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
             <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">
-              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · {isPremium ? 'PRO cá nhân hóa' : 'Free'}
+              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · Lộ trình cá nhân hóa
             </h3>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
               Từ vựng đã lưu sẽ được Lina dùng để tạo bài học phù hợp với tài khoản này.
@@ -175,10 +195,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             type="button"
             disabled={isGenerating}
             onClick={async () => {
-              if (!isPremium && selectedLevel >= 3) {
-                onNavigate?.('pricing');
-                return;
-              }
               setIsGenerating(true);
               setGenerationError(null);
               try {
@@ -186,7 +202,21 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                 const response = await fetch('/api/learning/personalized-lesson', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ hskLevel: selectedLevel }),
+                  body: JSON.stringify({
+                    hskLevel: selectedLevel,
+                    adaptiveProfile: {
+                      difficulty: personalizedPlan.difficulty,
+                      newWordsTarget: personalizedPlan.newWordsTarget,
+                      quizIntensity: personalizedPlan.quizIntensity,
+                      speakingPace: personalizedPlan.speakingPace,
+                      focus: personalizedPlan.focus,
+                    },
+                    composerContext: {
+                      diagnosticFocus: recommendations[0]?.metadata?.diagnosticFocus,
+                      diagnosticLessonId: recommendations[0]?.metadata?.diagnosticLessonId,
+                      diagnosticTargets: recommendations[0]?.metadata?.diagnosticTargets,
+                    },
+                  }),
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'Không thể tạo bài học cá nhân.');
@@ -213,7 +243,14 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       {generatedLesson?.content && (
         <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
           <div>
-            <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
+              {recommendations[0]?.metadata?.diagnosticTargets?.length > 0 && (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+                  Soạn theo AI-9
+                </span>
+              )}
+            </div>
             <h3 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
               {generatedLesson.content.title || generatedLesson.title}
             </h3>
@@ -291,6 +328,182 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
       )}
 
+      {/* Lina learning journey — presentation only; recommendation logic stays unchanged */}
+      <section className="chiu-card p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Hôm nay Lina đề xuất cho bạn</span>
+            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Một mini learning journey</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Các bước dưới đây chỉ thay đổi cách trình bày, không thay đổi quyết định của AI-9.</p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">HSK {selectedLevel}</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {[
+            { n: 1, title: 'Ôn SRS', icon: '↻', tone: 'Cần làm' },
+            { n: 2, title: 'Củng cố', icon: '◎', tone: 'Khuyến nghị' },
+            { n: 3, title: 'Học bài mới', icon: '▤', tone: 'Tiếp theo' },
+            { n: 4, title: 'Speaking', icon: '◉', tone: 'Luyện nói' },
+          ].map((step) => (
+            <div key={step.n} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 relative">
+              <div className="flex items-center justify-between">
+                <span className="w-9 h-9 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center font-black">{step.n}</span>
+                <span className="text-lg text-[#E86F51]">{step.icon}</span>
+              </div>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-4">{step.title}</p>
+              <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-white dark:bg-[#241F1C] text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">{step.tone}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* AI-10 Personalized Learning Plan */}
+      <section className="chiu-card p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-10 · Kế hoạch cá nhân hóa</span>
+            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+              {personalizedPlan.dailyMinutes} phút học hôm nay
+            </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              Trọng tâm: <span className="font-bold text-[#E86F51]">{personalizedPlan.focus}</span> · kế hoạch tự điều chỉnh theo tín hiệu chẩn đoán của AI-9.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Độ tải: {personalizedPlan.difficulty}</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">+{personalizedPlan.newWordsTarget} từ mới</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">Quiz: {personalizedPlan.quizIntensity}</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">Speaking: {personalizedPlan.speakingPace}</span>
+            </div>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-2">{personalizedPlan.adaptationReason}</p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">
+            {recommendations[0]?.metadata?.decision === 'review_srs'
+              ? 'Ưu tiên SRS'
+              : recommendations[0]?.metadata?.decision === 'review_quiz'
+                ? 'Ưu tiên củng cố'
+                : recommendations[0]?.metadata?.decision === 'advance_hsk'
+                  ? 'Sẵn sàng chuyển HSK'
+                  : 'Tiếp tục tiến độ'}
+          </span>
+          {recommendations[0]?.metadata?.diagnosticFocus && (
+            <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+              Chẩn đoán: {recommendations[0].metadata.diagnosticFocus === 'vocabulary' ? 'Từ vựng' : recommendations[0].metadata.diagnosticFocus === 'grammar' ? 'Ngữ pháp' : recommendations[0].metadata.diagnosticFocus === 'quiz' ? 'Đánh giá quiz' : 'Cân bằng'}
+            </span>
+          )}
+          {recommendations[0]?.metadata?.diagnosticTargets?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {recommendations[0]?.metadata?.diagnosticTargetLabels?.map((label) => (
+                <span key={label} className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">
+                  Mục tiêu: {label}
+                </span>
+              ))}
+              {recommendations[0]?.metadata?.diagnosticLessonId && (
+                <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+                  Bài đích: {lessons.find((lesson) => lesson.id === recommendations[0]?.metadata?.diagnosticLessonId)?.title || recommendations[0].metadata.diagnosticLessonId}
+                </span>
+              )}
+            </div>
+          )}
+          {recommendations[0]?.metadata?.coachReason && (
+            <div className="mt-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[11px] font-black text-[#E86F51] uppercase tracking-wider">AI Coach · Vì sao chọn bài này?</p>
+              <p className="text-sm text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.coachReason}</p>
+              {recommendations[0].metadata.coachGoal && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Mục tiêu sau phiên:</span> {recommendations[0].metadata.coachGoal}
+                </p>
+              )}
+              {recommendations[0].metadata.coachOutcome && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Tiêu chí đạt:</span> {recommendations[0].metadata.coachOutcome}
+                </p>
+              )}
+              {recommendations[0].metadata.coachCheckpoint && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Mốc theo dõi:</span> {recommendations[0].metadata.coachCheckpoint}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {personalizedPlan.steps.map((step, index) => (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => {
+                if (step.action === 'flashcards' && onNavigate) onNavigate('flashcards');
+                else if (step.action === 'speaking' && onNavigate) onNavigate('speaking');
+                else if (step.action === 'lesson' && recommendations[0]?.targetId && !recommendations[0].targetId.startsWith('level:')) {
+                  onSelectLesson(recommendations[0].targetId);
+                } else if (step.action === 'review' && recommendations[0]?.metadata?.diagnosticLessonId) {
+                  onSelectLesson(recommendations[0].metadata.diagnosticLessonId);
+                }
+              }}
+              className="text-left rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 hover:border-[#E86F51]/30 hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="w-9 h-9 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center font-black">{index + 1}</span>
+                <span className="text-xs font-black text-[#E86F51]">{step.minutes} phút</span>
+              </div>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-3">{step.title}</p>
+              <p className="text-xs leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{step.description}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Learning Intelligence — presentation layer built from existing AI-9/AI-10 signals */}
+      <section className="chiu-card p-5 sm:p-7">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Lina Learning Intelligence</span>
+            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Bản đồ năng lực hiện tại</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Lina dùng các tín hiệu đã có để cho bạn thấy điểm mạnh, vùng cần củng cố và mốc tiếp theo — không tạo thêm hệ thống dữ liệu mới.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">AI-9 · {recommendations[0]?.metadata?.diagnosticConfidence ?? 0}% tin cậy</span>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">{recommendations[0]?.metadata?.diagnosticEvidenceCount ?? 0} tín hiệu chẩn đoán</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Từ vựng', value: levelCompletion?.vocabularyMastery || 0, icon: '文' },
+            { label: 'Ngữ pháp', value: levelCompletion?.grammarMastery || 0, icon: '句' },
+            { label: 'Quiz', value: levelCompletion?.quizMastery || 0, icon: '✓' },
+            { label: 'Mastery', value: levelCompletion?.masteryScore || 0, icon: '★' },
+          ].map((skill) => (
+            <div key={skill.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="w-9 h-9 rounded-xl bg-white dark:bg-[#241F1C] text-[#E86F51] flex items-center justify-center font-black">{skill.icon}</span>
+                <span className="text-lg font-black text-[#211A17] dark:text-white">{Math.round(skill.value)}%</span>
+              </div>
+              <p className="text-xs font-black text-[#211A17] dark:text-white mt-3">{skill.label}</p>
+              <div className="h-2 mt-2 rounded-full bg-white dark:bg-[#241F1C] overflow-hidden">
+                <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${Math.min(100, Math.max(0, skill.value))}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
+          <div className="rounded-2xl border border-[#65A873]/20 bg-[#F3FAF4] dark:bg-[#18241B] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#4F8B5C]">Điểm mạnh</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{Math.max(levelCompletion?.vocabularyMastery || 0, levelCompletion?.grammarMastery || 0, levelCompletion?.quizMastery || 0) >= 80 ? "Bạn đã có ít nhất một trụ cột vững." : "Nền tảng đang hình thành; hãy ưu tiên nhịp học đều."}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">{recommendations[0]?.metadata?.coachGoal || "Lina sẽ tiếp tục điều chỉnh trọng tâm theo dữ liệu mới."}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E86F51]/15 bg-[#FFF9F4] dark:bg-[#181412] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Vùng cần củng cố</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0]?.metadata?.diagnosticTargetLabels?.[0] || ((levelCompletion?.weakVocabularyCount || 0) > (levelCompletion?.weakGrammarCount || 0) ? "Từ vựng cần ôn lại" : "Ngữ pháp cần ôn lại")}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">{recommendations[0]?.metadata?.diagnosticAgingNote || "Lina sẽ ưu tiên tín hiệu có độ tin cậy và độ mới phù hợp."}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E86F51]/15 bg-white dark:bg-[#241F1C] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Mốc tiếp theo</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{(levelCompletion?.completionPercent || 0) >= 100 && (levelCompletion?.masteryScore || 0) >= 80 && selectedLevel < 6 ? "Sẵn sàng kiểm tra HSK " + (selectedLevel + 1) : (levelCompletion?.completionPercent || 0) >= 70 ? "Củng cố để chạm mastery" : "Hoàn thành nền tảng cấp độ hiện tại"}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">Mốc này chỉ là diễn giải từ tiến độ hiện tại; quy tắc chuyển cấp vẫn giữ nguyên.</p>
+          </div>
+        </div>
+      </section>
       {/* Recommended Next Action / In-progress Widget */}
       {recommendations.length > 0 && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FFF5F1] via-white to-[#FFF9F4] dark:from-[#2A2320] dark:via-[#241F1C] dark:to-[#1E1917] border-2 border-[#E86F51]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -337,13 +550,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               if (targetId.startsWith('level:')) {
                 const nextLevel = Number(targetId.slice('level:'.length)) as HSKLevelNumber;
                 if (!Number.isInteger(nextLevel) || nextLevel < 1 || nextLevel > 6) return;
-
-                // Free users should be sent to the upgrade screen rather than
-                // changing the UI into a locked level.
-                if (!isPremium && nextLevel >= 3) {
-                  onNavigate?.('pricing');
-                  return;
-                }
 
                 setSelectedLevel(nextLevel);
                 setSearchQuery('');

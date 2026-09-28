@@ -84,6 +84,31 @@ export async function handleGeneratePersonalizedLesson(req: any, res: any) {
     .map((card: any) => `${card.hanzi} | ${card.pinyin} | ${card.meaning} | status=${card.status}`)
     .join("\n");
 
+  const adaptive = body?.adaptiveProfile && typeof body.adaptiveProfile === "object" ? body.adaptiveProfile : {};
+  const difficulty = ["nhẹ", "vừa", "thách thức"].includes(adaptive.difficulty) ? adaptive.difficulty : "vừa";
+  const newWordsTarget = Math.min(12, Math.max(6, Number(adaptive.newWordsTarget) || 9));
+  const quizIntensity = ["nhẹ", "chuẩn", "tập trung"].includes(adaptive.quizIntensity) ? adaptive.quizIntensity : "chuẩn";
+  const speakingPace = ["chậm", "tự nhiên", "tăng phản xạ"].includes(adaptive.speakingPace) ? adaptive.speakingPace : "tự nhiên";
+  const adaptiveFocus = typeof adaptive.focus === "string" ? adaptive.focus.slice(0, 80) : "Cân bằng 4 kỹ năng";
+  const composerContext = body?.composerContext && typeof body.composerContext === "object" ? body.composerContext : {};
+  const diagnosticTargets = Array.isArray(composerContext.diagnosticTargets)
+    ? composerContext.diagnosticTargets
+        .filter((item: any) => item && typeof item.id === "string")
+        .slice(0, 5)
+        .map((item: any) => ({
+          kind: item.kind === "grammar" ? "grammar" : "vocabulary",
+          id: item.id.slice(0, 80),
+          accuracy: Number.isFinite(Number(item.accuracy)) ? Math.max(0, Math.min(100, Number(item.accuracy))) : null,
+          errorPattern: typeof item.errorPattern === "string" ? item.errorPattern.slice(0, 30) : null,
+        }))
+    : [];
+  const diagnosticLessonId = typeof composerContext.diagnosticLessonId === "string"
+    ? composerContext.diagnosticLessonId.slice(0, 80)
+    : null;
+  const diagnosticFocus = typeof composerContext.diagnosticFocus === "string"
+    ? composerContext.diagnosticFocus.slice(0, 30)
+    : null;
+
   const topic = typeof body?.topic === "string" && body.topic.trim()
     ? body.topic.trim().slice(0, 80)
     : profile?.learning_goal || "daily conversation";
@@ -97,7 +122,25 @@ Learning goal: ${profile?.learning_goal || "conversation"}.
 Topic: ${topic}.
 UI language: ${language}.
 
+Adaptive learner profile:
+- Difficulty: ${difficulty}
+- New vocabulary target: ${newWordsTarget} words
+- Quiz intensity: ${quizIntensity}
+- Speaking pace: ${speakingPace}
+- Current focus: ${adaptiveFocus}
+
+Diagnostic composer context:
+- Diagnostic focus: ${diagnosticFocus || "none"}
+- Target lesson id: ${diagnosticLessonId || "none"}
+- Weak targets: ${diagnosticTargets.length ? JSON.stringify(diagnosticTargets) : "none"}
+
+If diagnostic weak targets are provided, compose the lesson around those targets first. Reuse the target vocabulary or grammar in examples, dialogue, and practice so the lesson can directly test the diagnosed weakness. Do not invent IDs or mention internal IDs in learner-facing text. If no target matches the requested HSK level naturally, keep the lesson coherent rather than forcing it.
 Use the learner's saved vocabulary when it naturally fits. Do not force words into the lesson.
+Match the adaptive profile in the actual lesson content, not just in labels.
+Return exactly ${newWordsTarget} vocabulary items when enough relevant vocabulary exists; otherwise return as many high-quality items as available.
+For difficulty "nhẹ", use shorter sentences and fewer distractors. For "thách thức", use richer context and more nuanced examples.
+For quiz intensity "nhẹ", provide 2 practice items; "chuẩn" provide 3; "tập trung" provide 5.
+For speaking pace "chậm", keep speaking prompts short; for "tăng phản xạ", use rapid-response prompts with natural follow-ups.
 Return strict JSON:
 {
   "title": "Vietnamese lesson title",

@@ -1,40 +1,139 @@
 @import "tailwindcss";
 
+/* Tailwind v4: Chiu uses an explicit class-based theme toggle, not OS-only dark mode. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    --font-heading: 'Outfit', sans-serif;
+    --font-heading: 'DM Sans', sans-serif;
     --font-sans: 'DM Sans', sans-serif;
     --font-chinese: 'Noto Sans SC', 'DM Sans', sans-serif;
+    --chiu-font-size-base: 15px;
+    --chiu-line-height-body: 1.6;
+    --chiu-primary: #E86F51;
+    --chiu-primary-hover: #D85F41;
+    --chiu-primary-soft: #FFF0EB;
+    --chiu-bg: #FFF9F4;
+    --chiu-surface: #FFFFFF;
+    --chiu-surface-muted: #FFF5F1;
+    --chiu-text: #211A17;
+    --chiu-text-muted: #716761;
+    --chiu-border: rgba(232, 111, 81, 0.15);
+    --chiu-success: #65A873;
+    --chiu-warning: #D5A85C;
+    --chiu-error: #D0533C;
+    --chiu-radius-sm: 0.75rem;
+    --chiu-radius-md: 1rem;
+    --chiu-radius-lg: 1.5rem;
+    --chiu-radius-xl: 2rem;
+    --chiu-shadow-card: 0 8px 30px rgba(80, 48, 35, 0.06);
+    --chiu-shadow-float: 0 16px 40px rgba(80, 48, 35, 0.10);
   }
 
+  .dark {
+    --chiu-bg: #181412;
+    --chiu-surface: #241F1C;
+    --chiu-surface-muted: #2A2320;
+    --chiu-text: #F7F2EE;
+    --chiu-text-muted: #A89E97;
+    --chiu-border: rgba(255, 255, 255, 0.08);
+    --chiu-primary-soft: #342822;
+    --chiu-shadow-card: 0 8px 30px rgba(0, 0, 0, 0.20);
+    --chiu-shadow-float: 0 18px 44px rgba(0, 0, 0, 0.28);
+  }
+
+  html,
   body {
+    min-height: 100%;
+    background: var(--chiu-bg);
+    color: var(--chiu-text);
     font-family: var(--font-sans);
+    font-size: var(--chiu-font-size-base);
+    line-height: var(--chiu-line-height-body);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color 180ms ease, color 180ms ease;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  html { scroll-behavior: smooth; }
+  body { overflow-x: hidden; min-width: 320px; overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); line-height: 1.18; letter-spacing: -0.018em; }
+  p, li { line-height: var(--chiu-line-height-body); }
+  button, input, textarea, select { font: inherit; }
+  .font-chinese { font-family: var(--font-chinese); }
+  .chiu-text-balance { text-wrap: balance; }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--chiu-primary) 45%, transparent);
+    outline-offset: 3px;
   }
 
-  .font-chinese {
-    font-family: var(--font-chinese);
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button:disabled { cursor: not-allowed; }
+
+  @media (max-width: 767px) {
+    button, [role='button'], a { touch-action: manipulation; }
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@layer components {
+  .chiu-page { width: 100%; min-width: 0; }
+  .chiu-content-auto { content-visibility: auto; contain-intrinsic-size: 1px 720px; }
+  .chiu-surface-contain { contain: layout paint; }
+  .chiu-section-title { letter-spacing: -0.018em; line-height: 1.2; }
+  .chiu-label { font-size: 0.6875rem; line-height: 1.2; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .chiu-body { font-size: 0.9375rem; line-height: 1.6; }
+  .chiu-caption { font-size: 0.75rem; line-height: 1.5; color: var(--chiu-text-muted); }
+  .chiu-card { background: var(--chiu-surface); border: 1px solid var(--chiu-border); border-radius: var(--chiu-radius-lg); box-shadow: var(--chiu-shadow-card); transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+  .chiu-card-interactive:hover { transform: translateY(-2px); box-shadow: var(--chiu-shadow-float); border-color: color-mix(in srgb, var(--chiu-primary) 24%, var(--chiu-border)); }
+  .chiu-card-interactive:active { transform: translateY(0) scale(0.995); }
+  .chiu-completion { animation: chiu-completion-in 420ms cubic-bezier(.22,1,.36,1) both; }
+  .chiu-completion-icon { animation: chiu-completion-pop 520ms cubic-bezier(.22,1.25,.36,1) 120ms both; }
+  .chiu-feedback { animation: chiu-feedback-in 240ms ease-out both; }
+  .chiu-flip { transition: transform 360ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease; }
+  .chiu-flip:active { transform: scale(.995); }
+  .chiu-tap { transition: transform 140ms ease, opacity 140ms ease; }
+  .chiu-tap:active { transform: scale(.97); }
+  .chiu-focus-card:focus-visible { box-shadow: 0 0 0 4px color-mix(in srgb, var(--chiu-primary) 16%, transparent), var(--chiu-shadow-float); }
+  .chiu-btn { min-height: 44px; padding-inline: 1rem; border-radius: var(--chiu-radius-md); font-weight: 700; transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+  .chiu-btn:active { transform: scale(0.97); }
+  .chiu-btn-primary { background: var(--chiu-primary); color: white; box-shadow: 0 8px 20px color-mix(in srgb, var(--chiu-primary) 22%, transparent); }
+  .chiu-btn-primary:hover { background: var(--chiu-primary-hover); box-shadow: 0 10px 24px color-mix(in srgb, var(--chiu-primary) 28%, transparent); }
+  .chiu-btn-secondary { background: var(--chiu-surface); color: var(--chiu-primary); border: 1px solid color-mix(in srgb, var(--chiu-primary) 28%, transparent); }
+  .chiu-btn-secondary:hover { background: var(--chiu-primary-soft); border-color: color-mix(in srgb, var(--chiu-primary) 45%, transparent); }
+  .chiu-progress { height: 0.625rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--chiu-primary) 10%, var(--chiu-surface)); }
+  .chiu-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--chiu-primary), #F5A28E); transition: width 500ms ease; }
+  .chiu-ring { --value: 0; width: 112px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--chiu-primary) calc(var(--value) * 1%), color-mix(in srgb, var(--chiu-primary) 10%, var(--chiu-surface)) 0); position: relative; }
+  .chiu-ring::after { content: ""; position: absolute; inset: 9px; border-radius: inherit; background: var(--chiu-surface); }
+  .chiu-ring > span { position: relative; z-index: 1; }
+  .chiu-step { position: relative; }
+  .chiu-step:not(:last-child)::after { content: ""; position: absolute; top: 1.15rem; left: calc(100% - 0.25rem); width: calc(100% - 2rem); height: 2px; background: color-mix(in srgb, var(--chiu-primary) 16%, transparent); }
+
+  .safe-area-bottom { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .safe-area-x { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+
+  @media (max-width: 767px) {
+    .chiu-content-auto { contain-intrinsic-size: 1px 560px; }
+    .chiu-step:not(:last-child)::after { top: calc(100% - 0.25rem); left: 1.15rem; width: 2px; height: 1.25rem; }
+    .chiu-ring { width: 96px; }
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(113, 103, 97, 0.2); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(113, 103, 97, 0.4); }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(113, 103, 97, 0.2);
-  border-radius: 9999px;
-}
+@keyframes chiu-completion-in { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes chiu-completion-pop { 0% { opacity: 0; transform: scale(.72) rotate(-8deg); } 70% { transform: scale(1.08) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes chiu-feedback-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(113, 103, 97, 0.4);
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }

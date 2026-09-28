@@ -12,7 +12,7 @@ import {
 
 export const HSK_CURRICULUM: Curriculum = {
   id: 'curriculum-hsk-3.0',
-  name: 'HanziAI HSK-Aligned Structured Chinese Curriculum',
+  name: 'Bentalk AI HSK-Aligned Structured Chinese Curriculum',
   version: 'hsk-3.0',
   language: 'vi',
   targetLanguage: 'zh-CN',

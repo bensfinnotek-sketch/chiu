@@ -238,6 +238,13 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
+        <div className="flex justify-center items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#E86F51]">
+          <span className="w-6 h-6 rounded-lg bg-[#E86F51]/10 flex items-center justify-center">1</span>
+          <span className="w-8 h-px bg-[#E86F51]/20" />
+          <span className="w-6 h-6 rounded-lg bg-[#E86F51]/10 flex items-center justify-center">2</span>
+          <span className="w-8 h-px bg-[#E86F51]/20" />
+          <span className="w-6 h-6 rounded-lg bg-[#E86F51]/10 flex items-center justify-center">3</span>
+        </div>
         <span className="px-3.5 py-1.5 rounded-full bg-orange-100 dark:bg-orange-950/50 text-[#E86F51] text-xs font-bold inline-flex items-center gap-1.5">
           <RotateCcw size={14} /> Ôn tập 10 phút hàng ngày
         </span>
@@ -248,15 +255,15 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
       </div>
 
       {!isDone && current ? (
-        <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-6 sm:p-8 border border-[#E86F51]/15 shadow-xl space-y-6">
+        <div className="bg-white dark:bg-[#241F1C] rounded-[2rem] p-6 sm:p-8 border border-[#E86F51]/15 shadow-[0_16px_45px_rgba(80,48,35,0.10)] space-y-6">
           <div className="flex justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97]">
             <span>Câu {step + 1} / {cards.length}</span>
             <span className="text-[#E86F51]">{Math.round(score)} điểm</span>
           </div>
 
-          <div className="w-full h-2.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+          <div className="chiu-progress">
             <div
-              className="h-full bg-[#E86F51] transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[#E86F51] to-[#F5A28E] transition-all duration-500"
               style={{ width: `${((step + 1) / cards.length) * 100}%` }}
             />
           </div>
@@ -283,7 +290,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
                   type="button"
                   disabled={reveal}
                   onClick={() => handleSelectOption(index)}
-                  className={`p-4 rounded-2xl border text-sm font-bold text-left transition-all ${
+                  className={`chiu-tap p-4 rounded-2xl border text-sm font-bold text-left transition-all ${
                     reveal && isCorrect
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700'
                       : reveal && isSelected
@@ -302,8 +309,8 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-[#241F1C] rounded-3xl p-8 sm:p-10 border border-[#E86F51]/20 shadow-xl text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[#65A873] flex items-center justify-center mx-auto">
+        <div className="chiu-completion bg-white dark:bg-[#241F1C] rounded-3xl p-8 sm:p-10 border border-[#E86F51]/20 shadow-xl text-center space-y-6">
+          <div className="chiu-completion-icon w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[#65A873] flex items-center justify-center mx-auto">
             <Trophy size={40} />
           </div>
           <div className="space-y-2">
@@ -324,7 +331,7 @@ export const DailyReviewPage: React.FC<{ onComplete: () => void; onNavigate?: (r
           <button
             type="button"
             onClick={onComplete}
-            className="w-full py-4 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] transition-all"
+            className="chiu-tap w-full py-4 rounded-2xl bg-[#E86F51] text-white font-bold text-sm shadow-md hover:bg-[#d85f41] transition-all"
           >
             Quay lại trang chính
           </button>

@@ -31,17 +31,23 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="lg">
-      <div className="space-y-6 text-center">
+      <div className="space-y-6 text-center" aria-label="Bentalk AI Pro">
+        {user.isPremium && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <CheckCircle2 size={16} />
+            Tài khoản hiện đang có quyền Pro
+          </div>
+        )}
         {/* Header */}
         <div className="space-y-2">
           <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-[#D5A85C] to-[#E5BE79] text-white flex items-center justify-center mx-auto shadow-md">
             <Crown size={28} />
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white">
-            Nâng cấp HanziAI Pro
+            Nâng cấp Bentalk AI Pro
           </h2>
           <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97] max-w-md mx-auto">
-            Mở khóa trọn vẹn sức mạnh AI để giao tiếp tiếng Trung tự tin và tự nhiên nhất
+            Mở rộng lộ trình học, luyện Lina và các trải nghiệm AI chuyên sâu khi gói Pro được mở bán.
           </p>
         </div>
 
@@ -50,6 +56,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           <button
             type="button"
             onClick={() => setIsAnnual(false)}
+            aria-pressed={!isAnnual}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
               !isAnnual ? 'bg-white dark:bg-[#241F1C] text-[#211A17] dark:text-white shadow-xs' : 'text-[#716761]'
             }`}
@@ -59,6 +66,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           <button
             type="button"
             onClick={() => setIsAnnual(true)}
+            aria-pressed={isAnnual}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
               isAnnual ? 'bg-[#E86F51] text-white shadow-xs' : 'text-[#716761]'
             }`}
@@ -103,11 +111,11 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           {/* Pro Plan */}
           <div className="p-6 rounded-3xl bg-gradient-to-b from-white to-[#FFF5F1] dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51] shadow-lg relative space-y-4">
             <span className="absolute -top-3 right-6 px-3 py-1 rounded-full bg-[#E86F51] text-white text-[10px] font-black uppercase tracking-wider">
-              Khuyên dùng
+              PRO
             </span>
 
             <div>
-              <h3 className="font-bold text-base text-[#E86F51]">HanziAI Pro Unlimited</h3>
+              <h3 className="font-bold text-base text-[#E86F51]">Bentalk AI Pro Unlimited</h3>
               <p className="text-xs text-[#716761]">Không giới hạn mọi tính năng</p>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-[#211A17] dark:text-white">
@@ -144,6 +152,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               type="button"
               onClick={handleUpgrade}
               disabled={isProcessing || user.isPremium}
+              aria-live="polite"
               className="w-full py-3.5 rounded-2xl bg-[#E86F51] text-white font-extrabold text-xs shadow-md shadow-[#E86F51]/30 hover:bg-[#d85f41] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Sparkles size={16} />
@@ -151,15 +160,15 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 {user.isPremium
                   ? 'Gói Pro đang kích hoạt'
                   : isProcessing
-                  ? 'Tính năng thanh toán đang được chuẩn bị...'
-                  : 'Thanh toán Pro sẽ được tích hợp sau'}
+                  ? 'Đang kiểm tra trạng thái nâng cấp...'
+                  : 'Đăng ký Pro khi thanh toán được mở'}
               </span>
             </button>
           </div>
         </div>
 
         <p className="text-[11px] text-[#716761] dark:text-[#A89E97]">
-          Thanh toán và quản lý gói Pro sẽ được tích hợp ở giai đoạn tiếp theo.
+          Thanh toán chưa được kết nối trong phiên bản hiện tại. Khi billing sẵn sàng, nút này sẽ chuyển sang luồng đăng ký thực tế.
         </p>
       </div>
     </Modal>
