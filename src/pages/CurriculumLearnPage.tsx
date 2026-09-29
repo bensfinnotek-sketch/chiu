@@ -809,36 +809,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
 
                 {/* Lessons Grid in Unit */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                      <div className="space-y-0.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
-                            Unit {unit.order} · {unit.titleZh}
-                          </span>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${unitStateClass}`}>
-                            {unitState}
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-black text-[#211A17] dark:text-white">
-                          {unit.title}
-                        </h3>
-                        <p className="text-xs text-[#716761] dark:text-[#A89E97]">
-                          {unit.description}
-                        </p>
-                      </div>
-                      <div className="min-w-[180px]">
-                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-[#716761] dark:text-[#A89E97] mb-1">
-                      <span>{completedCount}/{unitLessons.length} bài hoàn thành · {inProgressCount} đang học</span>
-                      <span>{unitPercent}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ Unit ${unit.order}: ${unitPercent}% · ${unitState}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={unitLessons.length ? Math.round((unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length / unitLessons.length) * 100) : 0}>
-                      <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${unitPercent}%` }} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lessons Grid in Unit */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {unitLessons.map((lesson) => {
                     const progress = progressMap[lesson.id];
                     const isCompleted = progress?.status === 'completed';
