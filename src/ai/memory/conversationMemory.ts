@@ -182,6 +182,15 @@ export function formatMemoryForPrompt(memory: ConversationMemory): string {
     parts.push(`VOCABULARY DISCUSSED SO FAR:\n${memory.vocabulary.slice(-10).join(', ')}`);
   }
 
+  if (memory.grammarIssues.length > 0) {
+    const recurring = memory.grammarIssues
+      .slice(-5)
+      .sort((a, b) => b.count - a.count)
+      .map((issue) => `- ${issue.pattern} (${issue.count}x)`)
+      .join('\\n');
+    parts.push(`RECURRING GRAMMAR WEAKNESSES:\n${recurring}`);
+  }
+
   if (memory.recentMessages.length > 0) {
     const recentTurns = memory.recentMessages
       .slice(-8)

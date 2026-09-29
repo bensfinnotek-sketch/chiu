@@ -55,6 +55,7 @@ interface AutoVocabularyTest {
   options: string[];
   correctIndex: number;
   answered?: number;
+  flashcardId?: string;
 }
 
 interface AiConversationPageProps {
@@ -405,7 +406,9 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         const tests = recentWords.map(makeTest);
         setAutoVocabularyTests(tests);
 
-        // Persist the newly encountered vocabulary into the same SRS pipeline.
+        // Persist the newly encountered vocabulary into the same SRS pipeline and
+        // connect each micro-test to its real flashcard so the learner's answer
+        // immediately feeds back into SRS.
         void flashcardService.upsertBatchFlashcards(
           recentWords.map((word) => ({
             hanzi: word.hanzi,
@@ -413,10 +416,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             meaning: word.meaning,
             topic: `conversation:${activeTopic}`,
             auto_saved: true,
-            source_conversation_id: selectedSessionId || undefined,
+            source_conversation_id: conversationSessionId || selectedSessionId || undefined,
             hsk_level: Number(String(word.hskLevel || activeLevel).replace(/[^0-9]/g, '')) || 1,
           }))
-        ).catch((error) => console.warn('Auto-save vocabulary failed:', error));
+        ).then((savedCards) => {
+          const cardIdsByHanzi = new Map(savedCards.map((card) => [card.hanzi.trim(), card.id]));
+          setAutoVocabularyTests((current) =>
+            current.map((test) => ({
+              ...test,
+              flashcardId: cardIdsByHanzi.get(test.word.hanzi.trim()) || test.flashcardId,
+            }))
+          );
+        }).catch((error) => console.warn('Auto-save vocabulary failed:', error));
       }
 
       // Update scores
@@ -1113,7 +1124,14 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                         const chosen = optionIndex === test.answered;
                         return (
                           <button key={option} type="button" disabled={answered}
-                            onClick={() => setAutoVocabularyTests((prev) => prev.map((item) => item.id === test.id ? { ...item, answered: optionIndex } : item))}
+                            onClick={() => {
+                              const isCorrect = optionIndex === test.correctIndex;
+                              setAutoVocabularyTests((prev) => prev.map((item) => item.id === test.id ? { ...item, answered: optionIndex } : item));
+                              if (test.flashcardId) {
+                                void flashcardService.reviewFlashcard(test.flashcardId, isCorrect ? 'correct' : 'incorrect')
+                                  .catch((error) => console.warn('SRS review from Lina micro-test failed:', error));
+                              }
+                            }}
                             className={`w-full text-left px-2.5 py-2 rounded-lg border text-[10px] transition-colors ${answered && correct ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : answered && chosen ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white dark:bg-[#201915] border-[#EADCCF] hover:border-[#E86F51]'}`}>
                             {option}
                           </button>
