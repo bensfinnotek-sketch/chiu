@@ -779,7 +779,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15" aria-label={`HSK ${lessonLevelForUnit(unitLessons)} · Unit ${unit.order}`}>
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15" aria-label={`HSK ${unitLessons[0]?.levelNumber || selectedLevel} · Unit ${unit.order}`}>
                   <div className="space-y-0.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
