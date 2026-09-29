@@ -264,7 +264,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
                 </div>
 
                 <div className="my-auto py-5 space-y-4 animate-fade-in">
-                  <div className="mx-auto w-28 h-28 sm:w-32 sm:h-32 rounded-[2rem] bg-gradient-to-br from-[#FFF0EB] via-[#FFF8F4] to-[#FFE5DC] dark:from-[#342822] dark:via-[#2A2320] dark:to-[#3A2923] border border-[#E86F51]/10 flex items-center justify-center shadow-inner overflow-hidden" aria-label={`Hình minh họa: ${currentCard.meaning || currentCard.chinese}`}>
+                  <div className="mx-auto w-28 h-28 sm:w-32 sm:h-32 rounded-[2rem] bg-gradient-to-br from-[#FFF0EB] via-[#FFF8F4] to-[#FFE5DC] dark:from-[#342822] dark:via-[#2A2320] dark:to-[#3A2923] border border-[#E86F51]/10 flex items-center justify-center shadow-inner overflow-hidden" aria-label={`Hình minh họa: ${currentCard.meaning || currentCard.hanzi}`}>
                     <img src={visualUrl} alt="" width="76" height="76" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-contain select-none" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
                     <span className="text-6xl sm:text-7xl" aria-hidden="true">{visualEmoji}</span>
                   </div>
