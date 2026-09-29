@@ -17,6 +17,8 @@ export const MusicPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [currentSong, setCurrentSong] = useState<SongItem>(CHINESE_SONGS[0]);
   const [activeLineIndex, setActiveLineIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(0.85);
+  const [repeatLine, setRepeatLine] = useState(false);
 
   // Play line audio
   const playLyricLine = (index: number) => {
@@ -24,7 +26,7 @@ export const MusicPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const line = currentSong.lyrics[index];
     if (line) {
       voiceService.speakText(line.chinese, {
-        rate: 0.85,
+        rate: playbackRate,
         onEnd: () => {
           if (isPlaying && index < currentSong.lyrics.length - 1) {
             playLyricLine(index + 1);
@@ -162,6 +164,12 @@ export const MusicPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           >
             <SkipForward size={20} />
           </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10">
+          <div className="flex items-center gap-2 text-xs"><span className="font-bold text-[#716761]">Tốc độ:</span>{[0.65,0.85,1].map(rate => <button key={rate} onClick={() => setPlaybackRate(rate)} className={`px-2.5 py-1.5 rounded-xl font-bold ${playbackRate===rate ? 'bg-[#E86F51] text-white' : 'bg-white dark:bg-[#241F1C] text-[#716761]'}`}>{rate}×</button>)}</div>
+          <button type="button" onClick={() => setRepeatLine(!repeatLine)} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${repeatLine ? 'bg-[#E86F51] text-white' : 'bg-white dark:bg-[#241F1C] text-[#716761]'}`}>{repeatLine ? '↻ Lặp dòng' : 'Lặp dòng'}</button>
+          <div className="text-[11px] text-[#716761] dark:text-[#A89E97]">Chế độ học: nghe chậm → đọc theo → hiểu nghĩa → nhắc lại.</div>
         </div>
 
         {/* Synchronized Karaoke Lyrics Display */}
