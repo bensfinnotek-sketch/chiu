@@ -255,7 +255,7 @@ export const CurriculumLessonViewer: React.FC<CurriculumLessonViewerProps> = ({ 
                   <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40">
                     <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">Lỗi hay gặp</p>
                     <ul className="mt-1.5 space-y-1 text-xs text-amber-800 dark:text-amber-200">
-                      {g.commonMistakes.map((mistake, i) => <li key={i}>• {mistake}</li>)}
+                      {(g.commonMistakes ?? []).map((mistake, i) => <li key={i}>• {mistake}</li>)}
                     </ul>
                   </div>
                 )}
