@@ -412,6 +412,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             pinyin: word.pinyin,
             meaning: word.meaning,
             topic: `conversation:${activeTopic}`,
+            auto_saved: true,
+            source_conversation_id: selectedSessionId || undefined,
             hsk_level: Number(String(word.hskLevel || activeLevel).replace(/[^0-9]/g, '')) || 1,
           }))
         ).catch((error) => console.warn('Auto-save vocabulary failed:', error));
