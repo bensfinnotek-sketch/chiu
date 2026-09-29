@@ -36,6 +36,7 @@ import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
+import { flashcardService } from '../services/flashcardService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
 import { SessionSummaryModal } from '../components/speaking/SessionSummaryModal';
 import {
@@ -45,6 +46,14 @@ import {
   saveMemoryToStorage,
   clearMemoryFromStorage,
 } from '../ai/memory/conversationMemory';
+
+interface AutoVocabularyTest {
+  id: string;
+  word: { hanzi: string; pinyin: string; meaning: string };
+  options: string[];
+  correctIndex: number;
+  answered?: number;
+}
 
 interface AiConversationPageProps {
   onBackToTopics?: () => void;
@@ -158,6 +167,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     Array<{ hanzi: string; pinyin: string; meaning: string }>
   >([]);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
+  const [autoVocabularyTests, setAutoVocabularyTests] = useState<AutoVocabularyTest[]>([]);
 
   // Language Usage Ratings for active session
   const [sessionScores, setSessionScores] = useState({
@@ -339,7 +349,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         };
       }
 
-      // Update detected vocabulary
+      // Update detected vocabulary and immediately create lightweight HSK-level micro-tests.
       if (analysis.vocabulary && analysis.vocabulary.length > 0) {
         userMsg.detectedVocabulary = analysis.vocabulary;
         setWordsLearnedSession((prev) => {
@@ -349,6 +359,37 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           });
           return Array.from(map.values());
         });
+
+        const recentWords = analysis.vocabulary.slice(0, 3);
+        const tests = recentWords.map((word, index) => {
+          const distractors = analysis.vocabulary
+            .filter((v) => v.hanzi !== word.hanzi)
+            .map((v) => v.meaning)
+            .slice(0, 2);
+          const fallback = ['Từ này dùng trong ngữ cảnh khác', 'Không liên quan đến chủ đề'];
+          const options = [word.meaning, ...distractors, ...fallback].slice(0, 3);
+          const shuffled = options
+            .map((value, i) => ({ value, i }))
+            .sort(() => Math.random() - 0.5);
+          return {
+            id: `auto-vocab-${Date.now()}-${index}`,
+            word: { hanzi: word.hanzi, pinyin: word.pinyin, meaning: word.meaning },
+            options: shuffled.map((item) => item.value),
+            correctIndex: shuffled.findIndex((item) => item.i === 0),
+          };
+        });
+        setAutoVocabularyTests(tests);
+
+        // Persist the newly encountered vocabulary into the same SRS pipeline.
+        void flashcardService.upsertBatchFlashcards(
+          recentWords.map((word) => ({
+            hanzi: word.hanzi,
+            pinyin: word.pinyin,
+            meaning: word.meaning,
+            topic: `conversation:${activeTopic}`,
+            hsk_level: Number(String(word.hsk || activeLevel).replace(/[^0-9]/g, '')) || 1,
+          }))
+        ).catch((error) => console.warn('Auto-save vocabulary failed:', error));
       }
 
       // Update scores
@@ -1020,6 +1061,42 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                 </div>
               );
             })}
+
+
+            {autoVocabularyTests.length > 0 && (
+              <div className="p-4 rounded-2xl bg-[#FFF0EB] dark:bg-[#34221C] border border-[#E86F51]/20 space-y-3">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={15} className="text-[#E86F51]" />
+                    <h4 className="text-xs font-extrabold text-[#211A17] dark:text-white">Test nhanh từ mới · {activeLevel}</h4>
+                  </div>
+                  <p className="text-[10px] text-[#716761] dark:text-[#BDB2AA] mt-1">Lina vừa phát hiện từ mới — trả lời ngay để ghi nhớ sâu hơn.</p>
+                </div>
+                {autoVocabularyTests.map((test) => (
+                  <div key={test.id} className="p-3 rounded-xl bg-white/80 dark:bg-[#241B17] border border-[#E86F51]/10 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif font-bold text-base">{test.word.hanzi}</span>
+                      <span className="text-[10px] text-[#E86F51]">{test.word.pinyin}</span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-[#716761] dark:text-[#C5B9B0]">Nghĩa gần đúng nhất là?</p>
+                    <div className="space-y-1.5">
+                      {test.options.map((option, optionIndex) => {
+                        const answered = test.answered !== undefined;
+                        const correct = optionIndex === test.correctIndex;
+                        const chosen = optionIndex === test.answered;
+                        return (
+                          <button key={option} type="button" disabled={answered}
+                            onClick={() => setAutoVocabularyTests((prev) => prev.map((item) => item.id === test.id ? { ...item, answered: optionIndex } : item))}
+                            className={`w-full text-left px-2.5 py-2 rounded-lg border text-[10px] transition-colors ${answered && correct ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : answered && chosen ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white dark:bg-[#201915] border-[#EADCCF] hover:border-[#E86F51]'}`}>
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Real-time Interim Transcript preview while user is actively speaking (Section 17) */}
             {micState === 'LISTENING' && interimTranscript && (
