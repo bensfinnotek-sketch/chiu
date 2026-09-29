@@ -196,6 +196,53 @@ const BASIC_STOPWORDS = new Set([
   "什么", "怎么", "哪个", "哪里", "谁", "去", "来", "做", "说"
 ]);
 
+function getSpeakingLevelGuidance(level: string): {
+  vocabulary: string;
+  pace: string;
+  depth: string;
+  coaching: string;
+} {
+  const profiles: Record<string, { vocabulary: string; pace: string; depth: string; coaching: string }> = {
+    "HSK 1": {
+      vocabulary: "Khoảng 150 từ nền; dùng từ thông dụng và mẫu câu rất cơ bản.",
+      pace: "Chậm, rõ; ưu tiên câu ngắn.",
+      depth: "Một ý chính mỗi lượt, tránh cấu trúc phức tạp.",
+      coaching: "Ưu tiên khả năng hiểu được, trật tự câu và lỗi ngữ pháp cốt lõi.",
+    },
+    "HSK 2": {
+      vocabulary: "Khoảng 300 từ; giao tiếp hàng ngày, mua sắm, thời gian và di chuyển.",
+      pace: "Tự nhiên nhưng vẫn rõ ràng.",
+      depth: "Một đến hai câu, có thể nối ý đơn giản.",
+      coaching: "Tăng độ trôi chảy và sửa lỗi quan trọng mà không ngắt dòng hội thoại.",
+    },
+    "HSK 3": {
+      vocabulary: "Khoảng 600 từ; du lịch, công việc, trải nghiệm và biểu đạt.",
+      pace: "Tự nhiên, khuyến khích phản xạ liên tục.",
+      depth: "Hai đến ba câu, có giải thích và kể lại trải nghiệm.",
+      coaching: "Khuyến khích mở rộng ý, nguyên nhân-kết quả và quan điểm cá nhân.",
+    },
+    "HSK 4": {
+      vocabulary: "Khoảng 1200 từ; đời sống, xã hội, công việc và chủ đề đa dạng.",
+      pace: "Tự nhiên, gần hội thoại thực tế.",
+      depth: "Hai đến ba câu có liên kết logic.",
+      coaching: "Khuyến khích lập luận, phản hồi ý kiến khác và câu phức.",
+    },
+    "HSK 5": {
+      vocabulary: "Khoảng 2500 từ; báo chí, phim ảnh, kinh doanh và chủ đề trừu tượng.",
+      pace: "Tăng phản xạ, giảm phụ thuộc vào câu mẫu.",
+      depth: "Ba câu trở lên khi cần, có giải thích hoặc ví dụ.",
+      coaching: "Tập trung phân tích, tóm tắt, thuyết trình và sắc thái từ vựng.",
+    },
+    "HSK 6": {
+      vocabulary: "5000+ từ; học thuật, chuyên sâu, thành ngữ và sắc thái.",
+      pace: "Tăng phản xạ, ưu tiên diễn đạt tự nhiên ở trình độ cao.",
+      depth: "Lập luận nhiều lớp, diễn đạt linh hoạt và tinh tế.",
+      coaching: "Tập trung sắc thái, văn phong, thành ngữ, lập luận và cách diễn đạt gần tự nhiên.",
+    },
+  };
+  return profiles[level] || profiles["HSK 1"];
+}
+
 // Handler for AI Speaking Analysis & Conversation (turn-by-turn)
 export async function handleSpeakingAnalyze(req: any, res: any) {
   try {
@@ -272,6 +319,7 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
       }
     }
 
+    const levelGuidance = getSpeakingLevelGuidance(actualLevel);
     const systemPrompt = `You are Lina, a friendly, patient, and highly encouraging Chinese speaking teacher for HanziAI.
 Your job is to help the learner practice Mandarin through natural, turn-by-turn conversation.
 
@@ -279,6 +327,13 @@ Learner Level: ${actualLevel}
 Topic: ${topic}
 Conversation Difficulty: ${difficulty} (easy = simpler words & shorter replies; normal = natural pacing; challenge = more authentic phrasing)
 Learner's Native/UI Language: ${langName}
+
+LEVEL-SPECIFIC SPEAKING PROFILE — MUST FOLLOW:
+- Vocabulary target: ${levelGuidance.vocabulary}
+- Pace: ${levelGuidance.pace}
+- Response depth: ${levelGuidance.depth}
+- Coaching focus: ${levelGuidance.coaching}
+Do not use HSK 2 defaults for other levels. The selected HSK level is the source of truth for this turn.
 ${flashcardsPrompt}
 
 CRITICAL TURN-BY-TURN CONVERSATION RULES:
