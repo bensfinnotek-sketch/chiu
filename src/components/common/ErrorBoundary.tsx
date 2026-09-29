@@ -24,6 +24,14 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('Uncaught error in UI boundary:', error, errorInfo);
   }
 
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  private handleReload = () => {
+    window.location.reload();
+  };
+
   public render() {
     if (this.state.hasError) {
       return (
@@ -36,19 +44,32 @@ export class ErrorBoundary extends Component<Props, State> {
               Đã xảy ra sự cố không mong muốn
             </h2>
             <p className="text-xs text-[#716761] dark:text-[#A89E97]">
-              {this.state.error?.message || 'Giao diện tạm thời gặp lỗi. Vui lòng làm mới trang.'}
+              Phần này của ứng dụng đang gặp lỗi. Bạn có thể thử lại hoặc tải lại trang nếu lỗi vẫn tiếp diễn.
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="px-6 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#d85f41] text-white text-xs font-bold shadow-md shadow-[#E86F51]/25 transition-all inline-flex items-center gap-2 cursor-pointer"
-            >
-              <RotateCcw size={16} />
-              <span>Tải lại trang</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={this.handleRetry}
+                className="px-5 py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#d85f41] text-white text-xs font-bold shadow-md shadow-[#E86F51]/25 transition-all inline-flex items-center gap-2 cursor-pointer"
+              >
+                <RotateCcw size={16} />
+                <span>Thử lại</span>
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReload}
+                className="px-5 py-2.5 rounded-xl bg-white dark:bg-[#181412] border border-[#E86F51]/20 text-[#716761] dark:text-[#D9D0CA] text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer"
+              >
+                <RotateCcw size={16} />
+                <span>Tải lại trang</span>
+              </button>
+            </div>
+            {import.meta.env.DEV && this.state.error?.message && (
+              <details className="text-left text-[11px] text-[#716761] dark:text-[#A89E97]">
+                <summary className="cursor-pointer font-bold">Chi tiết kỹ thuật</summary>
+                <pre className="mt-2 whitespace-pre-wrap break-words">{this.state.error.message}</pre>
+              </details>
+            )}
           </div>
         </div>
       );
