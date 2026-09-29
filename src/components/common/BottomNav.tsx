@@ -1,27 +1,21 @@
 import React from 'react';
 import { Home, BookOpen, Mic, RotateCcw, User } from 'lucide-react';
-import { SupportedLanguage } from '../../types';
-import { UI_TEXTS } from '../../data/translations';
 
 interface BottomNavProps {
   currentRoute: string;
   onNavigate: (route: string) => void;
-  language: SupportedLanguage;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   currentRoute,
-  onNavigate,
-  language,
+  onNavigate
 }) => {
-  const t = UI_TEXTS[language];
-
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'learn', label: t.learn, icon: BookOpen },
-    { id: 'practice', label: t.practice, icon: Mic, isCenter: true },
-    { id: 'review', label: t.review, icon: RotateCcw },
-    { id: 'profile', label: t.profile, icon: User },
+    { id: 'learn', label: 'Học tập', icon: BookOpen },
+    { id: 'practice', label: 'Luyện nói', icon: Mic, isCenter: true },
+    { id: 'review', label: 'Ôn tập', icon: RotateCcw },
+    { id: 'profile', label: 'Hồ sơ', icon: User },
   ];
 
   return (
