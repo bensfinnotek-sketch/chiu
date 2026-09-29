@@ -68,11 +68,16 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     'Daily Life';
 
   const userProfile = storageService.getUserProfile();
-  const activeLevel =
+  const initialSpeakingLevel =
     initialLevel ||
     sessionStorage.getItem('selected_speaking_level') ||
     userProfile.chineseLevel ||
     'HSK 1';
+  const [activeLevel, setActiveLevel] = useState<string>(initialSpeakingLevel);
+
+  useEffect(() => {
+    setActiveLevel(initialSpeakingLevel);
+  }, [initialSpeakingLevel]);
 
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
@@ -669,7 +674,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               </span>
             </div>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] hidden sm:block">
-              Phòng luyện nói 1-1 trực tiếp cùng cô Lina
+              Phòng luyện nói 1-1 trực tiếp cùng cô Lina · có thể đổi HSK ngay trong phiên
             </p>
           </div>
         </div>
@@ -708,6 +713,46 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           </button>
         </div>
       </header>
+
+      {/* In-session HSK level selector */}
+      <section className="mt-4 p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] shrink-0" aria-labelledby="conversation-level-title">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <p id="conversation-level-title" className="text-xs font-black uppercase tracking-wider text-[#E86F51]">HSK mục tiêu của phiên</p>
+            <p className="text-[11px] text-[#716761] dark:text-[#A89E97] mt-0.5">
+              Đổi cấp độ để Lina điều chỉnh từ vựng, độ dài câu, tốc độ phản hồi và độ sâu câu hỏi.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Đang luyện: {activeLevel}</span>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map((level) => {
+            const isSelected = activeLevel === level;
+            return (
+              <button
+                key={level}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => {
+                  setActiveLevel(level);
+                  sessionStorage.setItem('selected_speaking_level', level);
+                  setMemory((previous) => ({
+                    ...previous,
+                    learnerLevel: level,
+                  }));
+                  setStatusMessage(`Lina đã chuyển sang ${level}. Bạn có thể tiếp tục nói ở cấp độ mới.`);
+                }}
+                className={`px-2.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isSelected
+                  ? 'bg-[#E86F51] text-white border-[#E86F51] shadow-sm'
+                  : 'bg-[#FFF9F4] dark:bg-[#251D19] border-[#EADCCF] dark:border-[#382E27] text-[#5F554F] dark:text-[#C5B9B0] hover:border-[#E86F51]/50'
+                }`}
+              >
+                {level}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Main Classroom Grid (3-columns on desktop, stacked on mobile) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 pt-4 overflow-hidden">
