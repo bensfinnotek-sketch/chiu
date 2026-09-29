@@ -453,7 +453,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           )}
           {recommendations[0]?.metadata?.diagnosticTargets?.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {recommendations[0]?.metadata?.diagnosticTargetLabels?.map((label) => (
+              {(recommendations[0]?.metadata?.diagnosticTargetLabels ?? []).map((label) => (
                 <span key={label} className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">
                   Mục tiêu: {label}
                 </span>
