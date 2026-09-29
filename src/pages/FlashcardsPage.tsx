@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { AudioButton } from '../components/common/AudioButton';
-import { flashcardService } from '../services/flashcardService';
+import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 
 const getVisualEmoji = (card: any): string => {
@@ -65,10 +65,12 @@ const getTwemojiUrl = (emoji: string) => {
 
 export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [cards, setCards] = useState<any[]>(() => storageService.getSavedWords());
+  const [cards, setCards] = useState<Flashcard[]>(() => storageService.getSavedWords() as Flashcard[]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'HSK 1' | 'HSK 2' | 'HSK 3' | 'HSK 4' | 'HSK 5' | 'HSK 6'>('all');
+  const [levelFilter, setLevelFilter] = useState<'all' | 'HSK 1' | 'HSK 2' | 'HSK 3' | 'HSK 4' | 'HSK 5' | 'HSK 6'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'lina' | 'dictionary' | 'translator' | 'music' | 'hsk' | 'other'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'weak' | 'new'>('all');
   const [reviewedCount, setReviewedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -86,18 +88,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
         .then((dbCards) => {
           if (!isMounted) return;
           if (dbCards && dbCards.length > 0) {
-            const mapped = dbCards.map((c) => ({
-              id: c.id,
-              hanzi: c.hanzi,
-              chinese: c.hanzi,
-              pinyin: c.pinyin,
-              meaningVi: c.meaning,
-              exampleSentence: c.example_sentence,
-              hskLevel: c.hsk_level ? `HSK ${c.hsk_level}` : 'HSK 1',
-              status: c.status,
-              reviewCount: c.review_count,
-            }));
-            setCards(mapped);
+            setCards(dbCards);
           }
         })
         .catch((err) => {
@@ -113,7 +104,24 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
     };
   }, [user]);
 
-  const filteredCards = activeFilter === 'all' ? cards : cards.filter((c) => (c.hskLevel || c.level || 'HSK 1') === activeFilter);
+  const now = Date.now();
+  const getSource = (card: Flashcard) => {
+    const topic = card.topic || '';
+    if (topic.startsWith('conversation:')) return 'lina';
+    if (topic.startsWith('dictionary')) return 'dictionary';
+    if (topic.startsWith('translator')) return 'translator';
+    if (topic.startsWith('music:')) return 'music';
+    if (topic.startsWith('hsk-mistake:')) return 'hsk';
+    return 'other';
+  };
+  const isDue = (card: Flashcard) => !card.next_review_at || new Date(card.next_review_at).getTime() <= now;
+  const isWeak = (card: Flashcard) => card.status === 'learning' || (card.srs_incorrect_count || 0) > (card.srs_correct_count || 0) || (card.srs_incorrect_count || 0) >= 2;
+  const filteredCards = cards.filter((card) => {
+    const levelOk = levelFilter === 'all' || `HSK ${card.hsk_level || 1}` === levelFilter;
+    const sourceOk = sourceFilter === 'all' || getSource(card) === sourceFilter;
+    const statusOk = statusFilter === 'all' || (statusFilter === 'due' && isDue(card)) || (statusFilter === 'weak' && isWeak(card)) || (statusFilter === 'new' && card.status === 'new');
+    return levelOk && sourceOk && statusOk;
+  });
   const currentCard = filteredCards[currentIndex] || null;
   const progressPercent = filteredCards.length ? Math.round(((currentIndex + (sessionComplete ? 1 : 0)) / filteredCards.length) * 100) : 0;
 
@@ -183,11 +191,32 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
           <span className="text-xs text-[#716761] dark:text-[#A89E97] shrink-0">Cấp độ:</span>
           {(['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'] as const).map((lvl) => (
             <button key={lvl} type="button" onClick={() => {
-              setActiveFilter(lvl); setCurrentIndex(0); setIsFlipped(false); setLastRating(null); setSessionComplete(false);
-            }} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${activeFilter === lvl ? 'bg-[#E86F51] text-white shadow-sm' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`}>
+              setLevelFilter(lvl); setCurrentIndex(0); setIsFlipped(false); setLastRating(null); setSessionComplete(false);
+            }} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${levelFilter === lvl ? 'bg-[#E86F51] text-white shadow-sm' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`}>
               {lvl === 'all' ? 'Tất cả' : lvl}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 p-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-[#716761] dark:text-[#A89E97]">Nguồn:</span>
+          {([['all','Tất cả'],['lina','Lina'],['dictionary','Từ điển'],['translator','Dịch'],['music','Bài hát'],['hsk','HSK'],['other','Khác']] as const).map(([value,label]) => (
+            <button key={value} type="button" onClick={() => { setSourceFilter(value); setCurrentIndex(0); setSessionComplete(false); }} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${sourceFilter === value ? 'bg-[#E86F51] text-white' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`}>{label}</button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-[#716761] dark:text-[#A89E97]">Trạng thái:</span>
+          {([['all','Tất cả'],['due','Đến hạn'],['weak','Điểm yếu'],['new','Từ mới']] as const).map(([value,label]) => (
+            <button key={value} type="button" onClick={() => { setStatusFilter(value); setCurrentIndex(0); setSessionComplete(false); }} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${statusFilter === value ? 'bg-[#D5A85C] text-white' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`}>{label}</button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+          <div className="rounded-xl bg-white dark:bg-[#241F1C] p-2"><b>{cards.filter(isDue).length}</b><div className="text-[10px] text-[#716761]">đến hạn</div></div>
+          <div className="rounded-xl bg-white dark:bg-[#241F1C] p-2"><b>{cards.filter(isWeak).length}</b><div className="text-[10px] text-[#716761]">điểm yếu</div></div>
+          <div className="rounded-xl bg-white dark:bg-[#241F1C] p-2"><b>{cards.filter(c => c.status === 'new').length}</b><div className="text-[10px] text-[#716761]">từ mới</div></div>
+          <div className="rounded-xl bg-white dark:bg-[#241F1C] p-2"><b>{cards.filter(c => c.status === 'learned').length}</b><div className="text-[10px] text-[#716761]">đã nắm</div></div>
         </div>
       </div>
 
@@ -230,27 +259,27 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
             <button type="button" onClick={handleFlip} disabled={isReviewing} aria-label={isFlipped ? 'Hiện mặt trước' : 'Lật thẻ để xem nghĩa'} className="chiu-focus-card w-full text-left [transform-style:preserve-3d] focus-visible:outline-none group">
               <div className={`chiu-flip w-full min-h-[430px] sm:min-h-[480px] bg-white dark:bg-[#241F1C] rounded-[2rem] p-5 sm:p-7 border border-[#E86F51]/15 shadow-[0_16px_45px_rgba(80,48,35,0.10)] flex flex-col justify-between transition-all duration-300 group-hover:-translate-y-0.5 ${isFlipped ? 'ring-2 ring-[#E86F51]/20' : ''}`}>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="px-3 py-1 rounded-full bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">{currentCard.hskLevel}</span>
+                  <span className="px-3 py-1 rounded-full bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] text-xs font-bold">{currentCard.hsk_level ? `HSK ${currentCard.hsk_level}` : 'HSK 1'}</span>
                   <span className="text-xs text-[#716761] dark:text-[#A89E97]">{isFlipped ? 'Mặt sau · nhấn để lật lại' : 'Nhấn để lật ↻'}</span>
                 </div>
 
                 <div className="my-auto py-5 space-y-4 animate-fade-in">
-                  <div className="mx-auto w-28 h-28 sm:w-32 sm:h-32 rounded-[2rem] bg-gradient-to-br from-[#FFF0EB] via-[#FFF8F4] to-[#FFE5DC] dark:from-[#342822] dark:via-[#2A2320] dark:to-[#3A2923] border border-[#E86F51]/10 flex items-center justify-center shadow-inner overflow-hidden" aria-label={`Hình minh họa: ${currentCard.meaningVi || currentCard.chinese}`}>
+                  <div className="mx-auto w-28 h-28 sm:w-32 sm:h-32 rounded-[2rem] bg-gradient-to-br from-[#FFF0EB] via-[#FFF8F4] to-[#FFE5DC] dark:from-[#342822] dark:via-[#2A2320] dark:to-[#3A2923] border border-[#E86F51]/10 flex items-center justify-center shadow-inner overflow-hidden" aria-label={`Hình minh họa: ${currentCard.meaning || currentCard.chinese}`}>
                     <img src={visualUrl} alt="" width="76" height="76" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-contain select-none" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
                     <span className="text-6xl sm:text-7xl" aria-hidden="true">{visualEmoji}</span>
                   </div>
 
                   {!isFlipped ? (
                     <div className="text-center space-y-4">
-                      <p className="font-chinese text-6xl sm:text-7xl font-black text-[#211A17] dark:text-white tracking-wider">{currentCard.chinese || currentCard.hanzi}</p>
-                      <div className="flex justify-center"><AudioButton text={currentCard.chinese || currentCard.hanzi || ''} size="lg" label="Nghe phát âm" /></div>
+                      <p className="font-chinese text-6xl sm:text-7xl font-black text-[#211A17] dark:text-white tracking-wider">{currentCard.hanzi}</p>
+                      <div className="flex justify-center"><AudioButton text={currentCard.hanzi || ''} size="lg" label="Nghe phát âm" /></div>
                     </div>
                   ) : (
                     <div className="text-center space-y-3">
-                      <p className="font-chinese text-4xl font-black text-[#211A17] dark:text-white">{currentCard.chinese || currentCard.hanzi}</p>
+                      <p className="font-chinese text-4xl font-black text-[#211A17] dark:text-white">{currentCard.hanzi}</p>
                       <p className="text-2xl font-bold text-[#E86F51]">{currentCard.pinyin}</p>
-                      <p className="text-lg font-extrabold text-[#211A17] dark:text-white">{currentCard.meaningVi}</p>
-                      {currentCard.exampleSentence && <div className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 text-xs text-[#716761] dark:text-[#A89E97] space-y-1 max-w-md mx-auto"><p className="font-chinese font-bold text-sm text-[#211A17] dark:text-white">{currentCard.exampleSentence}</p><p className="text-[#E86F51]">{currentCard.examplePinyin}</p><p>{currentCard.exampleTranslationVi}</p></div>}
+                      <p className="text-lg font-extrabold text-[#211A17] dark:text-white">{currentCard.meaning}</p>
+                      {currentCard.example_sentence && <div className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 text-xs text-[#716761] dark:text-[#A89E97] space-y-1 max-w-md mx-auto"><p className="font-chinese font-bold text-sm text-[#211A17] dark:text-white">{currentCard.example_sentence}</p><p className="text-[#E86F51]">{currentCard.examplePinyin}</p><p>{currentCard.exampleTranslationVi}</p></div>}
                     </div>
                   )}
                 </div>
