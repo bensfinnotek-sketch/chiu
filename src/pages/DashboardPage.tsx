@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Flame, BookOpen, Target, Clock, ArrowRight, Mic, MessageSquare,
-  RotateCcw, Sparkles, CheckCircle2, Circle, LockKeyhole
+  RotateCcw, Sparkles, CheckCircle2
 } from 'lucide-react';
 import { UserProfile, SupportedLanguage } from '../types';
 import { LinaAvatar } from '../components/common/LinaAvatar';
@@ -33,7 +33,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in" aria-labelledby="dashboard-title">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-white via-[#FFF8F4] to-[#FFEDE6] dark:from-[#241F1C] dark:via-[#2A2320] dark:to-[#322722] border border-[#E86F51]/15 shadow-sm p-6 sm:p-8 md:p-10">
         <div className="absolute -right-16 -top-20 w-52 h-52 rounded-full bg-[#E86F51]/10 blur-3xl pointer-events-none" />
@@ -42,7 +42,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-bold">
               <Sparkles size={14} /> Lina đã chuẩn bị lộ trình hôm nay
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[#211A17] dark:text-white">
+            <h1 id="dashboard-title" className="text-4xl sm:text-5xl font-black tracking-tight text-[#211A17] dark:text-white">
               你好, {displayName} 👋
             </h1>
             <p className="text-sm sm:text-base text-[#716761] dark:text-[#A89E97] max-w-xl">
@@ -114,7 +114,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
       </section>
 
       {/* Snapshot */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" aria-label="Tổng quan tiến độ học">
         {[
           { icon: Flame, value: `${streakDays} ngày`, label: 'Chuỗi hiện tại', note: 'Giữ nhịp mỗi ngày' },
           { icon: BookOpen, value: String(wordsLearned), label: 'Từ đã nắm', note: 'Từ vựng cá nhân' },
@@ -133,14 +133,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
       </section>
 
       {/* Continue learning */}
-      <section className="chiu-card overflow-hidden">
+      <section className="chiu-card overflow-hidden" aria-labelledby="dashboard-continue-title">
         <div className="p-5 sm:p-7 bg-gradient-to-r from-[#FFF8F4] to-white dark:from-[#2A2320] dark:to-[#241F1C]">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E86F51]">
                 <BookOpen size={14} /> Tiếp tục học
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-2">HSK 1 · Lesson 5: Ordering Food at a Restaurant</h2>
+              <h2 id="dashboard-continue-title" className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-2">HSK 1 · Lesson 5: Ordering Food at a Restaurant</h2>
               <div className="flex flex-wrap gap-2 mt-3">
                 {['饭 · cơm', '水 · nước', '好吃 · ngon'].map((word) => (
                   <span key={word} className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#181412] border border-[#E86F51]/10 text-xs font-bold font-chinese text-[#E86F51]">{word}</span>
@@ -151,7 +151,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
               <div className="flex items-center justify-between text-xs font-bold text-[#716761] dark:text-[#A89E97] mb-2">
                 <span>3 / 8 phần</span><span className="text-[#E86F51]">42%</span>
               </div>
-              <div className="chiu-progress"><span style={{ width: '42%' }} /></div>
+              <div className="chiu-progress" role="progressbar" aria-label="Tiến độ bài học hiện tại 42%" aria-valuemin={0} aria-valuemax={100} aria-valuenow={42}><span style={{ width: '42%' }} /></div>
               <button type="button" onClick={() => onNavigate('learn')} className="chiu-btn chiu-btn-primary w-full mt-3 px-4 text-sm flex items-center justify-center gap-2">
                 Tiếp tục lộ trình <ArrowRight size={16} />
               </button>
