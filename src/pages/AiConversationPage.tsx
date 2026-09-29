@@ -49,6 +49,8 @@ import {
 
 interface AutoVocabularyTest {
   id: string;
+  type: 'meaning' | 'pinyin' | 'context';
+  prompt: string;
   word: { hanzi: string; pinyin: string; meaning: string };
   options: string[];
   correctIndex: number;
@@ -367,29 +369,40 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           return Array.from(map.values());
         });
 
-        const recentWords = analysis.vocabulary.filter((word) => {
-          const key = word.hanzi.trim();
-          if (!key || knownVocabularyRef.current.has(key)) return false;
-          knownVocabularyRef.current.add(key);
-          return true;
-        }).slice(0, 3);
-        const tests = recentWords.map((word, index) => {
-          const distractors = analysis.vocabulary
-            .filter((v) => v.hanzi !== word.hanzi)
-            .map((v) => v.meaning)
-            .slice(0, 2);
-          const fallback = ['Từ này dùng trong ngữ cảnh khác', 'Không liên quan đến chủ đề'];
-          const options = [word.meaning, ...distractors, ...fallback].slice(0, 3);
-          const shuffled = options
-            .map((value, i) => ({ value, i }))
-            .sort(() => Math.random() - 0.5);
+        const recentWords = analysis.vocabulary
+          .filter((word) => {
+            const key = word.hanzi.trim();
+            if (!key || knownVocabularyRef.current.has(key)) return false;
+            knownVocabularyRef.current.add(key);
+            return true;
+          })
+          .slice(0, 3);
+
+        const makeTest = (word: (typeof recentWords)[number], index: number): AutoVocabularyTest => {
+          const allMeanings = recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.meaning);
+          const fallbacks = ['Không liên quan đến chủ đề', 'Một cách dùng khác'];
+          const type: AutoVocabularyTest['type'] = index % 3 === 0 ? 'meaning' : index % 3 === 1 ? 'pinyin' : 'context';
+          let prompt = 'Nghĩa gần đúng nhất là?';
+          let values = [word.meaning, ...allMeanings, ...fallbacks];
+          if (type === 'pinyin') {
+            prompt = 'Pinyin đúng của từ này là?';
+            values = [word.pinyin, ...recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.pinyin), 'hǎo xué', 'bù zhī dào'];
+          } else if (type === 'context') {
+            prompt = 'Từ này nên được hiểu theo ngữ cảnh nào?';
+            values = [word.meaning, ...allMeanings, 'Tên riêng / địa danh', 'Biểu cảm không liên quan'];
+          }
+          const options = values.slice(0, 3);
+          const shuffled = options.map((value, i) => ({ value, i })).sort(() => Math.random() - 0.5);
           return {
             id: `auto-vocab-${Date.now()}-${index}`,
+            type,
+            prompt,
             word: { hanzi: word.hanzi, pinyin: word.pinyin, meaning: word.meaning },
             options: shuffled.map((item) => item.value),
             correctIndex: shuffled.findIndex((item) => item.i === 0),
           };
-        });
+        };
+        const tests = recentWords.map(makeTest);
         setAutoVocabularyTests(tests);
 
         // Persist the newly encountered vocabulary into the same SRS pipeline.
