@@ -176,4 +176,4 @@ const EXTRA_LEARNING_SONGS: SongItem[] = [
   },
 ];
 
-export const CHINESE_SONGS: SongItem[] = [...CHINESE_SONGS, ...EXTRA_LEARNING_SONGS];
+export const CHINESE_SONGS: SongItem[] = [...BASE_CHINESE_SONGS, ...EXTRA_LEARNING_SONGS];
