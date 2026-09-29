@@ -64,7 +64,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         </div>
 
         {/* Scrollable Summary Body */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 chiu-content-auto">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1 chiu-content-auto" aria-label="Nội dung tóm tắt buổi luyện nói">
           {/* 4 Stat Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="bg-white dark:bg-[#28201B] p-3 rounded-2xl border border-[#EFE5DB] dark:border-[#3A2F28] text-center shadow-xs">
@@ -105,9 +105,9 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
           </div>
 
           {/* Honest Language Evaluation Scores */}
-          <div className="bg-white dark:bg-[#28201B] p-4 rounded-2xl border border-[#EFE5DB] dark:border-[#3A2F28] space-y-3">
+          <section className="bg-white dark:bg-[#28201B] p-4 rounded-2xl border border-[#EFE5DB] dark:border-[#3A2F28] space-y-3" aria-labelledby="language-expression-title">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97] flex items-center gap-1.5">
+              <h4 id="language-expression-title" className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97] flex items-center gap-1.5">
                 <Sparkles size={14} className="text-[#E86F51]" />
                 Đánh giá năng lực diễn đạt (Language Expression)
               </h4>
@@ -119,7 +119,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   <span className="font-medium text-[#716761] dark:text-[#A89E97]">Độ rõ ràng (Clarity)</span>
                   <span className="font-bold text-[#E86F51]">{defaultScores.clarity}/5</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="progressbar" aria-label="Clarity độ rõ ràng" aria-valuemin={0} aria-valuemax={5} aria-valuenow={defaultScores.clarity}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <span
                       key={s}
@@ -136,7 +136,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   <span className="font-medium text-[#716761] dark:text-[#A89E97]">Ngữ pháp (Grammar)</span>
                   <span className="font-bold text-[#E86F51]">{defaultScores.grammar}/5</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="progressbar" aria-label="Grammar ngữ pháp" aria-valuemin={0} aria-valuemax={5} aria-valuenow={defaultScores.grammar}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <span
                       key={s}
@@ -153,7 +153,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   <span className="font-medium text-[#716761] dark:text-[#A89E97]">Từ vựng (Vocabulary)</span>
                   <span className="font-bold text-[#E86F51]">{defaultScores.vocabulary}/5</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="progressbar" aria-label="Vocabulary từ vựng" aria-valuemin={0} aria-valuemax={5} aria-valuenow={defaultScores.vocabulary}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <span
                       key={s}
@@ -170,7 +170,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   <span className="font-medium text-[#716761] dark:text-[#A89E97]">Độ tự nhiên (Naturalness)</span>
                   <span className="font-bold text-[#E86F51]">{defaultScores.naturalness}/5</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="progressbar" aria-label="Naturalness độ tự nhiên" aria-valuemin={0} aria-valuemax={5} aria-valuenow={defaultScores.naturalness}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <span
                       key={s}
@@ -186,7 +186,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             <p className="text-[11px] text-[#716761] dark:text-[#A89E97] italic pt-1 border-t border-[#F0E4D8] dark:border-[#382E28]">
               * Đánh giá trung thực dựa trên ngữ cảnh từ vựng và cấu trúc câu người học giao tiếp.
             </p>
-          </div>
+          </section>
 
           {/* Lina Coach — session takeaway built from the existing speaking session signals */}
           <div className="rounded-2xl border border-[#F0D8CC] dark:border-[#4A352C] bg-gradient-to-br from-[#FFF4EE] to-white dark:from-[#2C211C] dark:to-[#28201B] p-4 space-y-3">
@@ -203,9 +203,9 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
 
           {/* New Vocabulary Section */}
           {stats.wordsLearned.length > 0 && (
-            <div className="space-y-2.5">
+            <section className="space-y-2.5" aria-labelledby="new-vocabulary-title">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#716761] dark:text-[#A89E97]">
-                Từ vựng mới trong bài ({stats.wordsLearned.length})
+                <span id="new-vocabulary-title">Từ vựng mới trong bài ({stats.wordsLearned.length})</span>
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {stats.wordsLearned.slice(0, 6).map((word, idx) => (
@@ -226,7 +226,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
 
