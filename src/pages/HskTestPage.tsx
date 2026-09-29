@@ -14,7 +14,8 @@ import { AudioButton } from '../components/common/AudioButton';
 export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // diagnostic mode\n  const [targetLevel, setTargetLevel] = useState<'HSK 1' | 'HSK 2' | 'HSK 3'>('HSK 3');
+  const [timeLeft, setTimeLeft] = useState(600); // diagnostic mode
+  const [targetLevel, setTargetLevel] = useState<'HSK 1' | 'HSK 2' | 'HSK 3'>('HSK 3');
 
   useEffect(() => {
     if (isSubmitted) return;
@@ -49,7 +50,8 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       correctCount++;
     }
   });
-  const scorePercent = Math.round((correctCount / HSK_TEST_QUESTIONS.length) * 100);\n  const skillStats = (['listening','reading','vocabulary','grammar'] as const).map((skill) => { const items = HSK_TEST_QUESTIONS.filter(q => q.category === skill); const correct = items.filter(q => answers[q.id] === q.correctIndex).length; return { skill, correct, total: items.length, percent: items.length ? Math.round(correct/items.length*100) : 0 }; });
+  const scorePercent = Math.round((correctCount / HSK_TEST_QUESTIONS.length) * 100);
+  const skillStats = (['listening','reading','vocabulary','grammar'] as const).map((skill) => { const items = HSK_TEST_QUESTIONS.filter(q => q.category === skill); const correct = items.filter(q => answers[q.id] === q.correctIndex).length; return { skill, correct, total: items.length, percent: items.length ? Math.round(correct/items.length*100) : 0 }; });
 
   const getRecommendedLevel = () => {
     if (scorePercent >= 85) return 'HSK 3';
