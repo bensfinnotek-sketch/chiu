@@ -24,13 +24,18 @@ export const TranslatorPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     pinyin: string;
     vietnamese?: string;
     naturalAlternative?: string;
+    naturalAlternatives?: Array<{ text: string; pinyin?: string; note?: string }>;
     grammarNote?: string;
   }>({
     chinese: '我想喝一杯微糖的奶茶。',
     pinyin: 'Wǒ xiǎng hē yì bēi wēi táng de nǎichá.',
     vietnamese: 'Tôi muốn uống một cốc trà sữa ít đường.',
     naturalAlternative: '来一杯奶茶，微糖去冰。 (Cho một cốc trà sữa, ít đường không đá - cách nói phổ biến nhất khi order)',
-    grammarNote: 'Trong các quán trà sữa Trung Quốc: 微糖 (wēi táng) là 30% đường (ít đường), 半糖 (bàn táng) là 50% đường.',
+    grammarNote: 'Trong các quán trà sữa Trung Quốc, 微糖 thường diễn tả mức đường thấp; cách gọi thực tế có thể thay đổi theo cửa hàng.',
+    naturalAlternatives: [
+      { text: '我想喝一杯少糖的奶茶。', pinyin: 'Wǒ xiǎng hē yì bēi shǎo táng de nǎichá.', note: 'Tự nhiên, rõ nghĩa' },
+      { text: '来一杯奶茶，少糖。', pinyin: 'Lái yì bēi nǎichá, shǎo táng.', note: 'Ngắn gọn khi gọi đồ uống' },
+    ],
   });
 
   const handleTranslate = async () => {
@@ -48,6 +53,7 @@ export const TranslatorPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         chinese: res.translatedText,
         pinyin: res.pinyin || '',
         naturalAlternative: res.naturalAlternative,
+        naturalAlternatives: res.naturalAlternatives || (res.naturalAlternative ? [{ text: res.naturalAlternative, note: 'Gợi ý từ AI' }] : []),
         grammarNote: res.culturalNote,
       });
     } catch {
