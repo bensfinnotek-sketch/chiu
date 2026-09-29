@@ -82,7 +82,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {isSubmitted && <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#241F1C] border-2 border-[#E86F51]/30 shadow-xl text-center space-y-4 animate-fade-in">
         <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto"><Award size={32}/></div>
-        <div><h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Kết quả đánh giá: {scorePercent}% ({correctCount}/{testQuestions.length} câu đúng)</h2><p className="text-sm font-bold text-[#E86F51] mt-1">Đề luyện thích ứng tiếp theo: {getRecommendedLevel()}</p></div>
+        <div><h2 className="text-2xl font-extrabold text-[#211A17] dark:text-white">Kết quả đánh giá: {scorePercent}% ({correctCount}/{testQuestions.length} câu đúng)</h2><p className="text-sm font-bold text-[#E86F51] mt-1">Đề luyện thích ứng tiếp theo: {adaptiveLevel}</p></div>
         <p className="text-xs text-[#716761] max-w-lg mx-auto">
           Phân tích chẩn đoán theo kỹ năng sẽ giúp bạn chọn nội dung ôn tập tiếp theo. Bài vừa làm là <strong>{targetLevel}</strong>; bài kế tiếp được điều chỉnh dựa trên kết quả hiện tại.
         </p>
