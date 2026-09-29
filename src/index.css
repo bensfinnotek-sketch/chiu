@@ -51,6 +51,7 @@
     font-size: var(--chiu-font-size-base);
     line-height: var(--chiu-line-height-body);
     font-optical-sizing: auto;
+    font-kerning: normal;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     transition: background-color 180ms ease, color 180ms ease;
@@ -62,7 +63,7 @@
   body { overflow-x: hidden; min-width: 320px; overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; }
   body { padding-bottom: env(safe-area-inset-bottom); }
 
-  h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); line-height: 1.18; letter-spacing: -0.018em; }
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); line-height: 1.18; letter-spacing: -0.018em; text-wrap: balance; }
   p, li { line-height: var(--chiu-line-height-body); }
   button, input, textarea, select { font: inherit; }
   .font-chinese { font-family: var(--font-chinese); }
