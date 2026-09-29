@@ -272,7 +272,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
-              {recommendations[0]?.metadata?.diagnosticTargets?.length > 0 && (
+              {(recommendations[0]?.metadata?.diagnosticTargets?.length ?? 0) > 0 && (
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
                   Soạn theo AI-9
                 </span>
