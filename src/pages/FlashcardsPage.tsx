@@ -279,7 +279,7 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
                       <p className="font-chinese text-4xl font-black text-[#211A17] dark:text-white">{currentCard.hanzi}</p>
                       <p className="text-2xl font-bold text-[#E86F51]">{currentCard.pinyin}</p>
                       <p className="text-lg font-extrabold text-[#211A17] dark:text-white">{currentCard.meaning}</p>
-                      {currentCard.example_sentence && <div className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 text-xs text-[#716761] dark:text-[#A89E97] space-y-1 max-w-md mx-auto"><p className="font-chinese font-bold text-sm text-[#211A17] dark:text-white">{currentCard.example_sentence}</p><p className="text-[#E86F51]">{currentCard.examplePinyin}</p><p>{currentCard.exampleTranslationVi}</p></div>}
+                      {currentCard.example_sentence && <div className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/15 text-xs text-[#716761] dark:text-[#A89E97] space-y-1 max-w-md mx-auto"><p className="font-chinese font-bold text-sm text-[#211A17] dark:text-white">{currentCard.example_sentence}</p></div>}
                     </div>
                   )}
                 </div>
