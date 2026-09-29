@@ -231,7 +231,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           >
             {isGenerating ? 'Lina đang soạn bài…' : 'Tạo bài học cá nhân'}
           </button>
-        </div>
+        </section>
       )}
 
       {generationError && (
@@ -325,7 +325,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               </div>
             </div>
           )}
-        </div>
+        </section>
       )}
 
       {/* Lina learning journey — presentation only; recommendation logic stays unchanged */}
@@ -797,6 +797,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           })}
         </div>
       )}
-    </div>
+    </main>
   );
 };
