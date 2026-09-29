@@ -37,6 +37,32 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { ConversationsHistoryPage } from './pages/ConversationsHistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 
+const VALID_ROUTES = new Set([
+  'home',
+  'dashboard',
+  'login',
+  'register',
+  'forgot-password',
+  'reset-password',
+  'onboarding',
+  'conversations',
+  'settings',
+  'learn',
+  'learn-detail',
+  'practice',
+  'practice-speaking',
+  'practice-conversation',
+  'flashcards',
+  'review',
+  'tools',
+  'dictionary',
+  'translator',
+  'music',
+  'hsk-test',
+  'progress',
+  'profile',
+]);
+
 function AppContent() {
   const { user: authUser, isAuthenticated } = useAuth();
   const [currentRoute, setCurrentRoute] = useState<string>('home');
@@ -55,9 +81,11 @@ function AppContent() {
   }, [authUser]);
 
   useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash && ['login', 'register', 'forgot-password', 'reset-password', 'onboarding', 'conversations', 'settings'].includes(hash)) {
+    const hash = window.location.hash.replace(/^#/, '').trim();
+    if (hash && VALID_ROUTES.has(hash)) {
       setCurrentRoute(hash);
+    } else if (hash) {
+      window.location.hash = '';
     }
   }, []);
 
