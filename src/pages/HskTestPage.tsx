@@ -14,7 +14,7 @@ import { AudioButton } from '../components/common/AudioButton';
 export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [timeLeft, setTimeLeft] = useState(600); // diagnostic mode\n  const [targetLevel, setTargetLevel] = useState<'HSK 1' | 'HSK 2' | 'HSK 3'>('HSK 3');
 
   useEffect(() => {
     if (isSubmitted) return;
@@ -49,7 +49,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       correctCount++;
     }
   });
-  const scorePercent = Math.round((correctCount / HSK_TEST_QUESTIONS.length) * 100);
+  const scorePercent = Math.round((correctCount / HSK_TEST_QUESTIONS.length) * 100);\n  const skillStats = (['listening','reading','vocabulary','grammar'] as const).map((skill) => { const items = HSK_TEST_QUESTIONS.filter(q => q.category === skill); const correct = items.filter(q => answers[q.id] === q.correctIndex).length; return { skill, correct, total: items.length, percent: items.length ? Math.round(correct/items.length*100) : 0 }; });
 
   const getRecommendedLevel = () => {
     if (scorePercent >= 85) return 'HSK 3';
@@ -103,7 +103,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </p>
           </div>
           <p className="text-xs text-[#716761] max-w-lg mx-auto">
-            Dựa trên kết quả bài thi thử, chúng tôi khuyên bạn nên bắt đầu với các bài học thuộc cấp độ{' '}
+            Phân tích chẩn đoán theo kỹ năng sẽ giúp bạn chọn nội dung ôn tập tiếp theo thay vì chỉ nhìn vào tổng điểm. Bạn đang mô phỏng mục tiêu{' '}<strong>{targetLevel}</strong>. Dựa trên kết quả, hệ thống gợi ý ưu tiên các bài học thuộc cấp độ{' '}
             <strong>{getRecommendedLevel()}</strong> để củng cố nền tảng vững chắc nhất!
           </p>
         </div>
