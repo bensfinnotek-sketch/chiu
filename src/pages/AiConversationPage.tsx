@@ -88,6 +88,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     setActiveLevel(initialSpeakingLevel);
   }, [initialSpeakingLevel]);
 
+  useEffect(() => {
+    void flashcardService.getFlashcards().then((cards) => {
+      cards.forEach((card) => knownVocabularyRef.current.add(card.hanzi.trim()));
+    }).catch(() => undefined);
+  }, []);
+
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -168,6 +174,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   >([]);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
   const [autoVocabularyTests, setAutoVocabularyTests] = useState<AutoVocabularyTest[]>([]);
+  const knownVocabularyRef = useRef<Set<string>>(new Set());
 
   // Language Usage Ratings for active session
   const [sessionScores, setSessionScores] = useState({
@@ -360,7 +367,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           return Array.from(map.values());
         });
 
-        const recentWords = analysis.vocabulary.slice(0, 3);
+        const recentWords = analysis.vocabulary.filter((word) => {
+          const key = word.hanzi.trim();
+          if (!key || knownVocabularyRef.current.has(key)) return false;
+          knownVocabularyRef.current.add(key);
+          return true;
+        }).slice(0, 3);
         const tests = recentWords.map((word, index) => {
           const distractors = analysis.vocabulary
             .filter((v) => v.hanzi !== word.hanzi)
