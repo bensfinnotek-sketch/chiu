@@ -82,6 +82,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <p className="text-xs text-[#716761] dark:text-[#A89E97]">
             Bao gồm 8 câu hỏi chuẩn hóa: Nghe hiểu, Đọc hiểu, Từ vựng và Ngữ pháp
           </p>
+          <div className="flex flex-wrap gap-2 mt-3">{(['HSK 1','HSK 2','HSK 3'] as const).map(level => <button key={level} type="button" onClick={() => setTargetLevel(level)} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${targetLevel===level ? 'bg-[#E86F51] text-white' : 'bg-white dark:bg-[#181412] border border-[#E86F51]/15 text-[#716761]'}`}>{level}</button>)}</div>
         </div>
 
         <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-[#181412] border border-[#E86F51]/20 shadow-xs font-mono font-bold text-sm text-[#E86F51]">
@@ -108,6 +109,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             Phân tích chẩn đoán theo kỹ năng sẽ giúp bạn chọn nội dung ôn tập tiếp theo thay vì chỉ nhìn vào tổng điểm. Bạn đang mô phỏng mục tiêu{' '}<strong>{targetLevel}</strong>. Dựa trên kết quả, hệ thống gợi ý ưu tiên các bài học thuộc cấp độ{' '}
             <strong>{getRecommendedLevel()}</strong> để củng cố nền tảng vững chắc nhất!
           </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">{skillStats.map(s => <div key={s.skill} className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] text-left"><div className="text-[10px] uppercase font-bold text-[#716761]">{s.skill}</div><div className="text-lg font-extrabold text-[#E86F51]">{s.percent}%</div><div className="text-[10px] text-[#716761]">{s.correct}/{s.total} đúng</div></div>)}</div>
         </div>
       )}
 
