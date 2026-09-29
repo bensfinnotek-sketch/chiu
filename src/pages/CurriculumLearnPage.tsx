@@ -93,6 +93,30 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
     });
   }, [profile?.dailyMinutes, profile?.learningGoal, recommendations, levelCompletion, progressMap]);
 
+  const learningSignals = React.useMemo(() => {
+    const progressItems = Object.values(progressMap || {});
+    const momentum = calculateLearningMomentum(progressItems);
+    const recentCompletionRate = progressItems.length
+      ? Math.round(progressItems.reduce((sum, item) => sum + Number(item.progressPercent || 0), 0) / progressItems.length)
+      : 50;
+    const recentCompleted = progressItems
+      .filter((item) => item.status === 'completed' && item.completedAt)
+      .sort((a, b) => Date.parse(String(b.completedAt)) - Date.parse(String(a.completedAt)))[0];
+    const recentOutcomeScore = recentCompleted?.score ?? null;
+    const recentOutcomeAgeDays = recentCompleted?.completedAt
+      ? Math.max(0, Math.round((Date.now() - Date.parse(recentCompleted.completedAt)) / 86400000))
+      : null;
+
+    return {
+      momentum: Math.round(momentum.score),
+      consistency: Math.round(momentum.consistency),
+      completionRate: recentCompletionRate,
+      recentOutcomeScore: recentOutcomeScore == null ? null : Math.round(Number(recentOutcomeScore)),
+      recentOutcomeAgeDays,
+      trend: momentum.trend,
+    };
+  }, [progressMap]);
+
   // Progress the learner's target HSK automatically only after the current
   // level is fully completed with the existing mastery thresholds.
   // HSK access remains open in the learning UI; subscription logic is preserved
@@ -163,6 +187,9 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               <button
                 key={lvl}
                 type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-label={locked ? `HSK ${lvl}, mở khóa bằng gói PRO` : `Chọn HSK ${lvl}`}
                 onClick={() => {
                   setSelectedLevel(lvl as HSKLevelNumber);
                 }}
@@ -510,6 +537,37 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               <p className="text-sm font-black text-[#211A17] dark:text-white mt-3">{step.title}</p>
               <p className="text-xs leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{step.description}</p>
             </button>
+          ))}
+        </div>
+      </section>
+
+      {/* AI-10 adaptation signals — presentation only; values reuse existing progress data */}
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="ai10-signals-title">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-10 · Tín hiệu thích ứng</span>
+            <h2 id="ai10-signals-title" className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">Lina đang đọc nhịp học của bạn</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">
+              Bốn tín hiệu dưới đây giải thích dữ liệu đầu vào cho kế hoạch hôm nay. Chúng chỉ hiển thị dữ liệu đã có, không tạo thêm hồ sơ hay thay đổi learning engine.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">Cập nhật theo tiến độ hiện tại</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Động lực', value: `${learningSignals.momentum}%`, hint: learningSignals.trend === 'rising' ? 'Đang tăng' : learningSignals.trend === 'falling' ? 'Đang giảm' : 'Ổn định' },
+            { label: 'Tính đều đặn', value: `${learningSignals.consistency}%`, hint: 'Mức ổn định của các phiên học gần đây.' },
+            { label: 'Hoàn thành gần đây', value: `${learningSignals.completionRate}%`, hint: 'Tiến độ trung bình của các mục đã theo dõi.' },
+            { label: 'Kết quả gần nhất', value: learningSignals.recentOutcomeScore == null ? 'Chưa có' : `${learningSignals.recentOutcomeScore}%`, hint: learningSignals.recentOutcomeAgeDays == null ? 'Chưa có phiên hoàn tất gần đây.' : `${learningSignals.recentOutcomeAgeDays} ngày trước` },
+          ].map((signal) => (
+            <div key={signal.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">{signal.label}</p>
+                <span className="text-sm font-black text-[#211A17] dark:text-white">{signal.value}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-2">{signal.hint}</p>
+            </div>
           ))}
         </div>
       </section>
