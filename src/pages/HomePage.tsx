@@ -147,7 +147,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {/* Right Hero Interactive Showcase */}
             <div className="lg:col-span-5 relative flex justify-center">
               {/* Floating Vocabulary Card 1 */}
-              <div className="absolute -top-4 -left-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:4s]">
+              <div className="hidden sm:block absolute -top-4 -left-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:4s]">
                 <div className="flex items-center gap-2.5">
                   <span className="font-chinese text-2xl font-bold text-[#E86F51]">水</span>
                   <div>
@@ -159,7 +159,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               {/* Floating Vocabulary Card 2 */}
-              <div className="absolute -bottom-4 -right-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:5s]">
+              <div className="hidden sm:block absolute -bottom-4 -right-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:5s]">
                 <div className="flex items-center gap-2.5">
                   <span className="font-chinese text-2xl font-bold text-[#D5A85C]">好吃</span>
                   <div>
@@ -204,7 +204,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </div>
 
                   {/* User response simulation */}
-                  <div className="bg-[#E86F51] text-white p-3.5 rounded-2xl rounded-tr-sm ml-6 space-y-1 shadow-md shadow-[#E86F51]/20">
+                  <div aria-live="polite" aria-atomic="true" className="bg-[#E86F51] text-white p-3.5 rounded-2xl rounded-tr-sm ml-6 space-y-1 shadow-md shadow-[#E86F51]/20">
                     <p className="font-chinese text-base font-semibold">
                       {heroTranscript}
                     </p>
@@ -227,6 +227,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="pt-2 flex items-center justify-between border-t border-gray-100 dark:border-gray-800">
                   <button
                     type="button"
+                    aria-pressed={heroMicActive}
+                    aria-label={heroMicActive ? 'Dừng mô phỏng luyện nói' : 'Thử mô phỏng luyện nói tiếng Trung'}
                     onClick={() => {
                       setHeroMicActive(!heroMicActive);
                       if (!heroMicActive) {
@@ -540,6 +542,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveFaq(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-answer-${index}`}
                     className="w-full px-6 py-4.5 text-left font-bold text-base text-[#211A17] dark:text-white flex items-center justify-between gap-4 cursor-pointer"
                   >
                     <span>{faq.q}</span>
@@ -551,7 +555,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
+                    <div id={`faq-answer-${index}`} className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
                       {faq.a}
                     </div>
                   )}

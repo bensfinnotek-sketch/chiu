@@ -72,15 +72,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
       </section>
 
       {/* Today's plan — primary content */}
-      <section className="chiu-card p-5 sm:p-7 space-y-6">
+      <section className="chiu-card p-5 sm:p-7 space-y-6" aria-labelledby="dashboard-today-plan-title">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Kế hoạch học hôm nay</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white mt-1">Lina đề xuất cho bạn</h2>
+            <h2 id="dashboard-today-plan-title" className="text-2xl sm:text-3xl font-black text-[#211A17] dark:text-white mt-1">Lina đề xuất cho bạn</h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Một vòng học ngắn, rõ ràng — bạn luôn biết bước tiếp theo.</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="chiu-ring shrink-0" style={{ '--value': todayPercent } as React.CSSProperties}>
+            <div className="chiu-ring shrink-0" role="progressbar" aria-label={`Tiến độ học hôm nay ${todayPercent}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={todayPercent} style={{ '--value': todayPercent } as React.CSSProperties}>
               <span className="text-center"><strong className="block text-lg font-black text-[#211A17] dark:text-white">{todayPercent}%</strong><small className="text-[10px] text-[#716761] dark:text-[#A89E97]">hôm nay</small></span>
             </div>
           </div>
@@ -94,7 +94,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
                 key={step.title}
                 type="button"
                 onClick={step.action}
-                className="chiu-step group text-left p-4 md:p-3 rounded-2xl md:rounded-none hover:bg-[#FFF9F4] dark:hover:bg-[#2A2320] transition-colors"
+                aria-label={`${step.title} · ${step.done ? 'Đã xong' : step.label}`} className="chiu-step group text-left p-4 md:p-3 rounded-2xl md:rounded-none hover:bg-[#FFF9F4] dark:hover:bg-[#2A2320] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#211A17] transition-colors"
               >
                 <div className="flex md:flex-col items-center md:items-start gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${step.done ? 'bg-[#EAF5EC] border-[#65A873]/20 text-[#65A873]' : index === 0 ? 'bg-[#E86F51] border-[#E86F51] text-white shadow-md shadow-[#E86F51]/20' : 'bg-[#FFF0EB] dark:bg-[#342822] border-[#E86F51]/10 text-[#E86F51]'}`}>
@@ -161,7 +161,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
       </section>
 
       {/* Lina Coach — daily coaching layer built from existing dashboard signals */}
-      <section className="chiu-card p-5 sm:p-6 bg-gradient-to-br from-[#FFF4EE] via-white to-[#FFF9F4] dark:from-[#2A211D] dark:via-[#241F1C] dark:to-[#2A2320]">
+      <section aria-live="polite" className="chiu-card p-5 sm:p-6 bg-gradient-to-br from-[#FFF4EE] via-white to-[#FFF9F4] dark:from-[#2A211D] dark:via-[#241F1C] dark:to-[#2A2320]">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <LinaAvatar size="md" className="shrink-0" />
           <div className="min-w-0 flex-1">
@@ -203,7 +203,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
           </button>
         </div>
 
-        <button type="button" onClick={() => onNavigate('review')} className="chiu-card p-5 sm:p-6 text-left group hover:-translate-y-0.5 transition-transform">
+        <button type="button" onClick={() => onNavigate('review')} aria-label="Mở Daily Review để ôn SRS" className="chiu-card p-5 sm:p-6 text-left group hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#65A873] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#211A17] hover:-translate-y-0.5 transition-transform">
           <div className="flex items-center justify-between">
             <div className="w-11 h-11 rounded-xl bg-[#65A873]/10 text-[#65A873] flex items-center justify-center"><RotateCcw size={20} /></div>
             <ArrowRight size={17} className="text-[#B7AAA2] group-hover:text-[#65A873]" />

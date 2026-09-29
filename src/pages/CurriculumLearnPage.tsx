@@ -357,6 +357,40 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
       </section>
 
+      {/* AI-9 diagnostic explanation — presentation only */}
+      {recommendations[0]?.metadata && (
+        <section className="chiu-card p-5 sm:p-7">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-9 · Vì sao Lina chọn bước này?</span>
+              <h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">Giải thích đề xuất hiện tại</h2>
+              <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">Lina đang giải thích quyết định từ các tín hiệu học tập đã có, thay vì tạo thêm dữ liệu hay thay đổi learning engine.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-[10px] font-black">{recommendations[0].metadata.diagnosticConfidence ?? 0}% tin cậy</span>
+              <span className="px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97] text-[10px] font-bold">{recommendations[0].metadata.diagnosticEvidenceCount ?? 0} tín hiệu</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Trọng tâm</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.diagnosticFocus || 'balanced'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">Lina ưu tiên tín hiệu phù hợp với bước học tiếp theo.</p>
+            </div>
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Bằng chứng</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.diagnosticTargetLabels?.[0] || 'Theo dõi tín hiệu gần đây'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{recommendations[0].metadata.diagnosticAgingNote || 'Tín hiệu sẽ được cập nhật khi bạn học thêm.'}</p>
+            </div>
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Lý do</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.reason || 'Giữ nhịp học phù hợp với tiến độ hiện tại.'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">Đây là diễn giải của quyết định hiện tại, không phải điểm đánh giá người học.</p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* AI-10 Personalized Learning Plan */}
       <section className="chiu-card p-5 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
@@ -368,7 +402,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
               Trọng tâm: <span className="font-bold text-[#E86F51]">{personalizedPlan.focus}</span> · kế hoạch tự điều chỉnh theo tín hiệu chẩn đoán của AI-9.
             </p>
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-3" aria-label="Tóm tắt mức thích ứng AI-10">
               <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Độ tải: {personalizedPlan.difficulty}</span>
               <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">+{personalizedPlan.newWordsTarget} từ mới</span>
               <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">Quiz: {personalizedPlan.quizIntensity}</span>
@@ -427,11 +461,22 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="mb-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4" aria-label="Tóm tắt kế hoạch AI-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">AI-10 · Cách Lina phân bổ thời gian</p>
+              <p className="text-sm font-bold text-[#211A17] dark:text-white mt-1">{personalizedPlan.adaptationReason}</p>
+            </div>
+            <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">Tổng {personalizedPlan.dailyMinutes} phút · {personalizedPlan.steps.length} bước</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Các bước trong kế hoạch AI-10">
           {personalizedPlan.steps.map((step, index) => (
             <button
               key={step.id}
               type="button"
+              aria-label={`Bước ${index + 1}: ${step.title}, ${step.minutes} phút`}
               onClick={() => {
                 if (step.action === 'flashcards' && onNavigate) onNavigate('flashcards');
                 else if (step.action === 'speaking' && onNavigate) onNavigate('speaking');
@@ -441,7 +486,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                   onSelectLesson(recommendations[0].metadata.diagnosticLessonId);
                 }
               }}
-              className="text-left rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 hover:border-[#E86F51]/30 hover:-translate-y-0.5 transition-all"
+              className="text-left rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 hover:border-[#E86F51]/30 hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51]/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#241F1C]"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="w-9 h-9 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center font-black">{index + 1}</span>
