@@ -1,6 +1,6 @@
 import { SongItem } from '../types';
 
-export const CHINESE_SONGS: SongItem[] = [
+const BASE_CHINESE_SONGS: SongItem[] = [
   {
     id: 'song-1',
     title: '月亮代表我的心',
