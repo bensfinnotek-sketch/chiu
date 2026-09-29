@@ -3,28 +3,23 @@ import {
   Flame, Globe, Sun, Moon, Crown, User, Sparkles, BookOpen, Mic, Layers,
   BarChart3, Menu, X, LogOut, Settings, MessageSquare, ChevronDown,
 } from 'lucide-react';
-import { SupportedLanguage, UserProfile } from '../../types';
-import { UI_TEXTS } from '../../data/translations';
+import { UserProfile } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 
 interface NavbarProps {
   currentRoute: string;
   onNavigate: (route: string) => void;
-  language: SupportedLanguage;
-  onLanguageChange: (lang: SupportedLanguage) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   user: UserProfile;
   onOpenPricing: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, language, onLanguageChange, theme, onToggleTheme, user, onOpenPricing }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, theme, onToggleTheme, user, onOpenPricing }) => {
   const { user: authUser, isAuthenticated, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const t = UI_TEXTS[language];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,11 +31,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, langua
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Sparkles },
-    { id: 'learn', label: t.learn, icon: BookOpen },
-    { id: 'practice', label: t.practice, icon: Mic },
-    { id: 'flashcards', label: t.flashcards, icon: Layers },
+    { id: 'learn', label: 'Học tập', icon: BookOpen },
+    { id: 'practice', label: 'Luyện nói', icon: Mic },
+    { id: 'flashcards', label: 'Flashcards', icon: Layers },
     { id: 'conversations', label: 'Hội thoại', icon: MessageSquare },
-    { id: 'progress', label: t.progress, icon: BarChart3 },
+    { id: 'progress', label: 'Tiến độ', icon: BarChart3 },
   ];
 
   const displayName = authUser?.displayName || user.name || 'Học viên';
@@ -77,13 +72,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, langua
           <button type="button" onClick={() => onNavigate('progress')} className="min-h-11 flex items-center gap-1.5 px-2.5 rounded-xl bg-orange-50 dark:bg-[#2C211A] text-orange-600 dark:text-orange-400 text-xs sm:text-sm font-bold border border-orange-200/60 dark:border-orange-900/40 hover:scale-105 transition-transform" title={`${user.streakDays} ngày học liên tiếp`} aria-label={`${user.streakDays} ngày học liên tiếp`}><Flame size={17} className="fill-orange-500 text-orange-500 animate-pulse" /><span>{user.streakDays}</span></button>
 
           <button type="button" onClick={onOpenPricing} className={`hidden sm:flex min-h-11 items-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${user.isPremium ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-gradient-to-r from-[#D5A85C] to-[#E5BE79] text-white hover:brightness-105 hover:shadow-md'}`}><Crown size={14} className={user.isPremium ? 'fill-amber-600 text-amber-700' : 'fill-white'} /><span>{user.isPremium ? 'PRO' : 'Upgrade'}</span></button>
-
-          <div className="relative">
-            <button type="button" onClick={() => setLangMenuOpen(!langMenuOpen)} className="min-h-11 min-w-11 p-2 rounded-xl text-[#716761] dark:text-[#A89E97] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center gap-1 text-xs font-semibold uppercase" aria-label="Đổi ngôn ngữ" aria-expanded={langMenuOpen}><Globe size={18} /><span className="hidden sm:inline">{language}</span></button>
-            {langMenuOpen && <div className="absolute right-0 mt-2 w-40 rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 dark:border-white/10 shadow-xl py-1.5 z-50" role="menu">
-              {([['vi','🇻🇳 Tiếng Việt'],['en','🇬🇧 English'],['zh','🇨🇳 中文 (简体)']] as const).map(([lang,label]) => <button key={lang} type="button" onClick={() => { onLanguageChange(lang); setLangMenuOpen(false); }} className={`w-full min-h-11 px-3.5 py-2 text-left text-xs font-medium flex items-center justify-between hover:bg-[#FFF0EB] dark:hover:bg-[#342822] ${language === lang ? 'text-[#E86F51] font-bold' : 'text-[#211A17] dark:text-white'}`} role="menuitem"><span>{label}</span>{language === lang && '✓'}</button>)}
-            </div>}
-          </div>
 
           <button type="button" onClick={onToggleTheme} aria-label={themeLabel} title={themeLabel} className="min-h-11 min-w-11 p-2 rounded-xl text-[#716761] dark:text-[#A89E97] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center" aria-pressed={theme === 'dark'}>
             {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
