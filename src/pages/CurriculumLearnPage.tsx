@@ -392,11 +392,11 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       )}
 
       {/* AI-10 Personalized Learning Plan */}
-      <section className="chiu-card p-5 sm:p-7">
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="ai10-plan-title">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
           <div>
             <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-10 · Kế hoạch cá nhân hóa</span>
-            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+            <h2 id="ai10-plan-title" className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
               {personalizedPlan.dailyMinutes} phút học hôm nay
             </h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
@@ -459,6 +459,21 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               )}
             </div>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4" aria-label="Bốn nút điều chỉnh của AI-10">
+          {[
+            { label: 'Độ tải', value: personalizedPlan.difficulty, hint: 'Lina điều chỉnh lượng học theo nhịp và kết quả gần đây.' },
+            { label: 'Từ mới', value: '+' + personalizedPlan.newWordsTarget, hint: 'Mục tiêu từ mới trong phiên hôm nay.' },
+            { label: 'Quiz', value: personalizedPlan.quizIntensity, hint: 'Mức độ củng cố bằng kiểm tra ngắn.' },
+            { label: 'Speaking', value: personalizedPlan.speakingPace, hint: 'Tốc độ phản xạ khi luyện nói cùng Lina.' },
+          ].map((signal) => (
+            <div key={signal.label} className="rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">{signal.label}</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{signal.value}</p>
+              <p className="text-[11px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{signal.hint}</p>
+            </div>
+          ))}
         </div>
 
         <div className="mb-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4" aria-label="Tóm tắt kế hoạch AI-10">
