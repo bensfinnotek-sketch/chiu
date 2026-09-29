@@ -151,13 +151,13 @@ export const TOPICS_DATA = [
   },
 ];
 
-export const HSK_LEVEL_DESCRIPTIONS: Record<string, { descVi: string; wordCount: string }> = {
-  'HSK 1': { descVi: 'Người mới bắt đầu', wordCount: '150 từ cơ bản' },
-  'HSK 2': { descVi: 'Giao tiếp thường nhật', wordCount: '300 từ' },
-  'HSK 3': { descVi: 'Hội thoại linh hoạt', wordCount: '600 từ' },
-  'HSK 4': { descVi: 'Thảo luận đa dạng chủ đề', wordCount: '1200 từ' },
-  'HSK 5': { descVi: 'Thuyết trình & phản xạ nhanh', wordCount: '2500 từ' },
-  'HSK 6': { descVi: 'Lưu loát như người bản xứ', wordCount: '5000+ từ' },
+export const HSK_LEVEL_DESCRIPTIONS: Record<string, { descVi: string; wordCount: string; speakingFocus: string; responseStyle: string }> = {
+  'HSK 1': { descVi: 'Chào hỏi & đời sống cơ bản', wordCount: '150 từ', speakingFocus: 'Câu ngắn, phản xạ cơ bản', responseStyle: '1 câu chính · tốc độ chậm · từ vựng nền' },
+  'HSK 2': { descVi: 'Giao tiếp hàng ngày & mua sắm', wordCount: '300 từ', speakingFocus: 'Hội thoại đời thường', responseStyle: '1–2 câu · nhịp tự nhiên · mẫu câu quen thuộc' },
+  'HSK 3': { descVi: 'Du lịch, công việc & biểu đạt', wordCount: '600 từ', speakingFocus: 'Kể chuyện & giải thích', responseStyle: '2–3 câu · mở rộng ý · hỏi đáp tự nhiên' },
+  'HSK 4': { descVi: 'Thảo luận trôi chảy đa chủ đề', wordCount: '1200 từ', speakingFocus: 'Quan điểm & lập luận', responseStyle: '2–3 câu · liên kết ý · phản hồi quan điểm' },
+  'HSK 5': { descVi: 'Đọc báo & xem phim tiếng Trung', wordCount: '2500 từ', speakingFocus: 'Phân tích & thuyết trình', responseStyle: '3 câu · từ vựng giàu sắc thái · văn phong tự nhiên' },
+  'HSK 6': { descVi: 'Làm chủ ngôn ngữ chuyên sâu', wordCount: '5000+ từ', speakingFocus: 'Lập luận chuyên sâu & sắc thái', responseStyle: '3 câu · sắc thái tinh tế · diễn đạt gần tự nhiên' },
 };
 
 export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
@@ -361,14 +361,14 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
               hint: 'Lina ưu tiên tốc độ phù hợp với trình độ mục tiêu.',
             },
             {
-              label: 'Độ sâu',
-              value: Number(selectedLevel.replace('HSK ', '')) <= 2 ? 'Câu ngắn' : Number(selectedLevel.replace('HSK ', '')) <= 4 ? 'Mở rộng ý' : 'Lập luận',
-              hint: 'Từ trả lời cơ bản đến giải thích và phát triển quan điểm.',
+              label: 'Trọng tâm',
+              value: HSK_LEVEL_DESCRIPTIONS[selectedLevel]?.speakingFocus || 'Phản xạ tự nhiên',
+              hint: 'Mỗi HSK có mục tiêu diễn đạt khác nhau, không dùng chung một kịch bản.',
             },
             {
-              label: 'Nhịp phiên',
-              value: progress.speaking_minutes > 0 ? 'Tiếp tục nhịp hiện tại' : 'Khởi động 60 giây',
-              hint: progress.speaking_minutes > 0 ? 'Dựa trên lịch sử luyện nói hiện có.' : 'Bắt đầu bằng một đoạn nói ngắn, không áp lực.',
+              label: 'Độ sâu',
+              value: HSK_LEVEL_DESCRIPTIONS[selectedLevel]?.responseStyle || 'Câu trả lời phù hợp trình độ',
+              hint: 'Lina điều chỉnh độ dài, cấu trúc và sắc thái theo cấp độ đã chọn.',
             },
           ].map((signal) => (
             <div key={signal.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
