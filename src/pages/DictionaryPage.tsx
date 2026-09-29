@@ -54,7 +54,7 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
   const saveToSmartReview = async (word: any) => {
     try {
-      await flashcardService.createFlashcard({ hanzi: word.chinese, pinyin: word.pinyin, meaning: word.meaningVi, example_sentence: word.exampleSentence, hsk_level: Number(String(word.hskLevel).replace('HSK ', '')) });
+      await flashcardService.createFlashcard({ hanzi: word.chinese, pinyin: word.pinyin, meaning: word.meaningVi, example_sentence: word.exampleSentence, topic: 'dictionary', hsk_level: Number(String(word.hskLevel).replace('HSK ', '')) });
     } catch { /* guest mode keeps local bookmark behavior */ }
   };
 
