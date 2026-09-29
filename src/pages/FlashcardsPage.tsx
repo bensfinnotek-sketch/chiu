@@ -18,7 +18,7 @@ import { flashcardService, Flashcard } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
 
 const getVisualEmoji = (card: any): string => {
-  const text = `${card?.hanzi || ''} ${card?.chinese || ''} ${card?.meaningVi || ''}`.toLowerCase();
+  const text = `${card?.hanzi || ''} ${card?.meaning || ''}`.toLowerCase();
   const visualMap: Array<[string[], string]> = [
     [['饭', 'cơm', 'rice', 'ăn'], '🍚'],
     [['水', 'nước', 'water'], '💧'],
@@ -65,7 +65,7 @@ const getTwemojiUrl = (emoji: string) => {
 
 export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [cards, setCards] = useState<Flashcard[]>(() => storageService.getSavedWords() as Flashcard[]);
+  const [cards, setCards] = useState<Flashcard[]>(() => storageService.getSavedWords() as unknown as Flashcard[]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [levelFilter, setLevelFilter] = useState<'all' | 'HSK 1' | 'HSK 2' | 'HSK 3' | 'HSK 4' | 'HSK 5' | 'HSK 6'>('all');
