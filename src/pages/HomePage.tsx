@@ -250,10 +250,10 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 2. HOW IT WORKS */}
-      <section className="py-16 bg-white dark:bg-[#181412] border-y" aria-labelledby="how-it-works-title" border-[#E86F51]/10 dark:border-white/5">
+      <section className="py-16 bg-white dark:bg-[#181412] border-y border-[#E86F51]/10 dark:border-white/5" aria-labelledby="how-it-works-title">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="max-w-2xl mx-auto space-y-3">
-            <h2 className="text-3xl font-extrabold text-[#211A17] dark:text-white">
+            <h2 id="how-it-works-title" className="text-3xl font-extrabold text-[#211A17] dark:text-white">
               Học tiếng Trung hiệu quả gấp 3 lần
             </h2>
             <p className="text-base text-[#716761] dark:text-[#A89E97]">
