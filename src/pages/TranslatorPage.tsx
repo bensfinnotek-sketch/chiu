@@ -72,7 +72,7 @@ export const TranslatorPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         hanzi: text.trim(),
         pinyin: pinyin || '',
         meaning: inputText.trim(),
-        topic,
+        topic: `translator:${topic}`,
         hsk_level: 1,
       });
       setSavedToReview(true);
