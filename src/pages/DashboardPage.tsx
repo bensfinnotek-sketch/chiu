@@ -219,6 +219,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onNavigate }
         <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-[#65A873]" /> AI-9 không thay đổi logic</div>
         <div className="flex items-center gap-2"><CheckCircle2 size={15} className="text-[#65A873]" /> Routing & database giữ nguyên</div>
       </div>
-    </div>
+    </main>
   );
 };
