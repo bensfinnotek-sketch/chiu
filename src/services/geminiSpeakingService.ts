@@ -153,6 +153,71 @@ export const TOPIC_STARTERS: Record<string, Record<string, { chinese: string; pi
   },
 };
 
+export const HSK_SPEAKING_PROFILES: Record<string, {
+  vocabularyTarget: string;
+  pace: string;
+  responseDepth: string;
+  coachingFocus: string;
+}> = {
+  'HSK 1': {
+    vocabularyTarget: 'Từ vựng nền khoảng 150 từ; ưu tiên từ thông dụng và mẫu câu cố định.',
+    pace: 'Chậm, rõ, từng câu ngắn.',
+    responseDepth: 'Một ý chính mỗi lượt, câu đơn và câu hỏi quen thuộc.',
+    coachingFocus: 'Phát âm dễ hiểu, trật tự câu cơ bản, phản xạ chào hỏi và đời sống.',
+  },
+  'HSK 2': {
+    vocabularyTarget: 'Khoảng 300 từ; mở rộng giao tiếp hàng ngày, mua sắm, thời gian và di chuyển.',
+    pace: 'Tự nhiên nhưng vẫn rõ ràng.',
+    responseDepth: 'Một đến hai câu, có thể nối hai ý đơn giản.',
+    coachingFocus: 'Tăng độ trôi chảy, dùng mẫu câu đời thường và sửa lỗi quan trọng.',
+  },
+  'HSK 3': {
+    vocabularyTarget: 'Khoảng 600 từ; ưu tiên du lịch, công việc và diễn đạt trải nghiệm.',
+    pace: 'Tự nhiên, khuyến khích phản xạ liên tục.',
+    responseDepth: 'Hai đến ba câu, biết giải thích và kể lại trải nghiệm.',
+    coachingFocus: 'Mở rộng ý, liên kết câu, giải thích nguyên nhân và nêu quan điểm.',
+  },
+  'HSK 4': {
+    vocabularyTarget: 'Khoảng 1200 từ; đa chủ đề đời sống, xã hội và công việc.',
+    pace: 'Tự nhiên, gần hội thoại thực tế.',
+    responseDepth: 'Hai đến ba câu có liên kết logic.',
+    coachingFocus: 'Lập luận nhẹ, phản hồi ý kiến khác và dùng cấu trúc câu phức.',
+  },
+  'HSK 5': {
+    vocabularyTarget: 'Khoảng 2500 từ; báo chí, phim ảnh, kinh doanh và chủ đề trừu tượng.',
+    pace: 'Tăng phản xạ, giảm phụ thuộc vào câu mẫu.',
+    responseDepth: 'Ba câu trở lên khi cần, có giải thích và ví dụ.',
+    coachingFocus: 'Phân tích, tóm tắt, thuyết trình và sắc thái từ vựng.',
+  },
+  'HSK 6': {
+    vocabularyTarget: '5000+ từ; ngôn ngữ chuyên sâu, học thuật và sắc thái.',
+    pace: 'Tăng phản xạ, ưu tiên tự nhiên như hội thoại nâng cao.',
+    responseDepth: 'Lập luận nhiều lớp, diễn đạt linh hoạt và tinh tế.',
+    coachingFocus: 'Sắc thái, thành ngữ, văn phong, lập luận và diễn đạt gần tự nhiên.',
+  },
+};
+
+const LEVEL_STARTERS: Record<string, { chinese: string; pinyin: string; vi: string; en: string }> = {
+  'HSK 4': {
+    chinese: '我们来深入聊聊这个话题。你觉得它对日常生活有什么影响？',
+    pinyin: 'Wǒmen lái shēnrù liáo liao zhège huàtí. Nǐ juéde tā duì rìcháng shēnghuó yǒu shénme yǐngxiǎng?',
+    vi: 'Chúng ta cùng thảo luận sâu hơn về chủ đề này nhé. Bạn nghĩ nó ảnh hưởng thế nào đến cuộc sống hàng ngày?',
+    en: 'Let’s discuss this topic in more depth. How do you think it affects daily life?',
+  },
+  'HSK 5': {
+    chinese: '我们从更深入的角度来讨论这个话题。你认为最值得关注的问题是什么？',
+    pinyin: 'Wǒmen cóng gèng shēnrù de jiǎodù lái tǎolùn zhège huàtí. Nǐ rènwéi zuì zhíde guānzhù de wèntí shì shénme?',
+    vi: 'Chúng ta hãy thảo luận chủ đề này ở góc nhìn sâu hơn. Theo bạn, vấn đề đáng chú ý nhất là gì?',
+    en: 'Let’s discuss this topic from a deeper perspective. What issue deserves the most attention?',
+  },
+  'HSK 6': {
+    chinese: '我们来探讨这个话题背后的原因和不同观点。你会如何评价其中最关键的问题？',
+    pinyin: 'Wǒmen lái tàntǎo zhège huàtí bèihòu de yuányīn hé bùtóng guāndiǎn. Nǐ huì rúhé píngjià qízhōng zuì guānjiàn de wèntí?',
+    vi: 'Chúng ta cùng khám phá nguyên nhân và các góc nhìn phía sau chủ đề này. Bạn sẽ đánh giá vấn đề then chốt nhất như thế nào?',
+    en: 'Let’s explore the reasons and different perspectives behind this topic. How would you evaluate the key issue?',
+  },
+};
+
 class GeminiSpeakingService {
   public getInitialPrompt(
     topic: string,
@@ -160,12 +225,14 @@ class GeminiSpeakingService {
     nativeLang: string = 'vi'
   ): { chinese: string; pinyin: string; translation: string } {
     const topicGroup = TOPIC_STARTERS[topic] || TOPIC_STARTERS['Free Conversation'];
-    const matched = topicGroup[level] || topicGroup['HSK 1'] || {
-      chinese: `你好！我们来聊聊关于"${topic}"的话题吧。`,
-      pinyin: `Nǐ hǎo! Wǒmen lái liáo liao guānyú "${topic}" de huàtí ba.`,
-      vi: `Xin chào! Chúng ta cùng trò chuyện về chủ đề "${topic}" nhé.`,
-      en: `Hello! Let's chat about "${topic}".`,
-    };
+    const matched = topicGroup[level]
+      || LEVEL_STARTERS[level]
+      || {
+        chinese: `我们来聊聊“${topic}”这个话题吧。`,
+        pinyin: `Wǒmen lái liáo liao “${topic}” zhège huàtí ba.`,
+        vi: `Chúng ta cùng trò chuyện về chủ đề “${topic}” nhé.`,
+        en: `Let's talk about “${topic}”.`,
+      };
 
     return {
       chinese: matched.chinese,
