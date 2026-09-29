@@ -1,6 +1,6 @@
-import { Lesson, QuizQuestion, DialogueLine } from '../types/curriculum';
+import { Lesson, QuizQuestion, DialogueLine, HSKLevelNumber } from '../types/curriculum';
 
-const meta = (level: number, order: number, id: string, title: string, titleZh: string, description: string, objectives: string[], difficulty: Lesson['difficulty'], prerequisiteLessonId: string | null): Lesson => ({
+const meta = (level: HSKLevelNumber, order: number, id: string, title: string, titleZh: string, description: string, objectives: string[], difficulty: Lesson['difficulty'], prerequisiteLessonId: string | null): Lesson => ({
   id,
   unitId: `unit-hsk${level}-u${level === 1 ? (order <= 2 ? 1 : order <= 4 ? 2 : 3) : level === 2 ? (order <= 2 ? 1 : order === 3 ? 2 : 3) : level === 3 ? (order <= 2 ? 1 : 2) : 1}`,
   levelId: `hsk-level-${level}`,
