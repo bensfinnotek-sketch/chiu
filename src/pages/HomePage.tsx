@@ -19,7 +19,6 @@ import {
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
 import { SupportedLanguage } from '../types';
-import { UI_TEXTS } from '../data/translations';
 
 interface HomePageProps {
   onStartLearning: () => void;
@@ -34,7 +33,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
   language,
 }) => {
-  const t = UI_TEXTS[language];
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [heroMicActive, setHeroMicActive] = useState(false);
   const [heroTranscript, setHeroTranscript] = useState('我想要一杯奶茶。');
@@ -113,7 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   onClick={onStartLearning}
                   className="chiu-btn chiu-btn-primary px-7 py-4 rounded-2xl text-base shadow-lg shadow-[#E86F51]/30 hover:bg-[#d85f41] hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{t.startFree}</span>
+                  <span>{'Bắt đầu miễn phí'}</span>
                   <ArrowRight size={18} />
                 </button>
 
@@ -123,7 +121,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   className="chiu-btn chiu-btn-secondary px-7 py-4 rounded-2xl text-base border-2 border-[#E86F51]/30 hover:border-[#E86F51] hover:bg-[#FFF5F1] dark:hover:bg-[#342822] shadow-xs hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <MessageSquare size={18} className="text-[#E86F51]" />
-                  <span>{t.tryAiConversation}</span>
+                  <span>{'Thử trò chuyện với AI'}</span>
                 </button>
               </div>
 
