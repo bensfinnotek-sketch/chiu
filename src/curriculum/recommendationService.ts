@@ -308,6 +308,7 @@ export class RecommendationService {
     // This prevents lower-priority suggestions from conflicting with SRS/HSK decisions.
     if (decision.decision === 'learn_lesson' && (actionableDiagnosticLesson || nextLesson) && levelCompletion.completionPercent < 100) {
       const lessonToRecommend = actionableDiagnosticLesson || nextLesson;
+      if (!lessonToRecommend) return recommendations;
       const userProgress = await repo.getLessonProgress(userId, lessonToRecommend.id);
       const isResume = userProgress?.status === 'in_progress';
       const isCompletedReview = userProgress?.status === 'completed';
@@ -316,7 +317,7 @@ export class RecommendationService {
         title: isCompletedReview
           ? `Củng cố bài cần ôn: ${lessonToRecommend.title}`
           : isResume
-            ? `Tiếp tục bài học: ${nextLesson.title}`
+            ? `Tiếp tục bài học: ${lessonToRecommend.title}`
             : actionableDiagnosticLesson
               ? `Củng cố mục tiêu chẩn đoán: ${lessonToRecommend.title}`
               : `Bài học tiếp theo: ${lessonToRecommend.title}`,
