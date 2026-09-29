@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle2, XCircle, Award, ArrowLeft } from 'lucide-react';
-import { HSK_TEST_QUESTIONS } from '../data/hskTestData';
+import { HSK_TEST_QUESTIONS, HSK_LEVELS } from '../data/hskTestData';
 import { AudioButton } from '../components/common/AudioButton';
 import { flashcardService } from '../services/flashcardService';
 
@@ -8,7 +8,8 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600);
-  const [targetLevel, setTargetLevel] = useState<'HSK 1' | 'HSK 2' | 'HSK 3'>('HSK 3');
+  const [targetLevel, setTargetLevel] = useState<(typeof HSK_LEVELS)[number]>('HSK 3');
+  const testQuestions = HSK_TEST_QUESTIONS.filter((q) => q.level === targetLevel);
   const [savedMistakes, setSavedMistakes] = useState(false);
 
   useEffect(() => {
@@ -26,17 +27,17 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleSelect = (qId: string, optIdx: number) => { if (!isSubmitted) setAnswers({ ...answers, [qId]: optIdx }); };
 
   let correctCount = 0;
-  HSK_TEST_QUESTIONS.forEach((q) => { if (answers[q.id] === q.correctIndex) correctCount++; });
-  const scorePercent = Math.round((correctCount / HSK_TEST_QUESTIONS.length) * 100);
+  testQuestions.forEach((q) => { if (answers[q.id] === q.correctIndex) correctCount++; });
+  const scorePercent = testQuestions.length ? Math.round((correctCount / testQuestions.length) * 100) : 0;
   const skillStats = (['listening','reading','vocabulary','grammar'] as const).map((skill) => {
-    const items = HSK_TEST_QUESTIONS.filter(q => q.category === skill);
+    const items = testQuestions.filter(q => q.category === skill);
     const correct = items.filter(q => answers[q.id] === q.correctIndex).length;
     return { skill, correct, total: items.length, percent: items.length ? Math.round(correct/items.length*100) : 0 };
   });
   const getRecommendedLevel = () => scorePercent >= 85 ? 'HSK 3' : scorePercent >= 60 ? 'HSK 2' : 'HSK 1';
 
   const saveMistakesToReview = async () => {
-    const mistakes = HSK_TEST_QUESTIONS.filter(q => answers[q.id] !== q.correctIndex);
+    const mistakes = testQuestions.filter(q => answers[q.id] !== q.correctIndex);
     if (!mistakes.length) return;
     try {
       await flashcardService.upsertBatchFlashcards(mistakes.map(q => ({
@@ -57,7 +58,7 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div>
           <span className="text-xs font-extrabold uppercase px-3 py-1 rounded-xl bg-[#E86F51] text-white">HSK Diagnostic Test</span>
           <h1 className="text-2xl font-extrabold text-[#211A17] dark:text-white mt-1">Đề thi đánh giá năng lực Hán ngữ</h1>
-          <p className="text-xs text-[#716761] dark:text-[#A89E97]">Bao gồm 8 câu hỏi chuẩn hóa: Nghe hiểu, Đọc hiểu, Từ vựng và Ngữ pháp</p>
+          <p className="text-xs text-[#716761] dark:text-[#A89E97]">Bài test tự chọn theo đúng HSK mục tiêu, gồm Nghe, Đọc, Từ vựng và Ngữ pháp</p>
           <div className="flex flex-wrap gap-2 mt-3">{(['HSK 1','HSK 2','HSK 3'] as const).map(level => <button key={level} type="button" onClick={() => setTargetLevel(level)} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${targetLevel===level ? 'bg-[#E86F51] text-white' : 'bg-white dark:bg-[#181412] border border-[#E86F51]/15 text-[#716761]'}`}>{level}</button>)}</div>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-[#181412] border border-[#E86F51]/20 shadow-xs font-mono font-bold text-sm text-[#E86F51]"><Clock size={16}/><span>{formatTime(timeLeft)}</span></div>
