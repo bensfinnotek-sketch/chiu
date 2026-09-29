@@ -136,7 +136,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in" aria-labelledby="curriculum-page-title">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#E86F51]/10">
         <div>
@@ -146,7 +146,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               Giáo trình chuẩn HSK 3.0
             </span>
           </div>
-          <h1 className="text-3xl font-black text-[#211A17] dark:text-white mt-1.5">
+          <h1 id="curriculum-page-title" className="text-3xl font-black text-[#211A17] dark:text-white mt-1.5">
             Lộ trình học tập có cấu trúc
           </h1>
           <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
@@ -155,7 +155,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
 
         {/* Global Level Switcher Badges */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none" role="tablist" aria-label="Chọn cấp độ HSK">
           {[1, 2, 3, 4, 5, 6].map((lvl) => {
             const isSelected = selectedLevel === lvl;
             const locked = false;
@@ -181,10 +181,10 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       </div>
 
       {profile && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section aria-labelledby="personalized-path-title" className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
-            <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">
+            <h3 id="personalized-path-title" className="text-lg font-black text-[#211A17] dark:text-white mt-1">
               HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · Lộ trình cá nhân hóa
             </h3>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
@@ -241,7 +241,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       )}
 
       {generatedLesson?.content && (
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
+        <section aria-labelledby="generated-lesson-title" className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
