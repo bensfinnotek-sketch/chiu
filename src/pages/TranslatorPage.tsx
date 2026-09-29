@@ -219,6 +219,13 @@ export const TranslatorPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             </div>
           )}
 
+          {translationResult.naturalAlternatives && translationResult.naturalAlternatives.length > 0 && (
+            <div className="pt-3 border-t border-gray-100 dark:border-white/5 space-y-2">
+              <span className="text-xs font-bold text-[#211A17] dark:text-white">Biến thể theo ngữ cảnh</span>
+              <div className="grid gap-2">{translationResult.naturalAlternatives.slice(0,3).map((alt, i) => <div key={i} className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412]"><div className="font-chinese font-semibold text-sm text-[#E86F51]">{alt.text}</div>{alt.pinyin && <div className="text-[11px] text-[#E86F51]">{alt.pinyin}</div>}<div className="text-[11px] text-[#716761] dark:text-[#A89E97]">{alt.note}</div></div>)}</div>
+            </div>
+          )}
+
           {translationResult.grammarNote && (
             <div className="flex items-start gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
