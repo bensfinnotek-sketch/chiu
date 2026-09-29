@@ -147,6 +147,8 @@ export interface SongItem {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   hskLevel: HSKLevel;
   duration: string;
+  mood?: 'upbeat' | 'chill' | 'romantic' | 'motivational';
+  bpm?: number;
   lyrics: {
     time: number;
     chinese: string;
