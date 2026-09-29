@@ -64,7 +64,7 @@ export class InMemoryCurriculumRepository implements CurriculumRepository {
     const questions = [...(CURRICULUM_QUIZZES[lessonId] || []), ...(DEEP_EXPANDED_LESSON_QUIZZES[lessonId] || [])].sort((a, b) => a.order - b.order);
     const ids = (await this.getVocabularyForLesson(lessonId)).map((v) => v.id);
     const grammarIds = (DEEP_GRAMMAR_BY_LESSON[lessonId] || []);
-    return questions.map((question, index) => ({ ...question, vocabularyIds: question.vocabularyIds.length > 0 ? question.vocabularyIds : ids.slice(index % Math.max(ids.length, 1), index % Math.max(ids.length, 1) + 2), grammarPointIds: question.grammarPointIds?.length ? question.grammarPointIds : grammarIds }));
+    return questions.map((question, index) => ({ ...question, vocabularyIds: (question.vocabularyIds?.length ?? 0) > 0 ? question.vocabularyIds! : ids.slice(index % Math.max(ids.length, 1), index % Math.max(ids.length, 1) + 2), grammarPointIds: question.grammarPointIds?.length ? question.grammarPointIds : grammarIds }));
   }
   async getLessonSections(lessonId: string): Promise<LessonSection[]> {
     const lesson = await this.getLesson(lessonId); if (!lesson) return [];
