@@ -159,7 +159,6 @@ function AppContent() {
               onStartLearning={() => handleNavigate('dashboard')}
               onTryAiConversation={() => handleNavigate('practice-conversation')}
               onNavigate={handleNavigate}
-              language="vi"
             />
           )}
           {currentRoute === 'dashboard' && (
