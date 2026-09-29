@@ -81,7 +81,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FFF9F4] dark:bg-[#181412]">
+    <main className="flex flex-col min-h-screen bg-[#FFF9F4] dark:bg-[#181412]" aria-labelledby="home-page-title">
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-8 pb-16 md:pt-16 md:pb-24 bg-gradient-to-b from-[#FFF9F4] via-[#FFF3EC] to-[#FFF9F4] dark:from-[#181412] dark:via-[#211A17] dark:to-[#181412]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,7 +95,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#211A17] dark:text-white leading-[1.15]">
+              <h1 id="home-page-title" className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#211A17] dark:text-white leading-[1.15]">
                 Learn Chinese by <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E86F51] via-[#F5A28E] to-[#D5A85C]">
                   actually speaking it.
@@ -250,7 +250,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 2. HOW IT WORKS */}
-      <section className="py-16 bg-white dark:bg-[#181412] border-y border-[#E86F51]/10 dark:border-white/5">
+      <section className="py-16 bg-white dark:bg-[#181412] border-y" aria-labelledby="how-it-works-title" border-[#E86F51]/10 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="max-w-2xl mx-auto space-y-3">
             <h2 className="text-3xl font-extrabold text-[#211A17] dark:text-white">
@@ -302,11 +302,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 3. COMMUNITY STATS */}
-      <section className="py-10 bg-[#FFF9F4] dark:bg-[#211A17]">
+      <section className="py-10 bg-[#FFF9F4] dark:bg-[#211A17]" aria-labelledby="community-stats-title">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#E86F51]">Cộng đồng Bentalk AI</p>
+              <p id="community-stats-title" className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#E86F51]">Cộng đồng Bentalk AI</p>
               <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Số liệu visitor thực tế từ Web Analytics</p>
             </div>
             <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#716761] dark:text-[#A89E97]">
@@ -546,7 +546,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     aria-controls={`faq-answer-${index}`}
                     className="w-full px-6 py-4.5 text-left font-bold text-base text-[#211A17] dark:text-white flex items-center justify-between gap-4 cursor-pointer"
                   >
-                    <span>{faq.q}</span>
+                    <span id={`faq-question-${index}`}>{faq.q}</span>
                     <ChevronDown
                       size={18}
                       className={`text-[#E86F51] transition-transform duration-200 shrink-0 ${
@@ -555,7 +555,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     />
                   </button>
                   {isOpen && (
-                    <div id={`faq-answer-${index}`} className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
+                    <div id={`faq-answer-${index}`} role="region" aria-labelledby={`faq-question-${index}`} className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
                       {faq.a}
                     </div>
                   )}
@@ -614,6 +614,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
         </div>
       </footer>
-    </div>
+    </main>
   );
 };
