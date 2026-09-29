@@ -500,11 +500,11 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       </section>
 
       {/* Learning Intelligence — presentation layer built from existing AI-9/AI-10 signals */}
-      <section className="chiu-card p-5 sm:p-7">
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="learning-intelligence-title">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
           <div>
             <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Lina Learning Intelligence</span>
-            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Bản đồ năng lực hiện tại</h2>
+            <h2 id="learning-intelligence-title" className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Bản đồ năng lực hiện tại</h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Lina dùng các tín hiệu đã có để cho bạn thấy điểm mạnh, vùng cần củng cố và mốc tiếp theo — không tạo thêm hệ thống dữ liệu mới.</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -525,7 +525,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                 <span className="text-lg font-black text-[#211A17] dark:text-white">{Math.round(skill.value)}%</span>
               </div>
               <p className="text-xs font-black text-[#211A17] dark:text-white mt-3">{skill.label}</p>
-              <div className="h-2 mt-2 rounded-full bg-white dark:bg-[#241F1C] overflow-hidden">
+              <div className="h-2 mt-2 rounded-full bg-white dark:bg-[#241F1C] overflow-hidden" role="progressbar" aria-label={`${skill.label}: ${Math.round(skill.value)}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(100, Math.max(0, skill.value)))}>
                 <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${Math.min(100, Math.max(0, skill.value))}%` }} />
               </div>
             </div>
