@@ -212,7 +212,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           <div>
             <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
             <h3 id="personalized-path-title" className="text-lg font-black text-[#211A17] dark:text-white mt-1">
-              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · Lộ trình cá nhân hóa
+              HSK {selectedLevel} · Lộ trình cá nhân hóa
             </h3>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
               Từ vựng đã lưu sẽ được Lina dùng để tạo bài học phù hợp với tài khoản này.
@@ -779,7 +779,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15" aria-label={`HSK ${lessonLevelForUnit(unitLessons)} · Unit ${unit.order}`}>
                   <div className="space-y-0.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
@@ -842,9 +842,14 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       >
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
-                              Bài {lesson.order} · {lesson.titleZh}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
+                                HSK {lesson.levelNumber} · Bài {lesson.order}
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-[#181412] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">
+                                {lesson.titleZh}
+                              </span>
+                            </div>
                             {isCompleted ? (
                               <span className="flex items-center gap-1 text-xs font-bold text-[#65A873]">
                                 <CheckCircle2 size={16} />
