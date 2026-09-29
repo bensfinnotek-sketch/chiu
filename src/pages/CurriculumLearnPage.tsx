@@ -761,32 +761,55 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
             if (unitLessons.length === 0 && searchQuery) return null;
 
+            const completedCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length;
+            const inProgressCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'in_progress').length;
+            const unlockedCount = unitLessons.filter((lesson) => {
+              if (!lesson.prerequisiteLessonId) return true;
+              return progressMap[lesson.prerequisiteLessonId]?.status === 'completed';
+            }).length;
+            const unitPercent = unitLessons.length ? Math.round((completedCount / unitLessons.length) * 100) : 0;
+            const unitState = completedCount === unitLessons.length && unitLessons.length > 0
+              ? 'Hoàn thành'
+              : inProgressCount > 0
+                ? 'Đang học'
+                : unlockedCount > 0
+                  ? 'Sẵn sàng'
+                  : 'Đang chờ';
+
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                {(() => {
-                  const completedCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length;
-                  const inProgressCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'in_progress').length;
-                  const unlockedCount = unitLessons.filter((lesson) => {
-                    if (!lesson.prerequisiteLessonId) return true;
-                    return progressMap[lesson.prerequisiteLessonId]?.status === 'completed';
-                  }).length;
-                  const unitPercent = unitLessons.length ? Math.round((completedCount / unitLessons.length) * 100) : 0;
-                  const unitState = completedCount === unitLessons.length && unitLessons.length > 0
-                    ? 'Hoàn thành'
-                    : inProgressCount > 0
-                      ? 'Đang học'
-                      : unlockedCount > 0
-                        ? 'Sẵn sàng'
-                        : 'Đang chờ';
-                  const unitStateClass = unitState === 'Hoàn thành'
-                    ? 'bg-[#65A873]/10 text-[#4F8B5C]'
-                    : unitState === 'Đang học'
-                      ? 'bg-[#E86F51]/10 text-[#E86F51]'
-                      : 'bg-[#F3E8DE] dark:bg-[#2F2520] text-[#716761] dark:text-[#B5AAA2]';
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15">
+                  <div className="space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
+                        Unit {unit.order} · {unit.titleZh}
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${unitState === 'Hoàn thành' ? 'bg-[#65A873]/10 text-[#4F8B5C]' : unitState === 'Đang học' ? 'bg-[#E86F51]/10 text-[#E86F51]' : 'bg-[#F3E8DE] dark:bg-[#2F2520] text-[#716761] dark:text-[#B5AAA2]'}`}>
+                        {unitState}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black text-[#211A17] dark:text-white">
+                      {unit.title}
+                    </h3>
+                    <p className="text-xs text-[#716761] dark:text-[#A89E97]">
+                      {unit.description}
+                    </p>
+                  </div>
+                  <div className="min-w-[180px]">
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-[#716761] dark:text-[#A89E97] mb-1">
+                      <span>{completedCount}/{unitLessons.length} bài hoàn thành · {inProgressCount} đang học</span>
+                      <span>{unitPercent}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ Unit ${unit.order}: ${unitPercent}% · ${unitState}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={unitPercent}>
+                      <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${unitPercent}%` }} />
+                    </div>
+                  </div>
+                </div>
 
-                  return (
-                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15">
+                {/* Lessons Grid in Unit */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                       <div className="space-y-0.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
