@@ -16,7 +16,6 @@ import { storageService } from '../services/storageService';
 import { AudioButton } from '../components/common/AudioButton';
 import { flashcardService } from '../services/flashcardService';
 import { useAuth } from '../hooks/useAuth';
-import { useSubscription } from '../hooks/useSubscription';
 
 const getVisualEmoji = (card: any): string => {
   const text = `${card?.hanzi || ''} ${card?.chinese || ''} ${card?.meaningVi || ''}`.toLowerCase();
@@ -66,7 +65,6 @@ const getTwemojiUrl = (emoji: string) => {
 
 export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const { isPremium } = useSubscription();
   const [cards, setCards] = useState<any[]>(() => storageService.getSavedWords());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -179,21 +177,17 @@ export const FlashcardsPage: React.FC<{ onNavigate?: (route: string) => void }> 
           </div>
           <h1 className="text-3xl font-extrabold text-[#211A17] dark:text-white mt-1">Thẻ nhớ thông minh</h1>
           <p className="text-sm text-[#716761] dark:text-[#A89E97]">Ôn nhanh, phản hồi ngay, giữ nhịp ghi nhớ mỗi ngày.</p>
+        <p className="mt-2 text-xs text-[#716761] dark:text-[#A89E97]">Từ mới được Lina phát hiện trong hội thoại có thể tự động thêm vào bộ thẻ của bạn để Daily Review nhắc ôn lại.</p>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
           <span className="text-xs text-[#716761] dark:text-[#A89E97] shrink-0">Cấp độ:</span>
-          {(['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'] as const).map((lvl) => {
-            const requiresPremium = lvl !== 'all' && Number(lvl.replace('HSK ', '')) >= 3;
-            const locked = requiresPremium && !isPremium;
-            return (
-              <button key={lvl} type="button" onClick={() => {
-                if (locked) { onNavigate?.('pricing'); return; }
-                setActiveFilter(lvl); setCurrentIndex(0); setIsFlipped(false); setLastRating(null); setSessionComplete(false);
-              }} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${activeFilter === lvl ? 'bg-[#E86F51] text-white shadow-sm' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`} title={locked ? 'HSK 3–6 dành cho tài khoản PRO' : undefined}>
-                {lvl === 'all' ? 'Tất cả' : lvl}{locked ? ' 🔒' : ''}
-              </button>
-            );
-          })}
+          {(['all', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'] as const).map((lvl) => (
+            <button key={lvl} type="button" onClick={() => {
+              setActiveFilter(lvl); setCurrentIndex(0); setIsFlipped(false); setLastRating(null); setSessionComplete(false);
+            }} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${activeFilter === lvl ? 'bg-[#E86F51] text-white shadow-sm' : 'bg-white dark:bg-[#241F1C] border border-gray-200 dark:border-white/10 text-[#716761] dark:text-[#A89E97]'}`}>
+              {lvl === 'all' ? 'Tất cả' : lvl}
+            </button>
+          ))}
         </div>
       </div>
 
