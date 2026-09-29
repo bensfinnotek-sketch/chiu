@@ -133,15 +133,47 @@ export function useLesson(lessonId: string) {
     loadLesson();
   }, [loadLesson]);
 
+  const getQuizSkillDeltas = (attempt: QuizAttempt) => {
+    const questionMap = new Map(quizQuestions.map((question) => [question.id, question]));
+    let vocabularyQuestions = 0;
+    let vocabularyCorrect = 0;
+    let grammarQuestions = 0;
+    let grammarCorrect = 0;
+
+    attempt.answers.forEach((answer) => {
+      const question = questionMap.get(answer.questionId);
+      if (!question) return;
+
+      if ((question.vocabularyIds || []).length > 0) {
+        vocabularyQuestions += 1;
+        if (answer.isCorrect) vocabularyCorrect += 1;
+      }
+      if ((question.grammarPointIds || []).length > 0) {
+        grammarQuestions += 1;
+        if (answer.isCorrect) grammarCorrect += 1;
+      }
+    });
+
+    return {
+      vocabulary: vocabularyQuestions > 0
+        ? Math.round((vocabularyCorrect / vocabularyQuestions) * 15)
+        : 0,
+      grammar: grammarQuestions > 0
+        ? Math.round((grammarCorrect / grammarQuestions) * 15)
+        : 0,
+    };
+  };
+
   const saveSectionProgress = async (sectionId: string, percent: number) => {
     if (!lesson) return;
     const existing = await repo.getLessonProgress(userId, lessonId);
+    const nextPercent = Math.max(existing?.progressPercent || 0, percent);
     const updated: UserLessonProgress = {
       userId,
       lessonId,
       levelNumber: lesson.levelNumber,
       status: existing?.status === 'completed' ? 'completed' : 'in_progress',
-      progressPercent: Math.max(existing?.progressPercent || 0, percent),
+      progressPercent: nextPercent,
       currentSectionId: sectionId,
       score: existing?.score,
       attempts: existing?.attempts || 1,
@@ -151,6 +183,35 @@ export function useLesson(lessonId: string) {
     };
     await repo.saveProgress(updated);
     setUserProgress(updated);
+
+    // Completion is driven by the lesson's declared rule, not by visiting the
+    // quiz alone. For all_required_and_quiz, a passed quiz and 100% section
+    // progress are both required. For all_required_sections, section progress
+    // is sufficient. This also makes prerequisite unlocks refresh correctly
+    // after the final required section is completed.
+    if (nextPercent < 100 || updated.status === 'completed') return;
+
+    if (lesson.completionRule === 'quiz_pass') return;
+
+    let completionScore = updated.score ?? 0;
+    let skillDeltas = { vocabulary: 0, grammar: 0 };
+
+    if (lesson.completionRule === 'all_required_and_quiz') {
+      const attempts = await repo.getQuizAttempts(userId, lessonId);
+      const passedAttempt = attempts
+        .filter((attempt) => attempt.passed)
+        .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))[0];
+
+      if (!passedAttempt) return;
+
+      completionScore = passedAttempt.score;
+      skillDeltas = getQuizSkillDeltas(passedAttempt);
+    }
+
+    const completion = await completeLesson(completionScore, skillDeltas);
+    if (completion) {
+      setUserProgress(completion.progress);
+    }
   };
 
   const completeLesson = async (
@@ -313,17 +374,36 @@ export function useLesson(lessonId: string) {
       };
     }
 
-    const vocabularyDelta = vocabularyQuestions > 0
-      ? Math.round((vocabularyCorrect / vocabularyQuestions) * 15)
-      : 0;
-    const grammarDelta = grammarQuestions > 0
-      ? Math.round((grammarCorrect / grammarQuestions) * 15)
-      : 0;
+    const skillDeltas = getQuizSkillDeltas(attempt);
 
-    return completeLesson(attempt.score, {
-      vocabulary: vocabularyDelta,
-      grammar: grammarDelta,
-    });
+    // A passed quiz is the completion event only for quiz_pass lessons.
+    // For all_required_and_quiz, completion waits until required section
+    // progress reaches 100%; saveSectionProgress will finalize it then.
+    if (
+      lesson.completionRule === 'quiz_pass'
+      || lesson.completionRule === 'all_required_sections'
+      || (lesson.completionRule === 'all_required_and_quiz' && (userProgress?.progressPercent || 0) >= 100)
+    ) {
+      return completeLesson(attempt.score, skillDeltas);
+    }
+
+    const recommendations = await recommendationService.getRecommendations(
+      userId,
+      lesson.levelNumber,
+      repo
+    );
+    return {
+      progress: userProgress,
+      isFirstCompletion: false,
+      flashcardsSaved: 0,
+      skillDelta: 0,
+      recommendations,
+      levelCompletion: await recommendationService.calculateLevelCompletion(
+        userId,
+        lesson.levelNumber,
+        repo
+      ),
+    };
   };
 
   return {
