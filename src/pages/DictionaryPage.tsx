@@ -11,9 +11,13 @@ import {
 import { DICTIONARY_ITEMS } from '../data/dictionaryData';
 import { AudioButton } from '../components/common/AudioButton';
 import { storageService } from '../services/storageService';
+import { geminiService } from '../services/geminiService';
+import { flashcardService } from '../services/flashcardService';
 
 export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [aiDetail, setAiDetail] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [savedWords, setSavedWords] = useState<string[]>(
     storageService.getSavedWords().map((w) => w.id)
   );
@@ -43,7 +47,7 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     storageService.saveWords(updated);
   };
 
-  const quickSearch = ['茶', '水', '饭', '苹果', '喜欢', '学习', '朋友', '谢谢'];
+  const askAi = async (word: any) => {\n    setAiLoading(true);\n    try { setAiDetail(await geminiService.getDictionaryDetail(word.chinese)); } finally { setAiLoading(false); }\n  };\n\n  const saveToSmartReview = async (word: any) => {\n    try {\n      await flashcardService.createFlashcard({ hanzi: word.chinese, pinyin: word.pinyin, meaning: word.meaningVi, example_sentence: word.exampleSentence, hsk_level: Number(String(word.hskLevel).replace('HSK ', '')) });\n    } catch { /* guest mode keeps local bookmark behavior */ }\n  };\n\n  const quickSearch = ['茶', '水', '饭', '苹果', '喜欢', '学习', '朋友', '谢谢'];
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-fade-in">
@@ -125,7 +129,7 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <AudioButton text={word.chinese} size="sm" />
+                  <AudioButton text={word.chinese} size="sm" />\n                  <button type="button" onClick={() => askAi(word)} className="p-2 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] hover:scale-105 transition-transform" title="AI phân tích">\n                    <Sparkles size={16} />\n                  </button>
                   <button
                     type="button"
                     onClick={() => toggleSave(word)}
