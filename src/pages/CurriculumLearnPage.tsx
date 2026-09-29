@@ -764,7 +764,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-[#E86F51]/15">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15">
                   <div className="space-y-0.5">
                     <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
                       Unit {unit.order} · {unit.titleZh}
@@ -776,9 +776,15 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       {unit.description}
                     </p>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-xl bg-gray-100 dark:bg-[#342822] text-[#716761] dark:text-[#A89E97] font-semibold">
-                    {unitLessons.length} bài
-                  </span>
+                  <div className="min-w-[180px]">
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-[#716761] dark:text-[#A89E97] mb-1">
+                      <span>{unitLessons.length} bài · {unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length} hoàn thành</span>
+                      <span>{unitLessons.length ? Math.round((unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length / unitLessons.length) * 100) : 0}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ Unit ${unit.order}: ${unitLessons.length ? Math.round((unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length / unitLessons.length) * 100) : 0}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={unitLessons.length ? Math.round((unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length / unitLessons.length) * 100) : 0}>
+                      <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${unitLessons.length ? Math.round((unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length / unitLessons.length) * 100) : 0}%` }} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Lessons Grid in Unit */}
@@ -798,7 +804,16 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                     return (
                       <div
                         key={lesson.id}
+                        role={!isLocked ? 'button' : undefined}
+                        tabIndex={!isLocked ? 0 : undefined}
+                        aria-label={!isLocked ? `${lesson.title}. ${isCompleted ? 'Đã hoàn thành' : isInProgress ? `Đang học ${progress?.progressPercent || 0}%` : 'Sẵn sàng bắt đầu'}` : `${lesson.title}. Bài học đang khóa`}
                         onClick={() => !isLocked && onSelectLesson(lesson.id)}
+                        onKeyDown={(event) => {
+                          if (!isLocked && (event.key === 'Enter' || event.key === ' ')) {
+                            event.preventDefault();
+                            onSelectLesson(lesson.id);
+                          }
+                        }}
                         className={`p-5 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
                           isLocked
                             ? 'bg-gray-50/70 dark:bg-[#1C1816]/70 border-gray-200 dark:border-gray-800 opacity-60 cursor-not-allowed'
@@ -842,16 +857,24 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                         </div>
 
                         {/* Card Footer */}
-                        <div className="flex items-center justify-between pt-3 border-t border-[#E86F51]/10 text-xs text-[#716761] dark:text-[#A89E97]">
+                        {!isLocked && (
+                          <div className="space-y-2 pt-3 border-t border-[#E86F51]/10">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">
+                              <span>Tiến độ bài</span>
+                              <span>{isCompleted ? 100 : Math.round(progress?.progressPercent || 0)}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ ${lesson.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={isCompleted ? 100 : Math.round(progress?.progressPercent || 0)}>
+                              <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${isCompleted ? 100 : Math.min(100, Math.max(0, progress?.progressPercent || 0))}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-3 text-xs text-[#716761] dark:text-[#A89E97]">
                           <span className="flex items-center gap-1">
                             <Clock size={14} />
                             {lesson.estimatedMinutes} phút
                           </span>
 
-                          <button
-                            type="button"
-                            disabled={isLocked}
-                            className={`flex items-center gap-1 font-bold ${
+                          <span className={`flex items-center gap-1 font-bold ${
                               isLocked
                                 ? 'text-gray-400'
                                 : 'text-[#E86F51] group-hover:translate-x-1 transition-transform'
@@ -859,7 +882,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                           >
                             <span>{isCompleted ? 'Ôn tập lại' : isInProgress ? 'Học tiếp' : 'Bắt đầu'}</span>
                             <ChevronRight size={14} />
-                          </button>
+                          </span>
                         </div>
                       </div>
                     );
