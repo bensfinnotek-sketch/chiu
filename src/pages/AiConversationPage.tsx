@@ -184,7 +184,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       try {
         let session = selectedSessionId ? await conversationRepository.getSession(selectedSessionId) : null;
         if (session && session.userId !== persistenceUserId) session = null;
-        if (!session) session = await conversationRepository.createSession(persistenceUserId, activeTopic, activeLevel, `Trò chuyện về ${activeTopic}`);
+        if (!session) session = await conversationRepository.createSession(persistenceUserId, activeTopic, initialSpeakingLevel, `Trò chuyện về ${activeTopic}`);
         if (cancelled) return;
         setConversationSessionId(session.id);
         const persistedMessages = await conversationRepository.getSessionMessages(session.id);
@@ -212,7 +212,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           recentMessages: loadedMessages.slice(-12),
         }));
         if (loadedMessages.length === 0) {
-          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
+          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, initialSpeakingLevel, 'vi');
           const firstMsg: ConversationMessage = { id: `lina-init-${session.id}`, sender: 'lina', chinese: starter.chinese,
             pinyin: starter.pinyin, translation: starter.translation,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
@@ -241,7 +241,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     };
     initialiseConversation();
     return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.stopListening(); };
-  }, [activeTopic, activeLevel, selectedSessionId, authUser?.id, authLoading]);
+  }, [activeTopic, initialSpeakingLevel, selectedSessionId, authUser?.id, authLoading]);
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
