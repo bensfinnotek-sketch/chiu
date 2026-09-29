@@ -18,20 +18,16 @@ import {
 } from 'lucide-react';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
-import { SupportedLanguage } from '../types';
-
 interface HomePageProps {
   onStartLearning: () => void;
   onTryAiConversation: () => void;
   onNavigate: (route: string) => void;
-  language: SupportedLanguage;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartLearning,
   onTryAiConversation,
   onNavigate,
-  language,
 }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [heroMicActive, setHeroMicActive] = useState(false);
