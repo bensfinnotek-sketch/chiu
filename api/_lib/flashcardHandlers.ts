@@ -344,6 +344,8 @@ export async function handleCreateFlashcard(req: any, res: any) {
         example_sentence: item.example_sentence || item.exampleSentence || item.exampleChinese || "",
         topic: item.topic || "lesson",
         hsk_level: item.hsk_level || item.hskLevel || 1,
+        source_conversation_id: item.source_conversation_id || item.sourceConversationId,
+        auto_saved: item.auto_saved === true,
       }, accessToken);
 
       if (card) {
@@ -359,7 +361,7 @@ export async function handleCreateFlashcard(req: any, res: any) {
   }
 
   // Single card creation (original behavior preserved 100%)
-  const { hanzi, pinyin, meaning, example_sentence, exampleSentence, topic, hskLevel, hsk_level } = body;
+  const { hanzi, pinyin, meaning, example_sentence, exampleSentence, topic, hskLevel, hsk_level, source_conversation_id, sourceConversationId, auto_saved } = body;
 
   if (!hanzi || typeof hanzi !== "string" || !hanzi.trim()) {
     return sendJson(res, 400, { error: "hanzi is required and must be a non-empty string" });
@@ -372,6 +374,8 @@ export async function handleCreateFlashcard(req: any, res: any) {
     example_sentence: example_sentence || exampleSentence || "",
     topic: topic || "general",
     hsk_level: hsk_level || hskLevel || 1,
+    source_conversation_id: source_conversation_id || sourceConversationId,
+    auto_saved: auto_saved === true,
   }, accessToken);
 
   return sendJson(res, 201, {
