@@ -11,12 +11,6 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [targetLevel, setTargetLevel] = useState<(typeof HSK_LEVELS)[number]>('HSK 3');
   const testQuestions = HSK_TEST_QUESTIONS.filter((q) => q.level === targetLevel);
   const targetIndex = HSK_LEVELS.indexOf(targetLevel);
-  const adaptiveLevel =
-    scorePercent < 60 && targetIndex > 0
-      ? HSK_LEVELS[targetIndex - 1]
-      : scorePercent >= 85 && targetIndex < HSK_LEVELS.length - 1
-        ? HSK_LEVELS[targetIndex + 1]
-        : targetLevel;
   const [savedMistakes, setSavedMistakes] = useState(false);
 
   useEffect(() => {
@@ -50,7 +44,13 @@ export const HskTestPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const correct = items.filter(q => answers[q.id] === q.correctIndex).length;
     return { skill, correct, total: items.length, percent: items.length ? Math.round(correct/items.length*100) : 0 };
   });
-  const getRecommendedLevel = () => adaptiveLevel;
+  const getAdaptiveLevel = () =>
+    scorePercent < 60 && targetIndex > 0
+      ? HSK_LEVELS[targetIndex - 1]
+      : scorePercent >= 85 && targetIndex < HSK_LEVELS.length - 1
+        ? HSK_LEVELS[targetIndex + 1]
+        : targetLevel;
+  const adaptiveLevel = getAdaptiveLevel();
 
   const saveMistakesToReview = async () => {
     const mistakes = testQuestions.filter(q => answers[q.id] !== q.correctIndex);
