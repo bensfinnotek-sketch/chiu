@@ -94,6 +94,17 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   useEffect(() => {
     void flashcardService.getFlashcards().then((cards) => {
       cards.forEach((card) => knownVocabularyRef.current.add(card.hanzi.trim()));
+      const now = Date.now();
+      const due = cards.filter((card) => !card.next_review_at || new Date(card.next_review_at).getTime() <= now)
+        .sort((a, b) => (a.next_review_at || '').localeCompare(b.next_review_at || ''))
+        .slice(0, 8).map((card) => card.hanzi);
+      const weak = cards.filter((card) => card.status === 'learning' || card.srs_incorrect_count > card.srs_correct_count || card.srs_incorrect_count >= 2)
+        .sort((a, b) => b.srs_incorrect_count - a.srs_incorrect_count)
+        .slice(0, 8).map((card) => card.hanzi);
+      const newWords = cards.filter((card) => card.status === 'new')
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 8).map((card) => card.hanzi);
+      setMemory((previous) => ({ ...previous, srsContext: { due, weak, newWords } }));
     }).catch(() => undefined);
   }, []);
 
