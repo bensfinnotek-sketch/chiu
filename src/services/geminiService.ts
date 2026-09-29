@@ -76,6 +76,9 @@ export class GeminiServiceImpl implements AIService {
           memory: {
             summary: memory?.summary,
             keyFacts: memory?.keyFacts,
+            vocabulary: memory?.vocabulary,
+            grammarIssues: memory?.grammarIssues,
+            srsContext: memory?.srsContext,
           },
           attempt,
         };

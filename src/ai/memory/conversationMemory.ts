@@ -17,6 +17,29 @@ export interface SrsContext {
   newWords: string[];
 }
 
+export interface AdaptiveFocus {
+  priorityWords: string[];
+  grammarPatterns: string[];
+  suggestedTestTypes: Array<'meaning' | 'pinyin' | 'context'>;
+}
+
+export function getAdaptiveFocus(memory: ConversationMemory): AdaptiveFocus {
+  const srs = memory.srsContext || { due: [], weak: [], newWords: [] };
+  const priorityWords = Array.from(new Set([...srs.weak, ...srs.due, ...srs.newWords]))
+    .filter(Boolean)
+    .slice(0, 6);
+  const grammarPatterns = [...memory.grammarIssues]
+    .sort((a, b) => b.count - a.count || b.lastSeen.localeCompare(a.lastSeen))
+    .map((issue) => issue.pattern)
+    .filter(Boolean)
+    .slice(0, 3);
+  const suggestedTestTypes: AdaptiveFocus['suggestedTestTypes'] =
+    srs.weak.length > 0 ? ['context', 'meaning', 'pinyin'] :
+    srs.due.length > 0 ? ['meaning', 'context', 'pinyin'] :
+    ['meaning', 'pinyin', 'context'];
+  return { priorityWords, grammarPatterns, suggestedTestTypes };
+}
+
 export interface ConversationMemory {
   sessionId: string;
   topic: string;
@@ -130,6 +153,16 @@ export function formatMemoryForPrompt(memory: ConversationMemory): string {
     if (due.length > 0) parts.push(`SRS WORDS DUE FOR REVIEW:\n${due.slice(0, 8).join(', ')}`);
     if (weak.length > 0) parts.push(`SRS WEAK WORDS TO REINFORCE:\n${weak.slice(0, 8).join(', ')}`);
     if (newWords.length > 0) parts.push(`SRS NEW WORDS:\n${newWords.slice(0, 8).join(', ')}`);
+  }
+  const adaptiveFocus = getAdaptiveFocus(memory);
+  if (adaptiveFocus.priorityWords.length > 0 || adaptiveFocus.grammarPatterns.length > 0) {
+    parts.push(
+      `ADAPTIVE SESSION FOCUS:
+- Priority vocabulary to revisit naturally: ${adaptiveFocus.priorityWords.join(', ') || 'none'}
+- Grammar patterns to watch for: ${adaptiveFocus.grammarPatterns.join(' | ') || 'none'}
+- Micro-test order: ${adaptiveFocus.suggestedTestTypes.join(' → ')}
+RULE: Reuse priority vocabulary only when it fits the learner's current meaning and conversation flow. Do not force it.`
+    );
   }
   if (memory.grammarIssues.length > 0) {
     const recurring = memory.grammarIssues.slice(-5).sort((a, b) => b.count - a.count)
