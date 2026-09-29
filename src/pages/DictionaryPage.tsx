@@ -47,7 +47,18 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     storageService.saveWords(updated);
   };
 
-  const askAi = async (word: any) => {\n    setAiLoading(true);\n    try { setAiDetail(await geminiService.getDictionaryDetail(word.chinese)); } finally { setAiLoading(false); }\n  };\n\n  const saveToSmartReview = async (word: any) => {\n    try {\n      await flashcardService.createFlashcard({ hanzi: word.chinese, pinyin: word.pinyin, meaning: word.meaningVi, example_sentence: word.exampleSentence, hsk_level: Number(String(word.hskLevel).replace('HSK ', '')) });\n    } catch { /* guest mode keeps local bookmark behavior */ }\n  };\n\n  const quickSearch = ['茶', '水', '饭', '苹果', '喜欢', '学习', '朋友', '谢谢'];
+  const askAi = async (word: any) => {
+    setAiLoading(true);
+    try { setAiDetail(await geminiService.getDictionaryDetail(word.chinese)); } finally { setAiLoading(false); }
+  };
+
+  const saveToSmartReview = async (word: any) => {
+    try {
+      await flashcardService.createFlashcard({ hanzi: word.chinese, pinyin: word.pinyin, meaning: word.meaningVi, example_sentence: word.exampleSentence, hsk_level: Number(String(word.hskLevel).replace('HSK ', '')) });
+    } catch { /* guest mode keeps local bookmark behavior */ }
+  };
+
+  const quickSearch = ['茶', '水', '饭', '苹果', '喜欢', '学习', '朋友', '谢谢'];
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-fade-in">
@@ -129,7 +140,10 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <AudioButton text={word.chinese} size="sm" />\n                  <button type="button" onClick={() => askAi(word)} className="p-2 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] hover:scale-105 transition-transform" title="AI phân tích">\n                    <Sparkles size={16} />\n                  </button>
+                  <AudioButton text={word.chinese} size="sm" />
+                  <button type="button" onClick={() => askAi(word)} className="p-2 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51] hover:scale-105 transition-transform" title="AI phân tích">
+                    <Sparkles size={16} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => toggleSave(word)}
@@ -185,6 +199,21 @@ export const DictionaryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => 
           );
         })}
       </div>
+      {aiDetail && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setAiDetail(null)}>
+          <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-[#241F1C] p-6 space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4">
+              <div><div className="text-xs font-bold text-[#E86F51] uppercase">AI Dictionary</div><h2 className="font-chinese text-4xl font-extrabold text-[#211A17] dark:text-white">{aiDetail.word}</h2><p className="text-sm text-[#E86F51]">{aiDetail.pinyin}</p></div>
+              <button onClick={() => setAiDetail(null)} className="text-gray-400">✕</button>
+            </div>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97]">{aiDetail.meaning}</p>
+            {aiDetail.relatedWords?.length > 0 && <div><div className="text-xs font-bold mb-2">Từ liên quan</div><div className="flex flex-wrap gap-2">{aiDetail.relatedWords.slice(0,8).map((x:any)=><span key={x.word} className="px-3 py-1 rounded-xl bg-[#FFF9F4] dark:bg-[#181412] text-xs"><b className="font-chinese">{x.word}</b> · {x.meaning}</span>)}</div></div>}
+            {aiLoading && <div className="text-xs text-[#E86F51]">AI đang phân tích…</div>}
+            <button onClick={() => { const w=DICTIONARY_ITEMS.find(x=>x.chinese===aiDetail.word); if(w) saveToSmartReview(w); }} className="w-full py-3 rounded-2xl bg-[#E86F51] text-white text-sm font-bold">Thêm vào ôn tập thông minh</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
