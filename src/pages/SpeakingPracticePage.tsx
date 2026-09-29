@@ -230,7 +230,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10 space-y-8 animate-fade-in">
+    <main className="max-w-6xl mx-auto px-4 py-8 sm:py-10 space-y-8 animate-fade-in" aria-labelledby="speaking-practice-title">
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#FFF5F0] via-[#FFF9F4] to-[#FDF1EB] dark:from-[#231C18] dark:via-[#1D1714] dark:to-[#281F1A] border border-[#F2E5D8] dark:border-[#382D25] p-6 sm:p-8 md:p-10 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
@@ -240,7 +240,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
               AI SPEAKING PRACTICE • BENTALK AI
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#211A17] dark:text-[#FAF5F1]">
+            <h1 id="speaking-practice-title" className="text-3xl sm:text-4xl font-bold tracking-tight text-[#211A17] dark:text-[#FAF5F1]">
               Luyện nói AI cùng cô Lina
             </h1>
 
@@ -291,10 +291,10 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
       </div>
 
       {/* Level Selector Bar */}
-      <div className="space-y-3">
+      <section className="space-y-3" aria-labelledby="speaking-level-title">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
+            <h2 id="speaking-level-title" className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
               1. Chọn trình độ của bạn (Target Level)
             </h2>
             <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97]">
@@ -316,6 +316,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
                 key={lvl}
                 type="button"
                 onClick={() => setSelectedLevel(lvl)}
+                aria-pressed={isSelected}
                 className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
                     ? 'bg-[#E86F51] text-white border-[#E86F51] shadow-md shadow-[#E86F51]/20 scale-102'
@@ -338,13 +339,13 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Topic Cards Grid */}
-      <div className="space-y-4">
+      <section className="space-y-4" aria-labelledby="speaking-topic-title">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
+            <h2 id="speaking-topic-title" className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
               2. Chọn chủ đề bạn muốn luyện tập (Choose Topic)
             </h2>
             <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97]">
@@ -363,7 +364,16 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             return (
               <div
                 key={topic.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Bắt đầu luyện nói chủ đề ${topic.titleVi}, trình độ ${selectedLevel}`}
                 onClick={() => handleSelectTopic(topic.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSelectTopic(topic.id);
+                  }
+                }}
                 className="group relative bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-2xl p-5 hover:border-[#E86F51] hover:shadow-lg hover:shadow-[#E86F51]/10 transition-all cursor-pointer flex flex-col justify-between"
               >
                 <div>
@@ -426,7 +436,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             );
           })}
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
