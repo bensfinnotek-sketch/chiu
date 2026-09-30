@@ -257,7 +257,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } finally { if (!cancelled) setConversationReady(true); }
     };
     initialiseConversation();
-    return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.stopListening(); };
+    return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.abortListening(); };
   }, [activeTopic, initialSpeakingLevel, selectedSessionId, authUser?.id, authLoading]);
 
   // Stop Lina speech helper (Voice interruption)
@@ -283,7 +283,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } else if (e.code === 'Escape') {
         e.preventDefault();
         stopLinaSpeech();
-        if (speechRecognitionService.isListening()) {          speechRecognitionService.stopListening();
+        if (speechRecognitionService.isListening()) {          speechRecognitionService.abortListening();
           setMicState('IDLE');
           setInterimTranscript('');
         }
