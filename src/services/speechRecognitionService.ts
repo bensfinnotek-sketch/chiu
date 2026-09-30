@@ -5,7 +5,7 @@ export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
   onInterimResult?: (interim: string) => void;
   onError?: (error: string) => void;
-  onEnd?: () => void;
+  onEnd?: (finalTranscript?: string) => void;
   onStart?: () => void;
 }
 
@@ -13,6 +13,7 @@ export class SpeechRecognitionService {
   private recognition: any = null;
   private isListeningActive: boolean = false;
   private isSupportedBrowser: boolean = false;
+  private shouldFinalizeOnEnd: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -26,7 +27,7 @@ export class SpeechRecognitionService {
         this.isSupportedBrowser = true;
         this.recognition = new SpeechRecognition();
         this.recognition.lang = 'zh-CN';
-        this.recognition.continuous = false;
+        this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.maxAlternatives = 1;
       }
@@ -59,6 +60,7 @@ export class SpeechRecognitionService {
 
     this.recognition.onstart = () => {
       this.isListeningActive = true;
+      this.shouldFinalizeOnEnd = true;
       if (callbacks.onStart) callbacks.onStart();
     };
 
@@ -78,12 +80,13 @@ export class SpeechRecognitionService {
         callbacks.onInterimResult(interim);
       }
 
-      const activeText = finalAccumulated || interim;
+      const activeText = [finalAccumulated, interim].filter(Boolean).join(' ').trim();
       callbacks.onResult(activeText, Boolean(finalAccumulated));
     };
 
     this.recognition.onerror = (event: any) => {
       this.isListeningActive = false;
+      this.shouldFinalizeOnEnd = false;
       const errorCode = event?.error || 'unknown';
 
       let userMsg = 'Không thể nhận diện giọng nói.';
@@ -102,7 +105,10 @@ export class SpeechRecognitionService {
 
     this.recognition.onend = () => {
       this.isListeningActive = false;
-      if (callbacks.onEnd) callbacks.onEnd();
+      if (this.shouldFinalizeOnEnd) {
+        this.shouldFinalizeOnEnd = false;
+        if (callbacks.onEnd) callbacks.onEnd(finalAccumulated.trim());
+      }
     };
 
     try {
@@ -126,6 +132,8 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    // Keep shouldFinalizeOnEnd=true so a deliberate stop submits the complete
+    // transcript accumulated by the browser before the recognition session ends.
   }
 
   public abortListening(): void {
@@ -137,6 +145,7 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    this.shouldFinalizeOnEnd = false;
   }
 }
 
