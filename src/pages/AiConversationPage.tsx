@@ -528,15 +528,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       return;
     }
     if (micState === 'LISTENING') {
+      // Let the speech service finish and deliver the accumulated final transcript.
+      // Do not submit the current interim text here: it may still be incomplete.
       speechRecognitionService.stopListening();
-      if (interimTranscript.trim()) {
-        processUserMessage(interimTranscript);
-        setInterimTranscript('');
-      } else {
-        setMicState('IDLE');
-        setTeacherState('idle');
-        setStatusMessage('Nhấn mic để nói');
-      }
+      setStatusMessage('Đang hoàn tất câu nói...');
     } else {
       handleStartListening();
     }
@@ -665,14 +660,16 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 h-[calc(100vh-5rem)] flex flex-col animate-fade-in">
+    <div className="relative max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 h-[calc(100vh-5rem)] flex flex-col animate-fade-in">
+      <div className="pointer-events-none absolute -top-16 -left-20 h-48 w-48 rounded-full bg-[#E86F51]/10 blur-3xl dark:bg-[#E86F51]/5" />
+      <div className="pointer-events-none absolute top-24 right-0 h-56 w-56 rounded-full bg-[#D5A85C]/10 blur-3xl dark:bg-[#D5A85C]/5" />
       {/* Top Header Bar */}
-      <header className="flex items-center justify-between pb-4 border-b border-[#EFE4D8] dark:border-[#342A24] shrink-0">
+      <header className="relative flex items-center justify-between pb-4 border-b border-[#EFE4D8]/80 dark:border-[#342A24]/80 shrink-0">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleGoBack}
-            className="p-2 rounded-xl bg-white dark:bg-[#251D19] border border-[#E8DACD] dark:border-[#3B3029] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] text-[#716761] dark:text-[#BDB2AA] transition-colors cursor-pointer"
+            className="p-2.5 rounded-2xl bg-white/80 dark:bg-[#251D19]/80 backdrop-blur border border-[#E8DACD] dark:border-[#3B3029] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] hover:-translate-x-0.5 text-[#716761] dark:text-[#BDB2AA] transition-all shadow-sm cursor-pointer"
             title="Quay lại danh sách chủ đề"
           >
             <ChevronLeft size={20} />
@@ -682,7 +679,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               <h1 className="font-bold text-lg sm:text-xl text-[#211A17] dark:text-[#FAF5F1]">
                 {activeTopic}
               </h1>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#E86F51]/10 text-[#E86F51] font-semibold">
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-[#E86F51]/15 to-[#F5A28E]/15 text-[#D85F43] dark:text-[#FFB29D] font-bold border border-[#E86F51]/15">
                 {activeLevel}
               </span>
             </div>
@@ -710,7 +707,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-xl bg-white dark:bg-[#251D19] border border-[#E8DACD] dark:border-[#3B3029] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] text-[#716761] dark:text-[#BDB2AA] transition-colors cursor-pointer"
+            className="p-2.5 rounded-2xl bg-white/80 dark:bg-[#251D19]/80 backdrop-blur border border-[#E8DACD] dark:border-[#3B3029] hover:bg-[#FFF2EB] dark:hover:bg-[#322722] hover:-translate-y-0.5 text-[#716761] dark:text-[#BDB2AA] transition-all shadow-sm cursor-pointer"
             title="Cài đặt luyện nói"
           >
             <Sliders size={18} />
@@ -728,15 +725,15 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       </header>
 
       {/* In-session HSK level selector */}
-      <section className="mt-4 p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] shrink-0" aria-labelledby="conversation-level-title">
+      <section className="relative mt-4 p-3.5 sm:p-4 rounded-3xl bg-white/85 dark:bg-[#201915]/90 backdrop-blur border border-[#EADCCF] dark:border-[#382E27] shadow-sm shrink-0 overflow-hidden" aria-labelledby="conversation-level-title">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
-            <p id="conversation-level-title" className="text-xs font-black uppercase tracking-wider text-[#E86F51]">HSK mục tiêu của phiên</p>
+            <p id="conversation-level-title" className="text-[11px] font-black uppercase tracking-[0.14em] text-[#E86F51] flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#E86F51] shadow-[0_0_0_4px_rgba(232,111,81,0.12)]" />HSK mục tiêu của phiên</p>
             <p className="text-[11px] text-[#716761] dark:text-[#A89E97] mt-0.5">
               Đổi cấp độ để Lina điều chỉnh từ vựng, độ dài câu, tốc độ phản hồi và độ sâu câu hỏi.
             </p>
           </div>
-          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Đang luyện: {activeLevel}</span>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] border border-[#E86F51]/10">Đang luyện: {activeLevel}</span>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map((level) => {
@@ -768,12 +765,13 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       </section>
 
       {/* Main Classroom Grid (3-columns on desktop, stacked on mobile) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 pt-4 overflow-hidden">
+      <div className="relative flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 pt-4 overflow-hidden">
         {/* LEFT COLUMN: AI Teacher Profile & Live Status (Desktop) */}
-        <aside className="hidden lg:flex lg:col-span-3 flex-col bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-3xl p-5 shadow-xs justify-between overflow-y-auto">
+        <aside className="hidden lg:flex lg:col-span-3 flex-col bg-white/90 dark:bg-[#201915]/95 backdrop-blur border border-[#EADCCF] dark:border-[#382E27] rounded-[28px] p-5 shadow-[0_12px_40px_rgba(73,46,32,0.07)] justify-between overflow-y-auto">
           <div className="space-y-4">
-            <div className="flex flex-col items-center text-center pb-4 border-b border-[#F0E4D8] dark:border-[#342A24]">
-              <LinaAvatar size="xl" state={teacherState} className="mb-3" />
+            <div className="relative flex flex-col items-center text-center pb-5 border-b border-[#F0E4D8] dark:border-[#342A24]">
+              <div className="absolute top-0 h-24 w-24 rounded-full bg-[#E86F51]/10 blur-2xl" />
+              <div className="relative"><LinaAvatar size="xl" state={teacherState} className="mb-3 drop-shadow-[0_8px_18px_rgba(232,111,81,0.16)]" /></div>
               <h3 className="font-bold text-lg text-[#211A17] dark:text-white">Cô Lina (Lina 老师)</h3>
               <p className="text-xs text-[#E86F51] font-medium">Giáo viên bản xứ HanziAI</p>
               <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF5F0] dark:bg-[#2E241E] text-xs text-[#716761] dark:text-[#C5B9B0]">
@@ -880,7 +878,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         </aside>
 
         {/* CENTER COLUMN: Conversation History & Control Dock */}
-        <div className="col-span-1 lg:col-span-6 flex flex-col bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-3xl shadow-xs overflow-hidden">
+        <div className="col-span-1 lg:col-span-6 flex flex-col bg-white/95 dark:bg-[#201915]/95 backdrop-blur border border-[#EADCCF] dark:border-[#382E27] rounded-[28px] shadow-[0_16px_50px_rgba(73,46,32,0.09)] overflow-hidden">
           {persistenceError && (
             <div className="mx-4 mt-4 p-3 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs flex items-start gap-2">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -892,7 +890,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           )}
 
           {/* Messages Feed */}
-          <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4">
+          <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 scroll-smooth bg-gradient-to-b from-white/40 via-[#FFF9F4]/35 to-white/60 dark:from-transparent dark:via-[#251D19]/25 dark:to-transparent">
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
 
@@ -904,8 +902,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                   <div
                     className={`max-w-[92%] sm:max-w-[85%] rounded-3xl p-4 shadow-2xs ${
                       isUser
-                        ? 'bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] text-white rounded-tr-xs'
-                        : 'bg-[#FFF9F4] dark:bg-[#29201B] text-[#211A17] dark:text-[#F7F2EE] border border-[#F0E2D5] dark:border-[#3A2E26] rounded-tl-xs'
+                        ? 'bg-gradient-to-br from-[#E86F51] via-[#EC795D] to-[#F5A28E] text-white rounded-tr-md shadow-[0_10px_28px_rgba(232,111,81,0.22)]'
+                        : 'bg-white dark:bg-[#29201B] text-[#211A17] dark:text-[#F7F2EE] border border-[#F0E2D5] dark:border-[#3A2E26] rounded-tl-md'
                     }`}
                   >
                     {/* Speaker Header */}
@@ -1049,7 +1047,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
             {/* Lina Thinking Bubble */}
             {teacherState === 'thinking' && (
-              <div className="flex items-center gap-2 text-xs text-[#716761] dark:text-[#A89E97] animate-pulse p-2">
+              <div className="flex items-center gap-2.5 text-xs text-[#716761] dark:text-[#A89E97] animate-pulse px-3 py-2.5 rounded-2xl bg-[#FFF9F4] dark:bg-[#29201B] border border-[#F0E4D8] dark:border-[#382E27] w-fit">
                 <LinaAvatar size="sm" state="thinking" />
                 <span>Cô Lina đang lắng nghe và chuẩn bị câu trả lời...</span>
               </div>
@@ -1059,7 +1057,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           </div>
 
           {/* Bottom Interactive Control Dock */}
-          <div className="p-4 bg-[#FFF9F4] dark:bg-[#251D19] border-t border-[#EFE4D8] dark:border-[#342A24] space-y-3">
+          <div className="p-4 sm:p-5 bg-gradient-to-t from-[#FFF7F1] to-[#FFFDFC] dark:from-[#251D19] dark:to-[#211915] border-t border-[#EFE4D8] dark:border-[#342A24] space-y-3">
             {!authLoading && !authUser && (
               <div className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 border ${guestRemainingSeconds <= 30 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-[#EADCCF] text-[#5F554F]'}`}>
                 <div>
@@ -1085,7 +1083,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             )}
 
             {/* Center Microphone Button */}
-            <div className="flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center py-1">
               <MicrophoneButton
                 state={micState}
                 onClick={handleToggleMicrophone}
@@ -1095,18 +1093,18 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             </div>
 
             {/* Manual Typing Fallback Form */}
-            <form onSubmit={handleTextSubmit} className="flex items-center gap-2 pt-1">
+            <form onSubmit={handleTextSubmit} className="flex items-center gap-2 pt-2">
               <input
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 placeholder="Hoặc gõ câu tiếng Trung của bạn tại đây (Enter để gửi)..."
-                className="flex-1 px-4 py-2.5 rounded-2xl bg-white dark:bg-[#1E1714] border border-[#EADCCF] dark:border-[#3C3028] text-sm text-[#211A17] dark:text-white placeholder-[#9C9188] focus:outline-hidden focus:border-[#E86F51] transition-colors"
+                className="flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-[#1E1714] border border-[#EADCCF] dark:border-[#3C3028] text-sm text-[#211A17] dark:text-white placeholder-[#9C9188] focus:outline-hidden focus:border-[#E86F51] transition-colors"
               />
               <button
                 type="submit"
                 disabled={!inputVal.trim() || micState === 'PROCESSING' || !conversationReady || !guestCanSpeak}
-                className="p-2.5 rounded-2xl bg-[#E86F51] hover:bg-[#D55F42] disabled:opacity-40 text-white transition-colors cursor-pointer"
+                className="p-3 rounded-2xl bg-gradient-to-br from-[#E86F51] to-[#D85F43] hover:from-[#D85F43] hover:to-[#C95239] disabled:opacity-40 text-white shadow-[0_8px_18px_rgba(232,111,81,0.22)] hover:-translate-y-0.5 transition-all cursor-pointer"
                 title="Gửi câu trả lời"
               >
                 <Send size={18} />
@@ -1116,7 +1114,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         </div>
 
         {/* RIGHT COLUMN: Live Vocabulary & Honest Language Feedback (Desktop) */}
-        <aside className="hidden lg:flex lg:col-span-3 flex-col bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-3xl p-5 shadow-xs justify-between overflow-y-auto space-y-5">
+        <aside className="hidden lg:flex lg:col-span-3 flex-col bg-white/90 dark:bg-[#201915]/95 backdrop-blur border border-[#EADCCF] dark:border-[#382E27] rounded-[28px] p-5 shadow-[0_12px_40px_rgba(73,46,32,0.07)] justify-between overflow-y-auto space-y-5">
           {/* Active Session Vocabulary */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
