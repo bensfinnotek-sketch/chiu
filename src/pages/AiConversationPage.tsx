@@ -486,14 +486,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       onInterimResult: (interim) => {
         setInterimTranscript(interim);
       },
-      onResult: (finalText, isFinal) => {
-        setInterimTranscript(finalText);
-        if (isFinal && finalText.trim()) {
-          speechRecognitionService.stopListening();
-          setMicState('PROCESSING');
-          setInterimTranscript('');
-          processUserMessage(finalText);
-        }
+      onResult: (transcript) => {
+        // Keep showing the complete accumulated transcript, but do not send it
+        // to Lina while Web Speech is still producing recognition segments.
+        setInterimTranscript(transcript);
       },
       onError: (errMsg) => {
         setMicState('ERROR');
@@ -503,17 +499,19 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setMicState('IDLE');
         }, 3000);
       },
-      onEnd: () => {
-        if (micState === 'LISTENING') {
-          // If ended with content, submit it
-          if (interimTranscript.trim()) {
-            processUserMessage(interimTranscript);
-            setInterimTranscript('');
-          } else {
-            setMicState('IDLE');
-            setTeacherState('idle');
-            setStatusMessage('Nhấn mic để nói');
-          }
+      onEnd: (finalTranscript) => {
+        // Only submit after recognition has actually ended. This prevents a
+        // temporary/interim result or a short pause from sending a partial sentence.
+        if (finalTranscript?.trim()) {
+          setMicState('PROCESSING');
+          setTeacherState('thinking');
+          setInterimTranscript('');
+          processUserMessage(finalTranscript);
+        } else {
+          setMicState('IDLE');
+          setTeacherState('idle');
+          setInterimTranscript('');
+          setStatusMessage('Chưa ghi nhận đủ câu. Nhấn mic để nói lại nhé.');
         }
       },
     });
