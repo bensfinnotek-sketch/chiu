@@ -29,7 +29,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
+    <div className="chiu-page max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-extrabold text-[#211A17] dark:text-white">
@@ -49,7 +49,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
               key={level.id}
               type="button"
               onClick={() => setSelectedLevelId(level.id)}
-              className={`px-5 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
+              className={`chiu-tap px-5 py-3 min-h-11 rounded-2xl text-sm font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
                 isSelected
                   ? 'bg-[#E86F51] text-white shadow-md shadow-[#E86F51]/25 scale-102'
                   : 'bg-white dark:bg-[#241F1C] text-[#716761] dark:text-[#A89E97] border border-[#E86F51]/15 hover:border-[#E86F51]'
@@ -99,7 +99,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ onSelectLesson }) => {
               <div
                 key={lesson.id}
                 onClick={() => !isLocked && onSelectLesson(lesson.id)}
-                className={`p-6 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
+                className={`chiu-card chiu-card-interactive p-6 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
                   isLocked
                     ? 'bg-gray-50/70 dark:bg-[#1C1816]/70 border-gray-200 dark:border-gray-800 opacity-60 cursor-not-allowed'
                     : 'bg-white dark:bg-[#241F1C] border-[#E86F51]/15 hover:border-[#E86F51] hover:shadow-lg cursor-pointer group'

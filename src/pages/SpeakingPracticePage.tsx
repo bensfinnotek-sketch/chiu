@@ -151,13 +151,13 @@ export const TOPICS_DATA = [
   },
 ];
 
-export const HSK_LEVEL_DESCRIPTIONS: Record<string, { descVi: string; wordCount: string }> = {
-  'HSK 1': { descVi: 'Người mới bắt đầu', wordCount: '150 từ cơ bản' },
-  'HSK 2': { descVi: 'Giao tiếp thường nhật', wordCount: '300 từ' },
-  'HSK 3': { descVi: 'Hội thoại linh hoạt', wordCount: '600 từ' },
-  'HSK 4': { descVi: 'Thảo luận đa dạng chủ đề', wordCount: '1200 từ' },
-  'HSK 5': { descVi: 'Thuyết trình & phản xạ nhanh', wordCount: '2500 từ' },
-  'HSK 6': { descVi: 'Lưu loát như người bản xứ', wordCount: '5000+ từ' },
+export const HSK_LEVEL_DESCRIPTIONS: Record<string, { descVi: string; wordCount: string; speakingFocus: string; responseStyle: string }> = {
+  'HSK 1': { descVi: 'Chào hỏi & đời sống cơ bản', wordCount: '150 từ', speakingFocus: 'Câu ngắn, phản xạ cơ bản', responseStyle: '1 câu chính · tốc độ chậm · từ vựng nền' },
+  'HSK 2': { descVi: 'Giao tiếp hàng ngày & mua sắm', wordCount: '300 từ', speakingFocus: 'Hội thoại đời thường', responseStyle: '1–2 câu · nhịp tự nhiên · mẫu câu quen thuộc' },
+  'HSK 3': { descVi: 'Du lịch, công việc & biểu đạt', wordCount: '600 từ', speakingFocus: 'Kể chuyện & giải thích', responseStyle: '2–3 câu · mở rộng ý · hỏi đáp tự nhiên' },
+  'HSK 4': { descVi: 'Thảo luận trôi chảy đa chủ đề', wordCount: '1200 từ', speakingFocus: 'Quan điểm & lập luận', responseStyle: '2–3 câu · liên kết ý · phản hồi quan điểm' },
+  'HSK 5': { descVi: 'Đọc báo & xem phim tiếng Trung', wordCount: '2500 từ', speakingFocus: 'Phân tích & thuyết trình', responseStyle: '3 câu · từ vựng giàu sắc thái · văn phong tự nhiên' },
+  'HSK 6': { descVi: 'Làm chủ ngôn ngữ chuyên sâu', wordCount: '5000+ từ', speakingFocus: 'Lập luận chuyên sâu & sắc thái', responseStyle: '3 câu · sắc thái tinh tế · diễn đạt gần tự nhiên' },
 };
 
 export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
@@ -230,17 +230,17 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10 space-y-8 animate-fade-in">
+    <main className="max-w-6xl mx-auto px-4 py-8 sm:py-10 space-y-8 animate-fade-in" aria-labelledby="speaking-practice-title">
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#FFF5F0] via-[#FFF9F4] to-[#FDF1EB] dark:from-[#231C18] dark:via-[#1D1714] dark:to-[#281F1A] border border-[#F2E5D8] dark:border-[#382D25] p-6 sm:p-8 md:p-10 shadow-sm">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
           <div className="space-y-3 text-center md:text-left max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-xs font-semibold tracking-wide">
               <Sparkles size={14} />
-              AI SPEAKING PRACTICE • HANZI AI
+              AI SPEAKING PRACTICE • BENTALK AI
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#211A17] dark:text-[#FAF5F1]">
+            <h1 id="speaking-practice-title" className="text-3xl sm:text-4xl font-bold tracking-tight text-[#211A17] dark:text-[#FAF5F1]">
               Luyện nói AI cùng cô Lina
             </h1>
 
@@ -291,10 +291,10 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
       </div>
 
       {/* Level Selector Bar */}
-      <div className="space-y-3">
+      <section className="space-y-3" aria-labelledby="speaking-level-title">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
+            <h2 id="speaking-level-title" className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
               1. Chọn trình độ của bạn (Target Level)
             </h2>
             <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97]">
@@ -316,6 +316,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
                 key={lvl}
                 type="button"
                 onClick={() => setSelectedLevel(lvl)}
+                aria-pressed={isSelected}
                 className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
                     ? 'bg-[#E86F51] text-white border-[#E86F51] shadow-md shadow-[#E86F51]/20 scale-102'
@@ -338,13 +339,61 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             );
           })}
         </div>
-      </div>
+      </section>
+
+      {/* Speaking Session Blueprint */}
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="speaking-blueprint-title">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Lina Speaking Blueprint</span>
+            <h2 id="speaking-blueprint-title" className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">Khung luyện nói cho phiên này</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">
+              Chọn trình độ và chủ đề trước, sau đó Lina dùng khung này để bạn biết phiên nói sẽ tập trung vào điều gì.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Mục tiêu: phản xạ + diễn đạt</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            {
+              label: 'Tốc độ',
+              value: Number(selectedLevel.replace('HSK ', '')) <= 2 ? 'Chậm, rõ' : Number(selectedLevel.replace('HSK ', '')) <= 4 ? 'Tự nhiên' : 'Tăng phản xạ',
+              hint: 'Lina ưu tiên tốc độ phù hợp với trình độ mục tiêu.',
+            },
+            {
+              label: 'Trọng tâm',
+              value: HSK_LEVEL_DESCRIPTIONS[selectedLevel]?.speakingFocus || 'Phản xạ tự nhiên',
+              hint: 'Mỗi HSK có mục tiêu diễn đạt khác nhau, không dùng chung một kịch bản.',
+            },
+            {
+              label: 'Độ sâu',
+              value: HSK_LEVEL_DESCRIPTIONS[selectedLevel]?.responseStyle || 'Câu trả lời phù hợp trình độ',
+              hint: 'Lina điều chỉnh độ dài, cấu trúc và sắc thái theo cấp độ đã chọn.',
+            },
+          ].map((signal) => (
+            <div key={signal.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">{signal.label}</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{signal.value}</p>
+              <p className="text-[11px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{signal.hint}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Cấu trúc phiên</p>
+              <p className="text-sm font-bold text-[#211A17] dark:text-white mt-1">Khởi động → trả lời → mở rộng → nhận phản hồi → thử lại</p>
+            </div>
+            <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">HSK {selectedLevel.replace('HSK ', '')} · Lina 老师</span>
+          </div>
+        </div>
+      </section>
 
       {/* Topic Cards Grid */}
-      <div className="space-y-4">
+      <section className="space-y-4" aria-labelledby="speaking-topic-title">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
+            <h2 id="speaking-topic-title" className="text-lg sm:text-xl font-bold text-[#211A17] dark:text-[#FAF5F1]">
               2. Chọn chủ đề bạn muốn luyện tập (Choose Topic)
             </h2>
             <p className="text-xs sm:text-sm text-[#716761] dark:text-[#A89E97]">
@@ -363,7 +412,16 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             return (
               <div
                 key={topic.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Bắt đầu luyện nói chủ đề ${topic.titleVi}, trình độ ${selectedLevel}`}
                 onClick={() => handleSelectTopic(topic.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSelectTopic(topic.id);
+                  }
+                }}
                 className="group relative bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] rounded-2xl p-5 hover:border-[#E86F51] hover:shadow-lg hover:shadow-[#E86F51]/10 transition-all cursor-pointer flex flex-col justify-between"
               >
                 <div>
@@ -426,7 +484,7 @@ export const SpeakingPracticePage: React.FC<SpeakingPracticePageProps> = ({
             );
           })}
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };

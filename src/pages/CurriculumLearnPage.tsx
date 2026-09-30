@@ -18,8 +18,8 @@ import { HSKLevelNumber } from '../types/curriculum';
 import { useCurriculum } from '../hooks/useCurriculum';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { useSubscription } from '../hooks/useSubscription';
 import { getAuthHeaders } from '../services/flashcardService';
+import { buildPersonalizedLearningPlan, calculateLearningMomentum } from '../curriculum/learningDecisionEngine';
 
 interface CurriculumLearnPageProps {
   initialLevel?: HSKLevelNumber;
@@ -33,7 +33,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   onNavigate,
 }) => {
   const { profile, updateProfile } = useUserProfile();
-  const { isPremium } = useSubscription();
   const [selectedLevel, setSelectedLevel] = useState<HSKLevelNumber>(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [generatedLesson, setGeneratedLesson] = useState<any | null>(null);
@@ -48,8 +47,8 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ? Math.min(6, Math.max(1, Number(initialLevel))) as HSKLevelNumber
       : null;
     const nextLevel = requestedLevel ?? profileLevel;
-    setSelectedLevel(isPremium ? nextLevel : Math.min(nextLevel, 2) as HSKLevelNumber);
-  }, [profile?.hskLevel, isPremium, initialLevel]);
+    setSelectedLevel(nextLevel);
+  }, [profile?.hskLevel, initialLevel]);
 
   const {
     levels,
@@ -63,9 +62,65 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
 
   const activeLevelInfo = levels.find((l) => l.level === selectedLevel) || levels[0];
 
+  const personalizedPlan = React.useMemo(() => {
+    const progressItems = Object.values(progressMap || {});
+    const momentum = calculateLearningMomentum(progressItems);
+    const recentCompletionRate = progressItems.length
+      ? Math.round(progressItems.reduce((sum, item) => sum + Number(item.progressPercent || 0), 0) / progressItems.length)
+      : 50;
+    const recentCompleted = progressItems
+      .filter((item) => item.status === 'completed' && item.completedAt)
+      .sort((a, b) => Date.parse(String(b.completedAt)) - Date.parse(String(a.completedAt)))[0];
+    const recentOutcomeAgeDays = recentCompleted?.completedAt
+      ? Math.max(0, Math.round((Date.now() - Date.parse(recentCompleted.completedAt)) / 86400000))
+      : undefined;
+
+    return buildPersonalizedLearningPlan({
+      dailyMinutes: profile?.dailyMinutes || 15,
+      learningGoal: profile?.learningGoal || 'general',
+      decision: recommendations[0]?.metadata?.decision || 'learn_lesson',
+      completionPercent: levelCompletion?.completionPercent || 0,
+      vocabularyScore: levelCompletion?.vocabularyMastery || 0,
+      grammarScore: levelCompletion?.grammarMastery || 0,
+      quizScore: levelCompletion?.quizMastery || 0,
+      diagnosticFocus: recommendations[0]?.metadata?.diagnosticFocus,
+      momentumScore: momentum.score,
+      recentCompletionRate,
+      momentumTrend: momentum.trend,
+      consistencyScore: momentum.consistency,
+      recentOutcomeScore: recentCompleted?.score ?? undefined,
+      recentOutcomeAgeDays,
+    });
+  }, [profile?.dailyMinutes, profile?.learningGoal, recommendations, levelCompletion, progressMap]);
+
+  const learningSignals = React.useMemo(() => {
+    const progressItems = Object.values(progressMap || {});
+    const momentum = calculateLearningMomentum(progressItems);
+    const recentCompletionRate = progressItems.length
+      ? Math.round(progressItems.reduce((sum, item) => sum + Number(item.progressPercent || 0), 0) / progressItems.length)
+      : 50;
+    const recentCompleted = progressItems
+      .filter((item) => item.status === 'completed' && item.completedAt)
+      .sort((a, b) => Date.parse(String(b.completedAt)) - Date.parse(String(a.completedAt)))[0];
+    const recentOutcomeScore = recentCompleted?.score ?? null;
+    const recentOutcomeAgeDays = recentCompleted?.completedAt
+      ? Math.max(0, Math.round((Date.now() - Date.parse(recentCompleted.completedAt)) / 86400000))
+      : null;
+
+    return {
+      momentum: Math.round(momentum.score),
+      consistency: Math.round(momentum.consistency),
+      completionRate: recentCompletionRate,
+      recentOutcomeScore: recentOutcomeScore == null ? null : Math.round(Number(recentOutcomeScore)),
+      recentOutcomeAgeDays,
+      trend: momentum.trend,
+    };
+  }, [progressMap]);
+
   // Progress the learner's target HSK automatically only after the current
-  // level is fully completed with a passing average. Free accounts stop at
-  // HSK 2; premium accounts can progress through HSK 6.
+  // level is fully completed with the existing mastery thresholds.
+  // HSK access remains open in the learning UI; subscription logic is preserved
+  // elsewhere for future entitlement changes.
   React.useEffect(() => {
     const currentProfileLevel = Number(profile?.hskLevel || 1);
     const completedLevel = levelCompletion?.completionPercent === 100;
@@ -76,7 +131,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       ((levelCompletion?.quizMastery || 0) >= 80 || (levelCompletion?.quizMastery || 0) === 0) &&
       (levelCompletion?.weakVocabularyCount || 0) <= 5 &&
       (levelCompletion?.weakGrammarCount || 0) <= 2;
-    const canAdvance = selectedLevel < 6 && (isPremium || selectedLevel < 2);
+    const canAdvance = selectedLevel < 6;
 
     if (!profile || !completedLevel || !masteryReady || !canAdvance) return;
     if (currentProfileLevel !== selectedLevel) return;
@@ -88,7 +143,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   }, [
     profile,
     selectedLevel,
-    isPremium,
     levelCompletion?.completionPercent,
     levelCompletion?.averageQuizScore,
     updateProfile,
@@ -106,7 +160,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in" aria-labelledby="curriculum-page-title">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#E86F51]/10">
         <div>
@@ -116,7 +170,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               Giáo trình chuẩn HSK 3.0
             </span>
           </div>
-          <h1 className="text-3xl font-black text-[#211A17] dark:text-white mt-1.5">
+          <h1 id="curriculum-page-title" className="text-3xl font-black text-[#211A17] dark:text-white mt-1.5">
             Lộ trình học tập có cấu trúc
           </h1>
           <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
@@ -125,19 +179,18 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
 
         {/* Global Level Switcher Badges */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none" role="tablist" aria-label="Chọn cấp độ HSK">
           {[1, 2, 3, 4, 5, 6].map((lvl) => {
             const isSelected = selectedLevel === lvl;
-            const locked = !isPremium && lvl >= 3;
+            const locked = false;
             return (
               <button
                 key={lvl}
                 type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-label={locked ? `HSK ${lvl}, mở khóa bằng gói PRO` : `Chọn HSK ${lvl}`}
                 onClick={() => {
-                  if (locked) {
-                    onNavigate?.('pricing');
-                    return;
-                  }
                   setSelectedLevel(lvl as HSKLevelNumber);
                 }}
                 className={`px-4 py-2.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -145,7 +198,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                     ? 'bg-[#E86F51] text-white shadow-md shadow-[#E86F51]/25 scale-102'
                     : 'bg-white dark:bg-[#241F1C] text-[#716761] dark:text-[#A89E97] border border-[#E86F51]/15 hover:border-[#E86F51]'
                 }`}
-                title={locked ? 'HSK 3–6 dành cho tài khoản PRO' : undefined}
+
               >
                 <span>HSK {lvl}{locked ? ' 🔒' : ''}</span>
               </button>
@@ -154,18 +207,12 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
         </div>
       </div>
 
-      {!isPremium && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200">
-          Tài khoản Free học theo lộ trình HSK 1–2. Nâng cấp PRO để mở HSK 3–6 và lộ trình cá nhân hóa đầy đủ.
-        </div>
-      )}
-
       {profile && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section aria-labelledby="personalized-path-title" className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <p className="text-xs font-black text-[#E86F51] uppercase tracking-wider">Lộ trình riêng của bạn</p>
-            <h3 className="text-lg font-black text-[#211A17] dark:text-white mt-1">
-              HSK {Math.min(6, Math.max(1, Number(profile.hskLevel || 1)))} · {isPremium ? 'PRO cá nhân hóa' : 'Free'}
+            <h3 id="personalized-path-title" className="text-lg font-black text-[#211A17] dark:text-white mt-1">
+              HSK {selectedLevel} · Lộ trình cá nhân hóa
             </h3>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">
               Từ vựng đã lưu sẽ được Lina dùng để tạo bài học phù hợp với tài khoản này.
@@ -175,10 +222,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             type="button"
             disabled={isGenerating}
             onClick={async () => {
-              if (!isPremium && selectedLevel >= 3) {
-                onNavigate?.('pricing');
-                return;
-              }
               setIsGenerating(true);
               setGenerationError(null);
               try {
@@ -186,7 +229,21 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                 const response = await fetch('/api/learning/personalized-lesson', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...headers },
-                  body: JSON.stringify({ hskLevel: selectedLevel }),
+                  body: JSON.stringify({
+                    hskLevel: selectedLevel,
+                    adaptiveProfile: {
+                      difficulty: personalizedPlan.difficulty,
+                      newWordsTarget: personalizedPlan.newWordsTarget,
+                      quizIntensity: personalizedPlan.quizIntensity,
+                      speakingPace: personalizedPlan.speakingPace,
+                      focus: personalizedPlan.focus,
+                    },
+                    composerContext: {
+                      diagnosticFocus: recommendations[0]?.metadata?.diagnosticFocus,
+                      diagnosticLessonId: recommendations[0]?.metadata?.diagnosticLessonId,
+                      diagnosticTargets: recommendations[0]?.metadata?.diagnosticTargets,
+                    },
+                  }),
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'Không thể tạo bài học cá nhân.');
@@ -201,7 +258,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           >
             {isGenerating ? 'Lina đang soạn bài…' : 'Tạo bài học cá nhân'}
           </button>
-        </div>
+        </section>
       )}
 
       {generationError && (
@@ -211,9 +268,16 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
       )}
 
       {generatedLesson?.content && (
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
+        <section aria-labelledby="generated-lesson-title" className="p-6 rounded-3xl bg-gradient-to-br from-[#FFF5F1] to-white dark:from-[#2A2320] dark:to-[#241F1C] border-2 border-[#E86F51]/20 space-y-4">
           <div>
-            <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-[#E86F51] uppercase">Bài học cá nhân · HSK {generatedLesson.hsk_level}</span>
+              {(recommendations[0]?.metadata?.diagnosticTargets?.length ?? 0) > 0 && (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+                  Soạn theo AI-9
+                </span>
+              )}
+            </div>
             <h3 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
               {generatedLesson.content.title || generatedLesson.title}
             </h3>
@@ -288,9 +352,276 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               </div>
             </div>
           )}
-        </div>
+        </section>
       )}
 
+      {/* Lina learning journey — presentation only; recommendation logic stays unchanged */}
+      <section className="chiu-card p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Hôm nay Lina đề xuất cho bạn</span>
+            <h2 className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Một mini learning journey</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Các bước dưới đây chỉ thay đổi cách trình bày, không thay đổi quyết định của AI-9.</p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">HSK {selectedLevel}</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {[
+            { n: 1, title: 'Ôn SRS', icon: '↻', tone: 'Cần làm' },
+            { n: 2, title: 'Củng cố', icon: '◎', tone: 'Khuyến nghị' },
+            { n: 3, title: 'Học bài mới', icon: '▤', tone: 'Tiếp theo' },
+            { n: 4, title: 'Speaking', icon: '◉', tone: 'Luyện nói' },
+          ].map((step) => (
+            <div key={step.n} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 relative">
+              <div className="flex items-center justify-between">
+                <span className="w-9 h-9 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center font-black">{step.n}</span>
+                <span className="text-lg text-[#E86F51]">{step.icon}</span>
+              </div>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-4">{step.title}</p>
+              <span className="inline-flex mt-1 px-2 py-0.5 rounded-full bg-white dark:bg-[#241F1C] text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">{step.tone}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* AI-9 diagnostic explanation — presentation only */}
+      {recommendations[0]?.metadata && (
+        <section className="chiu-card p-5 sm:p-7">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-9 · Vì sao Lina chọn bước này?</span>
+              <h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">Giải thích đề xuất hiện tại</h2>
+              <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">Lina đang giải thích quyết định từ các tín hiệu học tập đã có, thay vì tạo thêm dữ liệu hay thay đổi learning engine.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-[10px] font-black">{recommendations[0].metadata.diagnosticConfidence ?? 0}% tin cậy</span>
+              <span className="px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97] text-[10px] font-bold">{recommendations[0].metadata.diagnosticEvidenceCount ?? 0} tín hiệu</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Trọng tâm</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.diagnosticFocus || 'balanced'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">Lina ưu tiên tín hiệu phù hợp với bước học tiếp theo.</p>
+            </div>
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Bằng chứng</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.diagnosticTargetLabels?.[0] || 'Theo dõi tín hiệu gần đây'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{recommendations[0].metadata.diagnosticAgingNote || 'Tín hiệu sẽ được cập nhật khi bạn học thêm.'}</p>
+            </div>
+            <div className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Lý do</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.reason || 'Giữ nhịp học phù hợp với tiến độ hiện tại.'}</p>
+              <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">Đây là diễn giải của quyết định hiện tại, không phải điểm đánh giá người học.</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* AI-10 Personalized Learning Plan */}
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="ai10-plan-title">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-10 · Kế hoạch cá nhân hóa</span>
+            <h2 id="ai10-plan-title" className="text-2xl font-black text-[#211A17] dark:text-white mt-1">
+              {personalizedPlan.dailyMinutes} phút học hôm nay
+            </h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              Trọng tâm: <span className="font-bold text-[#E86F51]">{personalizedPlan.focus}</span> · kế hoạch tự điều chỉnh theo tín hiệu chẩn đoán của AI-9.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3" aria-label="Tóm tắt mức thích ứng AI-10">
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Độ tải: {personalizedPlan.difficulty}</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">+{personalizedPlan.newWordsTarget} từ mới</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">Quiz: {personalizedPlan.quizIntensity}</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">Speaking: {personalizedPlan.speakingPace}</span>
+            </div>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-2">{personalizedPlan.adaptationReason}</p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">
+            {recommendations[0]?.metadata?.decision === 'review_srs'
+              ? 'Ưu tiên SRS'
+              : recommendations[0]?.metadata?.decision === 'review_quiz'
+                ? 'Ưu tiên củng cố'
+                : recommendations[0]?.metadata?.decision === 'advance_hsk'
+                  ? 'Sẵn sàng chuyển HSK'
+                  : 'Tiếp tục tiến độ'}
+          </span>
+          {recommendations[0]?.metadata?.diagnosticFocus && (
+            <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+              Chẩn đoán: {recommendations[0].metadata.diagnosticFocus === 'vocabulary' ? 'Từ vựng' : recommendations[0].metadata.diagnosticFocus === 'grammar' ? 'Ngữ pháp' : recommendations[0].metadata.diagnosticFocus === 'quiz' ? 'Đánh giá quiz' : 'Cân bằng'}
+            </span>
+          )}
+          {(recommendations[0]?.metadata?.diagnosticTargets?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(recommendations[0]?.metadata?.diagnosticTargetLabels ?? []).map((label) => (
+                <span key={label} className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">
+                  Mục tiêu: {label}
+                </span>
+              ))}
+              {recommendations[0]?.metadata?.diagnosticLessonId && (
+                <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">
+                  Bài đích: {lessons.find((lesson) => lesson.id === recommendations[0]?.metadata?.diagnosticLessonId)?.title || recommendations[0].metadata.diagnosticLessonId}
+                </span>
+              )}
+            </div>
+          )}
+          {recommendations[0]?.metadata?.coachReason && (
+            <div className="mt-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <p className="text-[11px] font-black text-[#E86F51] uppercase tracking-wider">AI Coach · Vì sao chọn bài này?</p>
+              <p className="text-sm text-[#211A17] dark:text-white mt-1">{recommendations[0].metadata.coachReason}</p>
+              {recommendations[0].metadata.coachGoal && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Mục tiêu sau phiên:</span> {recommendations[0].metadata.coachGoal}
+                </p>
+              )}
+              {recommendations[0].metadata.coachOutcome && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Tiêu chí đạt:</span> {recommendations[0].metadata.coachOutcome}
+                </p>
+              )}
+              {recommendations[0].metadata.coachCheckpoint && (
+                <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">
+                  <span className="font-bold">Mốc theo dõi:</span> {recommendations[0].metadata.coachCheckpoint}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4" aria-label="Bốn nút điều chỉnh của AI-10">
+          {[
+            { label: 'Độ tải', value: personalizedPlan.difficulty, hint: 'Lina điều chỉnh lượng học theo nhịp và kết quả gần đây.' },
+            { label: 'Từ mới', value: '+' + personalizedPlan.newWordsTarget, hint: 'Mục tiêu từ mới trong phiên hôm nay.' },
+            { label: 'Quiz', value: personalizedPlan.quizIntensity, hint: 'Mức độ củng cố bằng kiểm tra ngắn.' },
+            { label: 'Speaking', value: personalizedPlan.speakingPace, hint: 'Tốc độ phản xạ khi luyện nói cùng Lina.' },
+          ].map((signal) => (
+            <div key={signal.label} className="rounded-2xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">{signal.label}</p>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{signal.value}</p>
+              <p className="text-[11px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{signal.hint}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-4 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4" aria-label="Tóm tắt kế hoạch AI-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">AI-10 · Cách Lina phân bổ thời gian</p>
+              <p className="text-sm font-bold text-[#211A17] dark:text-white mt-1">{personalizedPlan.adaptationReason}</p>
+            </div>
+            <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">Tổng {personalizedPlan.dailyMinutes} phút · {personalizedPlan.steps.length} bước</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Các bước trong kế hoạch AI-10">
+          {personalizedPlan.steps.map((step, index) => (
+            <button
+              key={step.id}
+              type="button"
+              aria-label={`Bước ${index + 1}: ${step.title}, ${step.minutes} phút`}
+              onClick={() => {
+                if (step.action === 'flashcards' && onNavigate) onNavigate('flashcards');
+                else if (step.action === 'speaking' && onNavigate) onNavigate('speaking');
+                else if (step.action === 'lesson' && recommendations[0]?.targetId && !recommendations[0].targetId.startsWith('level:')) {
+                  onSelectLesson(recommendations[0].targetId);
+                } else if (step.action === 'review' && recommendations[0]?.metadata?.diagnosticLessonId) {
+                  onSelectLesson(recommendations[0].metadata.diagnosticLessonId);
+                }
+              }}
+              className="text-left rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4 hover:border-[#E86F51]/30 hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E86F51]/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#241F1C]"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="w-9 h-9 rounded-xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center font-black">{index + 1}</span>
+                <span className="text-xs font-black text-[#E86F51]">{step.minutes} phút</span>
+              </div>
+              <p className="text-sm font-black text-[#211A17] dark:text-white mt-3">{step.title}</p>
+              <p className="text-xs leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1.5">{step.description}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* AI-10 adaptation signals — presentation only; values reuse existing progress data */}
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="ai10-signals-title">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">AI-10 · Tín hiệu thích ứng</span>
+            <h2 id="ai10-signals-title" className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">Lina đang đọc nhịp học của bạn</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1 max-w-2xl">
+              Bốn tín hiệu dưới đây giải thích dữ liệu đầu vào cho kế hoạch hôm nay. Chúng chỉ hiển thị dữ liệu đã có, không tạo thêm hồ sơ hay thay đổi learning engine.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">Cập nhật theo tiến độ hiện tại</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Động lực', value: `${learningSignals.momentum}%`, hint: learningSignals.trend === 'rising' ? 'Đang tăng' : learningSignals.trend === 'falling' ? 'Đang giảm' : 'Ổn định' },
+            { label: 'Tính đều đặn', value: `${learningSignals.consistency}%`, hint: 'Mức ổn định của các phiên học gần đây.' },
+            { label: 'Hoàn thành gần đây', value: `${learningSignals.completionRate}%`, hint: 'Tiến độ trung bình của các mục đã theo dõi.' },
+            { label: 'Kết quả gần nhất', value: learningSignals.recentOutcomeScore == null ? 'Chưa có' : `${learningSignals.recentOutcomeScore}%`, hint: learningSignals.recentOutcomeAgeDays == null ? 'Chưa có phiên hoàn tất gần đây.' : `${learningSignals.recentOutcomeAgeDays} ngày trước` },
+          ].map((signal) => (
+            <div key={signal.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">{signal.label}</p>
+                <span className="text-sm font-black text-[#211A17] dark:text-white">{signal.value}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-2">{signal.hint}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Learning Intelligence — presentation layer built from existing AI-9/AI-10 signals */}
+      <section className="chiu-card p-5 sm:p-7" aria-labelledby="learning-intelligence-title">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-5">
+          <div>
+            <span className="text-xs font-black uppercase tracking-[0.14em] text-[#E86F51]">Lina Learning Intelligence</span>
+            <h2 id="learning-intelligence-title" className="text-2xl font-black text-[#211A17] dark:text-white mt-1">Bản đồ năng lực hiện tại</h2>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Lina dùng các tín hiệu đã có để cho bạn thấy điểm mạnh, vùng cần củng cố và mốc tiếp theo — không tạo thêm hệ thống dữ liệu mới.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">AI-9 · {recommendations[0]?.metadata?.diagnosticConfidence ?? 0}% tin cậy</span>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">{recommendations[0]?.metadata?.diagnosticEvidenceCount ?? 0} tín hiệu chẩn đoán</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Từ vựng', value: levelCompletion?.vocabularyMastery || 0, icon: '文' },
+            { label: 'Ngữ pháp', value: levelCompletion?.grammarMastery || 0, icon: '句' },
+            { label: 'Quiz', value: levelCompletion?.quizMastery || 0, icon: '✓' },
+            { label: 'Mastery', value: levelCompletion?.masteryScore || 0, icon: '★' },
+          ].map((skill) => (
+            <div key={skill.label} className="rounded-2xl bg-[#FFF9F4] dark:bg-[#181412] border border-[#E86F51]/10 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="w-9 h-9 rounded-xl bg-white dark:bg-[#241F1C] text-[#E86F51] flex items-center justify-center font-black">{skill.icon}</span>
+                <span className="text-lg font-black text-[#211A17] dark:text-white">{Math.round(skill.value)}%</span>
+              </div>
+              <p className="text-xs font-black text-[#211A17] dark:text-white mt-3">{skill.label}</p>
+              <div className="h-2 mt-2 rounded-full bg-white dark:bg-[#241F1C] overflow-hidden" role="progressbar" aria-label={`${skill.label}: ${Math.round(skill.value)}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(100, Math.max(0, skill.value)))}>
+                <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${Math.min(100, Math.max(0, skill.value))}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
+          <div className="rounded-2xl border border-[#65A873]/20 bg-[#F3FAF4] dark:bg-[#18241B] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#4F8B5C]">Điểm mạnh</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{Math.max(levelCompletion?.vocabularyMastery || 0, levelCompletion?.grammarMastery || 0, levelCompletion?.quizMastery || 0) >= 80 ? "Bạn đã có ít nhất một trụ cột vững." : "Nền tảng đang hình thành; hãy ưu tiên nhịp học đều."}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">{recommendations[0]?.metadata?.coachGoal || "Lina sẽ tiếp tục điều chỉnh trọng tâm theo dữ liệu mới."}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E86F51]/15 bg-[#FFF9F4] dark:bg-[#181412] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Vùng cần củng cố</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{recommendations[0]?.metadata?.diagnosticTargetLabels?.[0] || ((levelCompletion?.weakVocabularyCount || 0) > (levelCompletion?.weakGrammarCount || 0) ? "Từ vựng cần ôn lại" : "Ngữ pháp cần ôn lại")}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">{recommendations[0]?.metadata?.diagnosticAgingNote || "Lina sẽ ưu tiên tín hiệu có độ tin cậy và độ mới phù hợp."}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E86F51]/15 bg-white dark:bg-[#241F1C] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Mốc tiếp theo</p>
+            <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{(levelCompletion?.completionPercent || 0) >= 100 && (levelCompletion?.masteryScore || 0) >= 80 && selectedLevel < 6 ? "Sẵn sàng kiểm tra HSK " + (selectedLevel + 1) : (levelCompletion?.completionPercent || 0) >= 70 ? "Củng cố để chạm mastery" : "Hoàn thành nền tảng cấp độ hiện tại"}</p>
+            <p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1.5">Mốc này chỉ là diễn giải từ tiến độ hiện tại; quy tắc chuyển cấp vẫn giữ nguyên.</p>
+          </div>
+        </div>
+      </section>
       {/* Recommended Next Action / In-progress Widget */}
       {recommendations.length > 0 && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FFF5F1] via-white to-[#FFF9F4] dark:from-[#2A2320] dark:via-[#241F1C] dark:to-[#1E1917] border-2 border-[#E86F51]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -337,13 +668,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
               if (targetId.startsWith('level:')) {
                 const nextLevel = Number(targetId.slice('level:'.length)) as HSKLevelNumber;
                 if (!Number.isInteger(nextLevel) || nextLevel < 1 || nextLevel > 6) return;
-
-                // Free users should be sent to the upgrade screen rather than
-                // changing the UI into a locked level.
-                if (!isPremium && nextLevel >= 3) {
-                  onNavigate?.('pricing');
-                  return;
-                }
 
                 setSelectedLevel(nextLevel);
                 setSearchQuery('');
@@ -445,14 +769,34 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
             const unitLessons = filteredLessons.filter((l) => l.unitId === unit.id);
             if (unitLessons.length === 0 && searchQuery) return null;
 
+            const completedCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'completed').length;
+            const inProgressCount = unitLessons.filter((lesson) => progressMap[lesson.id]?.status === 'in_progress').length;
+            const unlockedCount = unitLessons.filter((lesson) => {
+              if (!lesson.prerequisiteLessonId) return true;
+              return progressMap[lesson.prerequisiteLessonId]?.status === 'completed';
+            }).length;
+            const unitPercent = unitLessons.length ? Math.round((completedCount / unitLessons.length) * 100) : 0;
+            const unitState = completedCount === unitLessons.length && unitLessons.length > 0
+              ? 'Hoàn thành'
+              : inProgressCount > 0
+                ? 'Đang học'
+                : unlockedCount > 0
+                  ? 'Sẵn sàng'
+                  : 'Đang chờ';
+
             return (
               <div key={unit.id} className="space-y-4">
                 {/* Unit Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-[#E86F51]/15">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 border-b border-[#E86F51]/15" aria-label={`HSK ${unitLessons[0]?.levelNumber || selectedLevel} · Unit ${unit.order}`}>
                   <div className="space-y-0.5">
-                    <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
-                      Unit {unit.order} · {unit.titleZh}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-black text-[#E86F51] tracking-wider uppercase">
+                        Unit {unit.order} · {unit.titleZh}
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${unitState === 'Hoàn thành' ? 'bg-[#65A873]/10 text-[#4F8B5C]' : unitState === 'Đang học' ? 'bg-[#E86F51]/10 text-[#E86F51]' : 'bg-[#F3E8DE] dark:bg-[#2F2520] text-[#716761] dark:text-[#B5AAA2]'}`}>
+                        {unitState}
+                      </span>
+                    </div>
                     <h3 className="text-xl font-black text-[#211A17] dark:text-white">
                       {unit.title}
                     </h3>
@@ -460,9 +804,15 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       {unit.description}
                     </p>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-xl bg-gray-100 dark:bg-[#342822] text-[#716761] dark:text-[#A89E97] font-semibold">
-                    {unitLessons.length} bài
-                  </span>
+                  <div className="min-w-[180px]">
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-[#716761] dark:text-[#A89E97] mb-1">
+                      <span>{completedCount}/{unitLessons.length} bài hoàn thành · {inProgressCount} đang học</span>
+                      <span>{unitPercent}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ Unit ${unit.order}: ${unitPercent}% · ${unitState}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={unitPercent}>
+                      <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${unitPercent}%` }} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Lessons Grid in Unit */}
@@ -482,7 +832,16 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                     return (
                       <div
                         key={lesson.id}
+                        role={!isLocked ? 'button' : undefined}
+                        tabIndex={!isLocked ? 0 : undefined}
+                        aria-label={!isLocked ? `${lesson.title}. ${isCompleted ? 'Đã hoàn thành' : isInProgress ? `Đang học ${progress?.progressPercent || 0}%` : 'Sẵn sàng bắt đầu'}` : `${lesson.title}. Bài học đang khóa`}
                         onClick={() => !isLocked && onSelectLesson(lesson.id)}
+                        onKeyDown={(event) => {
+                          if (!isLocked && (event.key === 'Enter' || event.key === ' ')) {
+                            event.preventDefault();
+                            onSelectLesson(lesson.id);
+                          }
+                        }}
                         className={`p-5 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
                           isLocked
                             ? 'bg-gray-50/70 dark:bg-[#1C1816]/70 border-gray-200 dark:border-gray-800 opacity-60 cursor-not-allowed'
@@ -491,9 +850,14 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                       >
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
-                              Bài {lesson.order} · {lesson.titleZh}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-[#FFF0EB] dark:bg-[#342822] text-[#E86F51]">
+                                HSK {lesson.levelNumber} · Bài {lesson.order}
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-[#181412] border border-[#E86F51]/10 text-[#716761] dark:text-[#A89E97]">
+                                {lesson.titleZh}
+                              </span>
+                            </div>
                             {isCompleted ? (
                               <span className="flex items-center gap-1 text-xs font-bold text-[#65A873]">
                                 <CheckCircle2 size={16} />
@@ -526,16 +890,24 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                         </div>
 
                         {/* Card Footer */}
-                        <div className="flex items-center justify-between pt-3 border-t border-[#E86F51]/10 text-xs text-[#716761] dark:text-[#A89E97]">
+                        {!isLocked && (
+                          <div className="space-y-2 pt-3 border-t border-[#E86F51]/10">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-[#716761] dark:text-[#A89E97]">
+                              <span>Tiến độ bài</span>
+                              <span>{isCompleted ? 100 : Math.round(progress?.progressPercent || 0)}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-gray-100 dark:bg-[#342822] overflow-hidden" role="progressbar" aria-label={`Tiến độ ${lesson.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={isCompleted ? 100 : Math.round(progress?.progressPercent || 0)}>
+                              <div className="h-full rounded-full bg-[#E86F51] transition-all" style={{ width: `${isCompleted ? 100 : Math.min(100, Math.max(0, progress?.progressPercent || 0))}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-3 text-xs text-[#716761] dark:text-[#A89E97]">
                           <span className="flex items-center gap-1">
                             <Clock size={14} />
                             {lesson.estimatedMinutes} phút
                           </span>
 
-                          <button
-                            type="button"
-                            disabled={isLocked}
-                            className={`flex items-center gap-1 font-bold ${
+                          <span className={`flex items-center gap-1 font-bold ${
                               isLocked
                                 ? 'text-gray-400'
                                 : 'text-[#E86F51] group-hover:translate-x-1 transition-transform'
@@ -543,7 +915,7 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
                           >
                             <span>{isCompleted ? 'Ôn tập lại' : isInProgress ? 'Học tiếp' : 'Bắt đầu'}</span>
                             <ChevronRight size={14} />
-                          </button>
+                          </span>
                         </div>
                       </div>
                     );
@@ -554,6 +926,6 @@ export const CurriculumLearnPage: React.FC<CurriculumLearnPageProps> = ({
           })}
         </div>
       )}
-    </div>
+    </main>
   );
 };

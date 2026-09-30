@@ -21,7 +21,7 @@ import { UserVocabulary } from '../types/vocabulary';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { curriculumRepository } from '../curriculum/curriculumRepository';
 import { ALL_GRAMMAR_POINTS } from '../curriculum/vocabularyAndGrammarData';
-import { buildHskMasteryProfile, getMasteryLabelVi, HSKMasteryProfile } from '../curriculum/masteryProfile';
+import { buildHskMasteryProfile, getHskMasteryProfile, getMasteryLabelVi, HSKMasteryProfile } from '../curriculum/masteryProfile';
 
 export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
   const { user: authUser } = useAuth();
@@ -106,6 +106,9 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
     [vocabulary]
   );
 
+  const targetHskLevel = Number(String(user.targetHsk).match(/\d+/)?.[0] || 1) as 1 | 2 | 3 | 4 | 5 | 6;
+  const targetMastery = getHskMasteryProfile(masteryProfiles, targetHskLevel);
+
   const stats = progress || {
     currentStreak: 0,
     longestStreak: 0,
@@ -177,21 +180,42 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: Flame, value: `${stats.currentStreak} ngày`, label: 'Chuỗi hiện tại' },
-          { icon: BookOpen, value: String(vocabulary.filter((word) => word.status === 'learned').length), label: 'Từ đã nắm vững' },
-          { icon: Target, value: user.targetHsk, label: 'Mục tiêu HSK' },
-          { icon: Clock, value: `${stats.totalStudyMinutes} phút`, label: 'Tổng thời gian học' },
-        ].map(({ icon: Icon, value, label }) => (
-          <div key={label} className="p-5 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/10 shadow-xs">
-            <div className="w-10 h-10 rounded-2xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center mb-3">
-              <Icon size={21} />
-            </div>
-            <p className="text-2xl font-black text-[#211A17] dark:text-white">{value}</p>
-            <p className="text-xs font-medium text-[#716761] dark:text-[#A89E97]">{label}</p>
+      <div className="chiu-card p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          <div className="chiu-ring shrink-0" style={{ '--value': targetMastery.overallScore } as React.CSSProperties}>
+            <span className="text-center">
+              <strong className="block text-2xl font-black text-[#211A17] dark:text-white">
+                {vocabulary.filter((word) => word.status === 'learned').length}
+              </strong>
+              <small className="text-[10px] text-[#716761] dark:text-[#A89E97]">độ vững</small>
+            </span>
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-[#EAF5EC] text-[#65A873] text-[10px] font-black">Đang học</span>
+              <span className="px-2.5 py-1 rounded-full bg-[#FFF4DE] text-[#A77A25] text-[10px] font-black">Cần ôn</span>
+              <span className="px-2.5 py-1 rounded-full bg-[#FFF0EB] text-[#E86F51] text-[10px] font-black">Đã nắm</span>
+            </div>
+            <h3 className="text-xl font-black text-[#211A17] dark:text-white mt-3">Bạn đang ở đâu?</h3>
+            <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">
+              HSK {targetHskLevel} · {targetMastery.overallScore}% độ vững · {stats.currentStreak} ngày streak.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+              {[
+                { icon: Flame, value: `${stats.currentStreak} ngày`, label: 'Chuỗi hiện tại' },
+                { icon: BookOpen, value: String(vocabulary.filter((word) => word.status === 'learned').length), label: 'Đã nắm' },
+                { icon: Target, value: user.targetHsk, label: 'Mục tiêu' },
+                { icon: Clock, value: `${stats.totalStudyMinutes} phút`, label: 'Thời gian học' },
+              ].map(({ icon: Icon, value, label }) => (
+                <div key={label} className="p-3 rounded-2xl bg-[#FFF9F4] dark:bg-[#181412]">
+                  <Icon size={16} className="text-[#E86F51] mb-2" />
+                  <p className="text-sm font-black text-[#211A17] dark:text-white">{value}</p>
+                  <p className="text-[10px] text-[#716761] dark:text-[#A89E97] mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 shadow-sm space-y-6">
@@ -228,7 +252,7 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         <div>
           <h3 className="text-lg font-bold text-[#211A17] dark:text-white">Tiến độ HSK 1 → HSK 6</h3>
           <p className="text-xs text-[#716761] dark:text-[#A89E97]">
-            Tính theo các từ trong flashcard cá nhân đã được đánh dấu “đã nắm vững”.
+            Tổng hợp Vocabulary + Grammar + Quiz theo dữ liệu học thật của tài khoản.
           </p>
         </div>
 
@@ -243,11 +267,8 @@ export const ProgressPage: React.FC<{ user: UserProfile }> = ({ user }) => {
                   {item.learned}/{item.wordsCount} · {item.percent}%
                 </span>
               </div>
-              <div className="w-full h-3 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#E86F51] rounded-full transition-all"
-                  style={{ width: `${item.percent}%` }}
-                />
+              <div className="chiu-progress">
+                <span style={{ width: `${item.percent}%` }} />
               </div>
               <p className="mt-1 text-[10px] text-[#8A7F78]">
                 {item.discovered} từ đã xuất hiện trong flashcard · {item.learning} từ đang học

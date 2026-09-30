@@ -19,6 +19,7 @@ export interface Flashcard {
   next_review_at?: string;
   created_at: string;
   updated_at: string;
+  auto_saved?: boolean;
 }
 
 /**
@@ -91,6 +92,8 @@ export const flashcardService = {
     example_sentence?: string;
     topic?: string;
     hsk_level?: number;
+    source_conversation_id?: string;
+    auto_saved?: boolean;
   }): Promise<Flashcard> {
     const token = await getAccessToken();
     if (!token) {
@@ -127,6 +130,8 @@ export const flashcardService = {
       example_sentence?: string;
       topic?: string;
       hsk_level?: number;
+      source_conversation_id?: string;
+      auto_saved?: boolean;
     }>
   ): Promise<Flashcard[]> {
     if (!cards || cards.length === 0) return [];

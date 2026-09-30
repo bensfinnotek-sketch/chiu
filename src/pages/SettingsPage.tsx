@@ -81,7 +81,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
+    <div className="chiu-page max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between bg-white dark:bg-[#201A17] p-6 rounded-3xl border border-[#E86F51]/15 shadow-xs">
         <div className="flex items-center gap-3.5">
@@ -126,7 +126,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
               <select
                 value={hskLevel}
                 onChange={(e) => setHskLevel(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-[#FAF6F0] dark:bg-[#28211C] border border-[#E5DAD0] dark:border-[#3E322A] text-sm text-[#211A17] dark:text-white focus:outline-none focus:border-[#E86F51]"
+                className="w-full min-h-11 px-3.5 py-2.5 rounded-2xl bg-[#FAF6F0] dark:bg-[#28211C] border border-[#E5DAD0] dark:border-[#3E322A] text-sm text-[#211A17] dark:text-white focus:outline-none focus:border-[#E86F51]"
               >
                 {[1, 2, 3, 4, 5, 6].map((lvl) => (
                   <option key={lvl} value={lvl}>
@@ -267,7 +267,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
               <button
                 type="button"
                 onClick={() => onNavigate('register')}
-                className="px-3.5 py-2 rounded-xl bg-[#E86F51] text-white text-xs font-bold shrink-0 hover:bg-[#d85f41] cursor-pointer"
+                className="chiu-btn chiu-btn-primary px-3.5 py-2 rounded-xl text-xs shrink-0"
               >
                 Tạo tài khoản
               </button>

@@ -88,8 +88,8 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
               ? 'Đang xử lý (Processing)'
               : 'Bắt đầu nói tiếng Trung (Start speaking)'
           }
-          className={`relative z-10 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-            isLarge ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-14 h-14'
+          className={`relative z-10 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 transform active:scale-95 hover:-translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+            isLarge ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-14 h-14'
           } ${
             effectiveState === 'LISTENING'
               ? 'bg-[#E86F51] text-white shadow-xl shadow-[#E86F51]/40 scale-105 ring-4 ring-[#E86F51]/30'
@@ -101,7 +101,7 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
           }`}
         >
           {effectiveState === 'PROCESSING' ? (
-            <Loader2 className={`animate-spin ${isLarge ? 'w-9 h-9' : 'w-6 h-6'}`} />
+            <Loader2 className={`animate-spin ${isLarge ? 'w-10 h-10' : 'w-6 h-6'}`} />
           ) : effectiveState === 'LISTENING' ? (
             <div className="flex items-center gap-1">
               {/* Equalizer bars */}

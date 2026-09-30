@@ -1,11 +1,10 @@
-import { UserProfile, ConversationMessage, VocabularyItem, SupportedLanguage } from '../types';
+import { UserProfile, ConversationMessage, VocabularyItem } from '../types';
 import { INITIAL_FLASHCARDS } from '../data/hskData';
 
 const USER_KEY = 'hanziai_user_profile';
 const SAVED_WORDS_KEY = 'hanziai_saved_words';
 const CONVERSATION_KEY = 'hanziai_conversation_history';
 const COMPLETED_LESSONS_KEY = 'hanziai_completed_lessons';
-const LANG_KEY = 'hanziai_lang';
 const THEME_KEY = 'hanziai_theme';
 
 export const storageService = {
@@ -106,22 +105,6 @@ export const storageService = {
   saveConversationHistory(messages: ConversationMessage[]): void {
     try {
       localStorage.setItem(CONVERSATION_KEY, JSON.stringify(messages));
-    } catch (e) {
-      console.error(e);
-    }
-  },
-
-  getLanguage(): SupportedLanguage {
-    try {
-      return (localStorage.getItem(LANG_KEY) as SupportedLanguage) || 'vi';
-    } catch {
-      return 'vi';
-    }
-  },
-
-  setLanguage(lang: SupportedLanguage): void {
-    try {
-      localStorage.setItem(LANG_KEY, lang);
     } catch (e) {
       console.error(e);
     }

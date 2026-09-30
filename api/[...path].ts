@@ -1,3 +1,37 @@
+async function handleAnalyticsVisitors(req: any, res: any) {
+  if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
+  const token = process.env.VERCEL_ANALYTICS_TOKEN;
+  const projectId = process.env.VERCEL_PROJECT_ID;
+  const teamId = process.env.VERCEL_ORG_ID;
+  if (!token || !projectId) return sendJson(res, 503, { error: "Vercel Analytics is not configured" });
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const recentStart = new Date(todayStart);
+  recentStart.setUTCDate(recentStart.getUTCDate() - 29);
+  const queryCount = async (from: Date) => {
+    const url = new URL("https://api.vercel.com/v1/query/web-analytics/visits/count");
+    if (teamId) url.searchParams.set("teamId", teamId);
+    url.searchParams.set("projectId", projectId);
+    url.searchParams.set("from", from.toISOString());
+    url.searchParams.set("to", now.toISOString());
+    const response = await fetch(url, { headers: { Authorization: "Bearer " + token, Accept: "application/json" } });
+    if (!response.ok) throw new Error("Vercel Analytics returned " + response.status);
+    const payload = await response.json();
+    const value = payload?.data?.count ?? payload?.count ?? payload?.data?.value ?? payload?.value ?? payload?.data;
+    const count = Number(value);
+    if (!Number.isFinite(count)) throw new Error("Unexpected Vercel Analytics response");
+    return count;
+  };
+  try {
+    const [todayVisitors, recentVisitors] = await Promise.all([queryCount(todayStart), queryCount(recentStart)]);
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
+    return sendJson(res, 200, { todayVisitors, recentVisitors, updatedAt: now.toISOString() });
+  } catch (error) {
+    console.error("[analytics] failed to fetch Vercel visitor metrics", error);
+    return sendJson(res, 502, { error: "Unable to fetch Vercel Analytics" });
+  }
+}
 import {
   handleHealth,
   handleConversation,
@@ -42,6 +76,9 @@ export default async function handler(req: any, res: any) {
 
   const fullSubPath = segments.join("/");
 
+  if (fullSubPath === "analytics/visitors") {
+    return handleAnalyticsVisitors(req, res);
+  }
   if (fullSubPath === "health") {
     return handleHealth(req, res);
   }

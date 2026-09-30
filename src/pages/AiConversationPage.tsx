@@ -36,6 +36,7 @@ import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { subscriptionService } from '../services/subscriptionService';
+import { flashcardService } from '../services/flashcardService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
 import { SessionSummaryModal } from '../components/speaking/SessionSummaryModal';
 import {
@@ -45,6 +46,17 @@ import {
   saveMemoryToStorage,
   clearMemoryFromStorage,
 } from '../ai/memory/conversationMemory';
+
+interface AutoVocabularyTest {
+  id: string;
+  type: 'meaning' | 'pinyin' | 'context';
+  prompt: string;
+  word: { hanzi: string; pinyin: string; meaning: string };
+  options: string[];
+  correctIndex: number;
+  answered?: number;
+  flashcardId?: string;
+}
 
 interface AiConversationPageProps {
   onBackToTopics?: () => void;
@@ -68,11 +80,33 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     'Daily Life';
 
   const userProfile = storageService.getUserProfile();
-  const activeLevel =
+  const initialSpeakingLevel =
     initialLevel ||
     sessionStorage.getItem('selected_speaking_level') ||
     userProfile.chineseLevel ||
     'HSK 1';
+  const [activeLevel, setActiveLevel] = useState<string>(initialSpeakingLevel);
+
+  useEffect(() => {
+    setActiveLevel(initialSpeakingLevel);
+  }, [initialSpeakingLevel]);
+
+  useEffect(() => {
+    void flashcardService.getFlashcards().then((cards) => {
+      cards.forEach((card) => knownVocabularyRef.current.add(card.hanzi.trim()));
+      const now = Date.now();
+      const due = cards.filter((card) => !card.next_review_at || new Date(card.next_review_at).getTime() <= now)
+        .sort((a, b) => (a.next_review_at || '').localeCompare(b.next_review_at || ''))
+        .slice(0, 8).map((card) => card.hanzi);
+      const weak = cards.filter((card) => card.status === 'learning' || card.srs_incorrect_count > card.srs_correct_count || card.srs_incorrect_count >= 2)
+        .sort((a, b) => b.srs_incorrect_count - a.srs_incorrect_count)
+        .slice(0, 8).map((card) => card.hanzi);
+      const newWords = cards.filter((card) => card.status === 'new')
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 8).map((card) => card.hanzi);
+      setMemory((previous) => ({ ...previous, srsContext: { due, weak, newWords } }));
+    }).catch(() => undefined);
+  }, []);
 
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
@@ -153,6 +187,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     Array<{ hanzi: string; pinyin: string; meaning: string }>
   >([]);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
+  const [autoVocabularyTests, setAutoVocabularyTests] = useState<AutoVocabularyTest[]>([]);
+  const knownVocabularyRef = useRef<Set<string>>(new Set());
 
   // Language Usage Ratings for active session
   const [sessionScores, setSessionScores] = useState({
@@ -179,7 +215,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       try {
         let session = selectedSessionId ? await conversationRepository.getSession(selectedSessionId) : null;
         if (session && session.userId !== persistenceUserId) session = null;
-        if (!session) session = await conversationRepository.createSession(persistenceUserId, activeTopic, activeLevel, `Trò chuyện về ${activeTopic}`);
+        if (!session) session = await conversationRepository.createSession(persistenceUserId, activeTopic, initialSpeakingLevel, `Trò chuyện về ${activeTopic}`);
         if (cancelled) return;
         setConversationSessionId(session.id);
         const persistedMessages = await conversationRepository.getSessionMessages(session.id);
@@ -207,7 +243,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           recentMessages: loadedMessages.slice(-12),
         }));
         if (loadedMessages.length === 0) {
-          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, activeLevel, 'vi');
+          const starter = geminiSpeakingService.getInitialPrompt(activeTopic, initialSpeakingLevel, 'vi');
           const firstMsg: ConversationMessage = { id: `lina-init-${session.id}`, sender: 'lina', chinese: starter.chinese,
             pinyin: starter.pinyin, translation: starter.translation,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
@@ -236,7 +272,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     };
     initialiseConversation();
     return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.stopListening(); };
-  }, [activeTopic, activeLevel, selectedSessionId, authUser?.id, authLoading]);
+  }, [activeTopic, initialSpeakingLevel, selectedSessionId, authUser?.id, authLoading]);
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
@@ -334,7 +370,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         };
       }
 
-      // Update detected vocabulary
+      // Update detected vocabulary and immediately create lightweight HSK-level micro-tests.
       if (analysis.vocabulary && analysis.vocabulary.length > 0) {
         userMsg.detectedVocabulary = analysis.vocabulary;
         setWordsLearnedSession((prev) => {
@@ -344,6 +380,65 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           });
           return Array.from(map.values());
         });
+
+        const recentWords = analysis.vocabulary
+          .filter((word) => {
+            const key = word.hanzi.trim();
+            if (!key || knownVocabularyRef.current.has(key)) return false;
+            knownVocabularyRef.current.add(key);
+            return true;
+          })
+          .slice(0, 3);
+
+        const makeTest = (word: (typeof recentWords)[number], index: number): AutoVocabularyTest => {
+          const allMeanings = recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.meaning);
+          const fallbacks = ['Không liên quan đến chủ đề', 'Một cách dùng khác'];
+          const type: AutoVocabularyTest['type'] = index % 3 === 0 ? 'meaning' : index % 3 === 1 ? 'pinyin' : 'context';
+          let prompt = 'Nghĩa gần đúng nhất là?';
+          let values = [word.meaning, ...allMeanings, ...fallbacks];
+          if (type === 'pinyin') {
+            prompt = 'Pinyin đúng của từ này là?';
+            values = [word.pinyin, ...recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.pinyin), 'hǎo xué', 'bù zhī dào'];
+          } else if (type === 'context') {
+            prompt = 'Từ này nên được hiểu theo ngữ cảnh nào?';
+            values = [word.meaning, ...allMeanings, 'Tên riêng / địa danh', 'Biểu cảm không liên quan'];
+          }
+          const options = values.slice(0, 3);
+          const shuffled = options.map((value, i) => ({ value, i })).sort(() => Math.random() - 0.5);
+          return {
+            id: `auto-vocab-${Date.now()}-${index}`,
+            type,
+            prompt,
+            word: { hanzi: word.hanzi, pinyin: word.pinyin, meaning: word.meaning },
+            options: shuffled.map((item) => item.value),
+            correctIndex: shuffled.findIndex((item) => item.i === 0),
+          };
+        };
+        const tests = recentWords.map(makeTest);
+        setAutoVocabularyTests(tests);
+
+        // Persist the newly encountered vocabulary into the same SRS pipeline and
+        // connect each micro-test to its real flashcard so the learner's answer
+        // immediately feeds back into SRS.
+        void flashcardService.upsertBatchFlashcards(
+          recentWords.map((word) => ({
+            hanzi: word.hanzi,
+            pinyin: word.pinyin,
+            meaning: word.meaning,
+            topic: `conversation:${activeTopic}`,
+            auto_saved: true,
+            source_conversation_id: conversationSessionId || selectedSessionId || undefined,
+            hsk_level: Number(String(word.hskLevel || activeLevel).replace(/[^0-9]/g, '')) || 1,
+          }))
+        ).then((savedCards) => {
+          const cardIdsByHanzi = new Map(savedCards.map((card) => [card.hanzi.trim(), card.id]));
+          setAutoVocabularyTests((current) =>
+            current.map((test) => ({
+              ...test,
+              flashcardId: cardIdsByHanzi.get(test.word.hanzi.trim()) || test.flashcardId,
+            }))
+          );
+        }).catch((error) => console.warn('Auto-save vocabulary failed:', error));
       }
 
       // Update scores
@@ -669,7 +764,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
               </span>
             </div>
             <p className="text-xs text-[#716761] dark:text-[#A89E97] hidden sm:block">
-              Phòng luyện nói 1-1 trực tiếp cùng cô Lina
+              Phòng luyện nói 1-1 trực tiếp cùng cô Lina · có thể đổi HSK ngay trong phiên
             </p>
           </div>
         </div>
@@ -708,6 +803,46 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           </button>
         </div>
       </header>
+
+      {/* In-session HSK level selector */}
+      <section className="mt-4 p-3 sm:p-4 rounded-2xl bg-white dark:bg-[#201915] border border-[#EADCCF] dark:border-[#382E27] shrink-0" aria-labelledby="conversation-level-title">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <p id="conversation-level-title" className="text-xs font-black uppercase tracking-wider text-[#E86F51]">HSK mục tiêu của phiên</p>
+            <p className="text-[11px] text-[#716761] dark:text-[#A89E97] mt-0.5">
+              Đổi cấp độ để Lina điều chỉnh từ vựng, độ dài câu, tốc độ phản hồi và độ sâu câu hỏi.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Đang luyện: {activeLevel}</span>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {['HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map((level) => {
+            const isSelected = activeLevel === level;
+            return (
+              <button
+                key={level}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => {
+                  setActiveLevel(level);
+                  sessionStorage.setItem('selected_speaking_level', level);
+                  setMemory((previous) => ({
+                    ...previous,
+                    learnerLevel: level,
+                  }));
+                  setStatusMessage(`Lina đã chuyển sang ${level}. Bạn có thể tiếp tục nói ở cấp độ mới.`);
+                }}
+                className={`px-2.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${isSelected
+                  ? 'bg-[#E86F51] text-white border-[#E86F51] shadow-sm'
+                  : 'bg-[#FFF9F4] dark:bg-[#251D19] border-[#EADCCF] dark:border-[#382E27] text-[#5F554F] dark:text-[#C5B9B0] hover:border-[#E86F51]/50'
+                }`}
+              >
+                {level}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Main Classroom Grid (3-columns on desktop, stacked on mobile) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 pt-4 overflow-hidden">
@@ -975,6 +1110,49 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                 </div>
               );
             })}
+
+
+            {autoVocabularyTests.length > 0 && (
+              <div className="p-4 rounded-2xl bg-[#FFF0EB] dark:bg-[#34221C] border border-[#E86F51]/20 space-y-3">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={15} className="text-[#E86F51]" />
+                    <h4 className="text-xs font-extrabold text-[#211A17] dark:text-white">Test nhanh từ mới · {activeLevel}</h4>
+                  </div>
+                  <p className="text-[10px] text-[#716761] dark:text-[#BDB2AA] mt-1">Lina vừa phát hiện từ mới — trả lời ngay để ghi nhớ sâu hơn.</p>
+                </div>
+                {autoVocabularyTests.map((test) => (
+                  <div key={test.id} className="p-3 rounded-xl bg-white/80 dark:bg-[#241B17] border border-[#E86F51]/10 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif font-bold text-base">{test.word.hanzi}</span>
+                      <span className="text-[10px] text-[#E86F51]">{test.word.pinyin}</span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-[#716761] dark:text-[#C5B9B0]">Nghĩa gần đúng nhất là?</p>
+                    <div className="space-y-1.5">
+                      {test.options.map((option, optionIndex) => {
+                        const answered = test.answered !== undefined;
+                        const correct = optionIndex === test.correctIndex;
+                        const chosen = optionIndex === test.answered;
+                        return (
+                          <button key={option} type="button" disabled={answered}
+                            onClick={() => {
+                              const isCorrect = optionIndex === test.correctIndex;
+                              setAutoVocabularyTests((prev) => prev.map((item) => item.id === test.id ? { ...item, answered: optionIndex } : item));
+                              if (test.flashcardId) {
+                                void flashcardService.reviewFlashcard(test.flashcardId, isCorrect ? 'correct' : 'incorrect')
+                                  .catch((error) => console.warn('SRS review from Lina micro-test failed:', error));
+                              }
+                            }}
+                            className={`w-full text-left px-2.5 py-2 rounded-lg border text-[10px] transition-colors ${answered && correct ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : answered && chosen ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white dark:bg-[#201915] border-[#EADCCF] hover:border-[#E86F51]'}`}>
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Real-time Interim Transcript preview while user is actively speaking (Section 17) */}
             {micState === 'LISTENING' && interimTranscript && (

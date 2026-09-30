@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   ArrowRight,
@@ -13,41 +13,51 @@ import {
   GraduationCap,
   MessageSquare,
   Zap,
+  Heart,
+  Users,
 } from 'lucide-react';
 import { LinaAvatar } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
-import { SupportedLanguage } from '../types';
-import { UI_TEXTS } from '../data/translations';
-
 interface HomePageProps {
   onStartLearning: () => void;
   onTryAiConversation: () => void;
   onNavigate: (route: string) => void;
-  language: SupportedLanguage;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartLearning,
   onTryAiConversation,
   onNavigate,
-  language,
 }) => {
-  const t = UI_TEXTS[language];
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [heroMicActive, setHeroMicActive] = useState(false);
   const [heroTranscript, setHeroTranscript] = useState('我想要一杯奶茶。');
+  const [communityStats, setCommunityStats] = useState<{ todayVisitors: number; recentVisitors: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/analytics/visitors')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.todayVisitors != null && data?.recentVisitors != null) {
+          setCommunityStats({ todayVisitors: Number(data.todayVisitors) || 0, recentVisitors: Number(data.recentVisitors) || 0 });
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const faqs = [
     {
-      q: 'HanziAI có miễn phí không?',
-      a: 'HanziAI hoàn toàn miễn phí cho tất cả bài học HSK cơ bản, flashcards spaced repetition, tra cứu từ điển và lượt trò chuyện AI hàng ngày. Bạn có thể nâng cấp lên bản Pro để mở khóa hội thoại AI không giới hạn và phân tích phát âm chuyên sâu.',
+      q: 'Bentalk AI có miễn phí không?',
+      a: 'Bentalk AI hoàn toàn miễn phí cho tất cả bài học HSK cơ bản, flashcards spaced repetition, tra cứu từ điển và lượt trò chuyện AI hàng ngày. Bạn có thể nâng cấp lên bản Pro để mở khóa hội thoại AI không giới hạn và phân tích phát âm chuyên sâu.',
     },
     {
       q: 'Người hoàn toàn mới bắt đầu (chưa biết gì) có học được không?',
-      a: 'Rất phù hợp! Lộ trình HSK 1 của HanziAI được thiết kế tỉ mỉ từ bài học phiên âm Pinyin, các nét chữ Hán cơ bản, chào hỏi thông dụng cho đến những mẫu câu giao tiếp đời sống đầu tiên.',
+      a: 'Rất phù hợp! Lộ trình HSK 1 của Bentalk AI được thiết kế tỉ mỉ từ bài học phiên âm Pinyin, các nét chữ Hán cơ bản, chào hỏi thông dụng cho đến những mẫu câu giao tiếp đời sống đầu tiên.',
     },
     {
-      q: 'HanziAI hỗ trợ những cấp độ HSK nào?',
+      q: 'Bentalk AI hỗ trợ những cấp độ HSK nào?',
       a: 'Hệ thống hỗ trợ toàn diện từ HSK 1 đến HSK 6 theo tiêu chuẩn Hán ngữ quốc tế, bao gồm đầy đủ Từ vựng, Ngữ pháp, Luyện nghe, Đọc hiểu và Hội thoại thực chiến.',
     },
     {
@@ -60,12 +70,12 @@ export const HomePage: React.FC<HomePageProps> = ({
     },
     {
       q: 'Tôi có thể học trên điện thoại được không?',
-      a: 'Có! HanziAI được thiết kế tối ưu hóa trải nghiệm dạng ứng dụng di động (Mobile-first PWA), thao tác vuốt chạm mượt mà, nút thu âm to rõ, không bị tràn màn hình.',
+      a: 'Có! Bentalk AI được thiết kế tối ưu hóa trải nghiệm dạng ứng dụng di động (Mobile-first PWA), thao tác vuốt chạm mượt mà, nút thu âm to rõ, không bị tràn màn hình.',
     },
   ];
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <main className="flex flex-col min-h-screen bg-[#FFF9F4] dark:bg-[#181412]" aria-labelledby="home-page-title">
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-8 pb-16 md:pt-16 md:pb-24 bg-gradient-to-b from-[#FFF9F4] via-[#FFF3EC] to-[#FFF9F4] dark:from-[#181412] dark:via-[#211A17] dark:to-[#181412]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,7 +89,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#211A17] dark:text-white leading-[1.15]">
+              <h1 id="home-page-title" className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#211A17] dark:text-white leading-[1.15]">
                 Learn Chinese by <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E86F51] via-[#F5A28E] to-[#D5A85C]">
                   actually speaking it.
@@ -95,19 +105,19 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <button
                   type="button"
                   onClick={onStartLearning}
-                  className="px-7 py-4 rounded-2xl bg-[#E86F51] text-white font-bold text-base shadow-lg shadow-[#E86F51]/30 hover:bg-[#d85f41] hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="chiu-btn chiu-btn-primary px-7 py-4 rounded-2xl text-base shadow-lg shadow-[#E86F51]/30 hover:bg-[#d85f41] hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>{t.startFree}</span>
+                  <span>{'Bắt đầu miễn phí'}</span>
                   <ArrowRight size={18} />
                 </button>
 
                 <button
                   type="button"
                   onClick={onTryAiConversation}
-                  className="px-7 py-4 rounded-2xl bg-white dark:bg-[#241F1C] text-[#211A17] dark:text-white font-bold text-base border-2 border-[#E86F51]/30 hover:border-[#E86F51] hover:bg-[#FFF5F1] dark:hover:bg-[#342822] shadow-xs hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                  className="chiu-btn chiu-btn-secondary px-7 py-4 rounded-2xl text-base border-2 border-[#E86F51]/30 hover:border-[#E86F51] hover:bg-[#FFF5F1] dark:hover:bg-[#342822] shadow-xs hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <MessageSquare size={18} className="text-[#E86F51]" />
-                  <span>{t.tryAiConversation}</span>
+                  <span>{'Thử trò chuyện với AI'}</span>
                 </button>
               </div>
 
@@ -131,7 +141,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {/* Right Hero Interactive Showcase */}
             <div className="lg:col-span-5 relative flex justify-center">
               {/* Floating Vocabulary Card 1 */}
-              <div className="absolute -top-4 -left-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:4s]">
+              <div className="hidden sm:block absolute -top-4 -left-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:4s]">
                 <div className="flex items-center gap-2.5">
                   <span className="font-chinese text-2xl font-bold text-[#E86F51]">水</span>
                   <div>
@@ -143,7 +153,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               {/* Floating Vocabulary Card 2 */}
-              <div className="absolute -bottom-4 -right-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:5s]">
+              <div className="hidden sm:block absolute -bottom-4 -right-4 z-20 bg-white dark:bg-[#241F1C] p-3 rounded-2xl shadow-xl border border-[#E86F51]/15 animate-bounce [animation-duration:5s]">
                 <div className="flex items-center gap-2.5">
                   <span className="font-chinese text-2xl font-bold text-[#D5A85C]">好吃</span>
                   <div>
@@ -188,7 +198,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </div>
 
                   {/* User response simulation */}
-                  <div className="bg-[#E86F51] text-white p-3.5 rounded-2xl rounded-tr-sm ml-6 space-y-1 shadow-md shadow-[#E86F51]/20">
+                  <div aria-live="polite" aria-atomic="true" className="bg-[#E86F51] text-white p-3.5 rounded-2xl rounded-tr-sm ml-6 space-y-1 shadow-md shadow-[#E86F51]/20">
                     <p className="font-chinese text-base font-semibold">
                       {heroTranscript}
                     </p>
@@ -211,6 +221,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="pt-2 flex items-center justify-between border-t border-gray-100 dark:border-gray-800">
                   <button
                     type="button"
+                    aria-pressed={heroMicActive}
+                    aria-label={heroMicActive ? 'Dừng mô phỏng luyện nói' : 'Thử mô phỏng luyện nói tiếng Trung'}
                     onClick={() => {
                       setHeroMicActive(!heroMicActive);
                       if (!heroMicActive) {
@@ -232,10 +244,10 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 2. HOW IT WORKS */}
-      <section className="py-16 bg-white dark:bg-[#181412] border-y border-[#E86F51]/10 dark:border-white/5">
+      <section className="py-16 bg-white dark:bg-[#181412] border-y border-[#E86F51]/10 dark:border-white/5" aria-labelledby="how-it-works-title">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="max-w-2xl mx-auto space-y-3">
-            <h2 className="text-3xl font-extrabold text-[#211A17] dark:text-white">
+            <h2 id="how-it-works-title" className="text-3xl font-extrabold text-[#211A17] dark:text-white">
               Học tiếng Trung hiệu quả gấp 3 lần
             </h2>
             <p className="text-base text-[#716761] dark:text-[#A89E97]">
@@ -283,7 +295,50 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 3. AI TEACHER LINA SHOWCASE */}
+      {/* 3. COMMUNITY STATS */}
+      <section className="py-10 bg-[#FFF9F4] dark:bg-[#211A17]" aria-labelledby="community-stats-title">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <p id="community-stats-title" className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#E86F51]">Cộng đồng Bentalk AI</p>
+              <p className="text-sm text-[#716761] dark:text-[#A89E97] mt-1">Số liệu visitor thực tế từ Web Analytics</p>
+            </div>
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#716761] dark:text-[#A89E97]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#65A873]" />
+              Cập nhật tự động
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="group rounded-3xl bg-white dark:bg-[#241F1C] border border-[#E86F51]/15 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+              <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#E86F51]/10 text-[#E86F51] flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Heart size={22} fill="currentColor" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-[#E86F51]">Đồng hành</p>
+                <p className="text-xl font-extrabold text-[#211A17] dark:text-white tabular-nums">
+                  {communityStats ? `${communityStats.recentVisitors.toLocaleString('vi-VN')} người` : 'Đang cập nhật'}
+                </p>
+                <p className="text-xs text-[#716761] dark:text-[#A89E97]">khách đã ghé Bentalk AI trong 30 ngày qua</p>
+              </div>
+            </div>
+            <div className="group rounded-3xl bg-white dark:bg-[#241F1C] border border-[#D5A85C]/20 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+              <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#D5A85C]/15 text-[#B8892F] dark:text-[#E5BE79] flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Users size={22} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-[#B8892F] dark:text-[#E5BE79]">Hôm nay</p>
+                <p className="text-xl font-extrabold text-[#211A17] dark:text-white tabular-nums">
+                  {communityStats ? `${communityStats.todayVisitors.toLocaleString('vi-VN')} người` : 'Đang cập nhật'}
+                </p>
+                <p className="text-xs text-[#716761] dark:text-[#A89E97]">khách đã sử dụng web hôm nay</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. AI TEACHER LINA SHOWCASE */}
       <section className="py-16 bg-[#FFF9F4] dark:bg-[#211A17]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-white to-[#FFF5F1] dark:from-[#241F1C] dark:to-[#2B231F] rounded-3xl p-8 md:p-12 border border-[#E86F51]/20 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -344,7 +399,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 4. HSK ROADMAP SECTION */}
+      {/* 5. HSK ROADMAP SECTION */}
       <section className="py-16 bg-white dark:bg-[#181412]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -390,7 +445,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 5. TOOL HUB & MUSIC PREVIEW */}
+      {/* 6. TOOL HUB & MUSIC PREVIEW */}
       <section className="py-16 bg-[#FFF9F4] dark:bg-[#211A17] border-t border-[#E86F51]/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -458,7 +513,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 6. FAQ ACCORDION */}
+      {/* 7. FAQ ACCORDION */}
       <section className="py-16 bg-white dark:bg-[#181412]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="text-center space-y-2">
@@ -466,7 +521,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               Câu hỏi thường gặp (FAQ)
             </h2>
             <p className="text-sm text-[#716761] dark:text-[#A89E97]">
-              Mọi điều bạn muốn biết về việc học tiếng Trung với HanziAI
+              Mọi điều bạn muốn biết về việc học tiếng Trung với Bentalk AI
             </p>
           </div>
 
@@ -481,9 +536,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveFaq(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-answer-${index}`}
                     className="w-full px-6 py-4.5 text-left font-bold text-base text-[#211A17] dark:text-white flex items-center justify-between gap-4 cursor-pointer"
                   >
-                    <span>{faq.q}</span>
+                    <span id={`faq-question-${index}`}>{faq.q}</span>
                     <ChevronDown
                       size={18}
                       className={`text-[#E86F51] transition-transform duration-200 shrink-0 ${
@@ -492,7 +549,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
+                    <div id={`faq-answer-${index}`} role="region" aria-labelledby={`faq-question-${index}`} className="px-6 pb-5 text-sm text-[#716761] dark:text-[#BDB4AE] leading-relaxed border-t border-[#E86F51]/10 dark:border-white/5 pt-3">
                       {faq.a}
                     </div>
                   )}
@@ -503,7 +560,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 7. FINAL CTA */}
+      {/* 8. FINAL CTA */}
       <section className="py-20 bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] text-white text-center">
         <div className="max-w-4xl mx-auto px-4 space-y-6">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
@@ -531,7 +588,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 8. FOOTER */}
+      {/* 9. FOOTER */}
       <footer className="py-12 bg-[#211A17] text-[#A89E97] text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
@@ -539,7 +596,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               汉
             </div>
             <span className="font-extrabold text-white text-lg tracking-tight">
-              HanziAI
+              Bentalk AI
             </span>
             <span className="text-xs text-[#716761] border-l border-white/10 pl-2">
               Learn Chinese. Speak Naturally.
@@ -547,10 +604,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           <p className="text-xs text-[#716761]">
-            © {new Date().getFullYear()} HanziAI Education Platform. All rights reserved.
+            © {new Date().getFullYear()} Bentalk AI Education Platform. All rights reserved.
           </p>
         </div>
       </footer>
-    </div>
+    </main>
   );
 };
