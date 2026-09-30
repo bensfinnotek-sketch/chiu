@@ -86,6 +86,7 @@ export class SpeechRecognitionService {
 
     this.recognition.onerror = (event: any) => {
       this.isListeningActive = false;
+      this.shouldFinalizeOnEnd = false;
       const errorCode = event?.error || 'unknown';
 
       let userMsg = 'Không thể nhận diện giọng nói.';
