@@ -47,17 +47,6 @@ import {
   clearMemoryFromStorage,
 } from '../ai/memory/conversationMemory';
 
-interface AutoVocabularyTest {
-  id: string;
-  type: 'meaning' | 'pinyin' | 'context';
-  prompt: string;
-  word: { hanzi: string; pinyin: string; meaning: string };
-  options: string[];
-  correctIndex: number;
-  answered?: number;
-  flashcardId?: string;
-}
-
 interface AiConversationPageProps {
   onBackToTopics?: () => void;
   initialTopic?: string;
@@ -93,7 +82,6 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   useEffect(() => {
     void flashcardService.getFlashcards().then((cards) => {
-      cards.forEach((card) => knownVocabularyRef.current.add(card.hanzi.trim()));
       const now = Date.now();
       const due = cards.filter((card) => !card.next_review_at || new Date(card.next_review_at).getTime() <= now)
         .sort((a, b) => (a.next_review_at || '').localeCompare(b.next_review_at || ''))
@@ -187,8 +175,6 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     Array<{ hanzi: string; pinyin: string; meaning: string }>
   >([]);
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
-  const [autoVocabularyTests, setAutoVocabularyTests] = useState<AutoVocabularyTest[]>([]);
-  const knownVocabularyRef = useRef<Set<string>>(new Set());
 
   // Language Usage Ratings for active session
   const [sessionScores, setSessionScores] = useState({
@@ -297,8 +283,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } else if (e.code === 'Escape') {
         e.preventDefault();
         stopLinaSpeech();
-        if (speechRecognitionService.isListening()) {
-          speechRecognitionService.stopListening();
+        if (speechRecognitionService.isListening()) {          speechRecognitionService.stopListening();
           setMicState('IDLE');
           setInterimTranscript('');
         }
@@ -370,7 +355,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         };
       }
 
-      // Update detected vocabulary and immediately create lightweight HSK-level micro-tests.
+      // Update detected vocabulary for the session.
       if (analysis.vocabulary && analysis.vocabulary.length > 0) {
         userMsg.detectedVocabulary = analysis.vocabulary;
         setWordsLearnedSession((prev) => {
@@ -380,65 +365,6 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           });
           return Array.from(map.values());
         });
-
-        const recentWords = analysis.vocabulary
-          .filter((word) => {
-            const key = word.hanzi.trim();
-            if (!key || knownVocabularyRef.current.has(key)) return false;
-            knownVocabularyRef.current.add(key);
-            return true;
-          })
-          .slice(0, 3);
-
-        const makeTest = (word: (typeof recentWords)[number], index: number): AutoVocabularyTest => {
-          const allMeanings = recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.meaning);
-          const fallbacks = ['Không liên quan đến chủ đề', 'Một cách dùng khác'];
-          const type: AutoVocabularyTest['type'] = index % 3 === 0 ? 'meaning' : index % 3 === 1 ? 'pinyin' : 'context';
-          let prompt = 'Nghĩa gần đúng nhất là?';
-          let values = [word.meaning, ...allMeanings, ...fallbacks];
-          if (type === 'pinyin') {
-            prompt = 'Pinyin đúng của từ này là?';
-            values = [word.pinyin, ...recentWords.filter((v) => v.hanzi !== word.hanzi).map((v) => v.pinyin), 'hǎo xué', 'bù zhī dào'];
-          } else if (type === 'context') {
-            prompt = 'Từ này nên được hiểu theo ngữ cảnh nào?';
-            values = [word.meaning, ...allMeanings, 'Tên riêng / địa danh', 'Biểu cảm không liên quan'];
-          }
-          const options = values.slice(0, 3);
-          const shuffled = options.map((value, i) => ({ value, i })).sort(() => Math.random() - 0.5);
-          return {
-            id: `auto-vocab-${Date.now()}-${index}`,
-            type,
-            prompt,
-            word: { hanzi: word.hanzi, pinyin: word.pinyin, meaning: word.meaning },
-            options: shuffled.map((item) => item.value),
-            correctIndex: shuffled.findIndex((item) => item.i === 0),
-          };
-        };
-        const tests = recentWords.map(makeTest);
-        setAutoVocabularyTests(tests);
-
-        // Persist the newly encountered vocabulary into the same SRS pipeline and
-        // connect each micro-test to its real flashcard so the learner's answer
-        // immediately feeds back into SRS.
-        void flashcardService.upsertBatchFlashcards(
-          recentWords.map((word) => ({
-            hanzi: word.hanzi,
-            pinyin: word.pinyin,
-            meaning: word.meaning,
-            topic: `conversation:${activeTopic}`,
-            auto_saved: true,
-            source_conversation_id: conversationSessionId || selectedSessionId || undefined,
-            hsk_level: Number(String(word.hskLevel || activeLevel).replace(/[^0-9]/g, '')) || 1,
-          }))
-        ).then((savedCards) => {
-          const cardIdsByHanzi = new Map(savedCards.map((card) => [card.hanzi.trim(), card.id]));
-          setAutoVocabularyTests((current) =>
-            current.map((test) => ({
-              ...test,
-              flashcardId: cardIdsByHanzi.get(test.word.hanzi.trim()) || test.flashcardId,
-            }))
-          );
-        }).catch((error) => console.warn('Auto-save vocabulary failed:', error));
       }
 
       // Update scores
@@ -597,7 +523,6 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       setTeacherState('idle');
     }
   };
-
   // Toggle Microphone
   const handleToggleMicrophone = () => {
     if (!conversationReady || !guestCanSpeak) {
@@ -897,8 +822,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                   Lina sẽ tự động ghi nhớ sở thích, tên và thông tin bạn chia sẻ trong lúc trò chuyện.
                 </p>
               ) : (
-                <div className="space-y-1.5">
-                  <div className="flex flex-wrap gap-1">
+                <div className="space-y-1.5">                  <div className="flex flex-wrap gap-1">
                     {memory.keyFacts.map((fact, idx) => (
                       <span
                         key={idx}
@@ -1112,49 +1036,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             })}
 
 
-            {autoVocabularyTests.length > 0 && (
-              <div className="p-4 rounded-2xl bg-[#FFF0EB] dark:bg-[#34221C] border border-[#E86F51]/20 space-y-3">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles size={15} className="text-[#E86F51]" />
-                    <h4 className="text-xs font-extrabold text-[#211A17] dark:text-white">Test nhanh từ mới · {activeLevel}</h4>
-                  </div>
-                  <p className="text-[10px] text-[#716761] dark:text-[#BDB2AA] mt-1">Lina vừa phát hiện từ mới — trả lời ngay để ghi nhớ sâu hơn.</p>
-                </div>
-                {autoVocabularyTests.map((test) => (
-                  <div key={test.id} className="p-3 rounded-xl bg-white/80 dark:bg-[#241B17] border border-[#E86F51]/10 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif font-bold text-base">{test.word.hanzi}</span>
-                      <span className="text-[10px] text-[#E86F51]">{test.word.pinyin}</span>
-                    </div>
-                    <p className="text-[11px] font-semibold text-[#716761] dark:text-[#C5B9B0]">Nghĩa gần đúng nhất là?</p>
-                    <div className="space-y-1.5">
-                      {test.options.map((option, optionIndex) => {
-                        const answered = test.answered !== undefined;
-                        const correct = optionIndex === test.correctIndex;
-                        const chosen = optionIndex === test.answered;
-                        return (
-                          <button key={option} type="button" disabled={answered}
-                            onClick={() => {
-                              const isCorrect = optionIndex === test.correctIndex;
-                              setAutoVocabularyTests((prev) => prev.map((item) => item.id === test.id ? { ...item, answered: optionIndex } : item));
-                              if (test.flashcardId) {
-                                void flashcardService.reviewFlashcard(test.flashcardId, isCorrect ? 'correct' : 'incorrect')
-                                  .catch((error) => console.warn('SRS review from Lina micro-test failed:', error));
-                              }
-                            }}
-                            className={`w-full text-left px-2.5 py-2 rounded-lg border text-[10px] transition-colors ${answered && correct ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : answered && chosen ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white dark:bg-[#201915] border-[#EADCCF] hover:border-[#E86F51]'}`}>
-                            {option}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Real-time Interim Transcript preview while user is actively speaking (Section 17) */}
+                        {/* Real-time Interim Transcript preview while user is actively speaking (Section 17) */}
             {micState === 'LISTENING' && interimTranscript && (
               <div className="flex justify-end animate-fade-in">
                 <div className="max-w-[85%] rounded-3xl rounded-tr-xs p-3.5 bg-[#E86F51]/15 dark:bg-[#E86F51]/25 border border-[#E86F51]/40 text-[#211A17] dark:text-white shadow-xs">
@@ -1197,8 +1079,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                 <p className="text-xs text-[#5F554F]">Đăng nhập Google để tiếp tục luyện nói không giới hạn.</p>
                 <button
                   type="button"
-                  onClick={() => void signInWithGoogle()}
-                  className="w-full py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D55F42] text-white text-xs font-semibold transition-colors"
+                  onClick={() => void signInWithGoogle()}                  className="w-full py-2.5 rounded-xl bg-[#E86F51] hover:bg-[#D55F42] text-white text-xs font-semibold transition-colors"
                 >
                   Continue with Google
                 </button>
