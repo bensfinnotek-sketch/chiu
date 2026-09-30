@@ -5,7 +5,7 @@ export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
   onInterimResult?: (interim: string) => void;
   onError?: (error: string) => void;
-  onEnd?: () => void;
+  onEnd?: (finalTranscript?: string) => void;
   onStart?: () => void;
 }
 
@@ -26,7 +26,7 @@ export class SpeechRecognitionService {
         this.isSupportedBrowser = true;
         this.recognition = new SpeechRecognition();
         this.recognition.lang = 'zh-CN';
-        this.recognition.continuous = false;
+        this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.maxAlternatives = 1;
       }
@@ -78,7 +78,7 @@ export class SpeechRecognitionService {
         callbacks.onInterimResult(interim);
       }
 
-      const activeText = finalAccumulated || interim;
+      const activeText = [finalAccumulated, interim].filter(Boolean).join(' ').trim();
       callbacks.onResult(activeText, Boolean(finalAccumulated));
     };
 
@@ -102,7 +102,7 @@ export class SpeechRecognitionService {
 
     this.recognition.onend = () => {
       this.isListeningActive = false;
-      if (callbacks.onEnd) callbacks.onEnd();
+      if (callbacks.onEnd) callbacks.onEnd(finalAccumulated.trim());
     };
 
     try {
