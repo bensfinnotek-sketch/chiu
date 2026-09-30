@@ -13,6 +13,7 @@ export class SpeechRecognitionService {
   private recognition: any = null;
   private isListeningActive: boolean = false;
   private isSupportedBrowser: boolean = false;
+  private shouldFinalizeOnEnd: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -59,6 +60,7 @@ export class SpeechRecognitionService {
 
     this.recognition.onstart = () => {
       this.isListeningActive = true;
+      this.shouldFinalizeOnEnd = true;
       if (callbacks.onStart) callbacks.onStart();
     };
 
@@ -102,7 +104,10 @@ export class SpeechRecognitionService {
 
     this.recognition.onend = () => {
       this.isListeningActive = false;
-      if (callbacks.onEnd) callbacks.onEnd(finalAccumulated.trim());
+      if (this.shouldFinalizeOnEnd) {
+        this.shouldFinalizeOnEnd = false;
+        if (callbacks.onEnd) callbacks.onEnd(finalAccumulated.trim());
+      }
     };
 
     try {
@@ -126,6 +131,8 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    // Keep shouldFinalizeOnEnd=true so a deliberate stop submits the complete
+    // transcript accumulated by the browser before the recognition session ends.
   }
 
   public abortListening(): void {
@@ -137,6 +144,7 @@ export class SpeechRecognitionService {
       }
     }
     this.isListeningActive = false;
+    this.shouldFinalizeOnEnd = false;
   }
 }
 
