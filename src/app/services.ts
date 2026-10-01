@@ -1,6 +1,7 @@
 import type { ConversationMessage, TutorResponse, TutorMode, TutorHint } from './types';
 import { speechService } from './services/speech';
 import { ttsService } from './services/tts';
+import { aiMemoryService } from './services/aiMemory';
 import { linaAvatarProvider } from './services/avatar';
 
 export interface AiTutorService {
