@@ -951,7 +951,7 @@ export async function handleTutorHint(req: any, res: any) {
       ? "Give the sentence structure/template with blanks. Do not give the complete answer."
       : "Give the complete natural answer in Chinese, Pinyin, and concise Vietnamese translation.";
     const response = await generateContentSafely(ai, {
-      contents: `Learner level: ${targetLevel}\nTask/prompt: ${prompt}\nHint level: ${hintLevel}\n${instruction}`,
+      contents: `Learner level: ${safeHintLevel}\nTask/prompt: ${safeHintPrompt}\nHint level: ${hintLevel}\n${instruction}`,
       config: {
         systemInstruction: "You are Lina (林娜), a patient Mandarin tutor for Vietnamese learners. Never shame the learner. Keep hints concise and accurate. If uncertain, say so rather than inventing a grammar rule. Return JSON only.",
         responseMimeType: "application/json",
