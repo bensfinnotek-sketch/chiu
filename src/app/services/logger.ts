@@ -1,4 +1,5 @@
+import { storage } from './storage';
 type LogKind='ai-request'|'ai-error'|'stt-error'|'tts-error'|'avatar-error'|'lesson-error';
-const enabled=()=>typeof window!=='undefined'&&localStorage.getItem('lina_debug_logs')==='1';
+const enabled=()=>typeof window!=='undefined'&&storage.getItem('lina_debug_logs')==='1';
 const safe=(value:unknown)=>{if(value instanceof Error)return value.message.slice(0,240);if(typeof value==='string')return value.replace(/(api[_-]?key|password|token|authorization|cookie)=?[^\s,;]+/gi,'[redacted]').slice(0,240);return '[redacted]';};
 export const appLogger={info(kind:LogKind,message:string){if(enabled())console.info('[Lina]',kind,message.slice(0,240));},error(kind:LogKind,error:unknown){if(enabled())console.warn('[Lina]',kind,safe(error));}};
