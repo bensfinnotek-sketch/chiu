@@ -80,3 +80,23 @@ button { -webkit-tap-highlight-color: transparent; }
   .lina-avatar { width: 96px; height: 96px; font-size: 47px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+.lina-avatar { position:relative; overflow:hidden; }
+.lina-face { position:relative; width:72%; height:72%; border-radius:48% 48% 44% 44%; background:linear-gradient(145deg,#f4c7aa,#e8a984); box-shadow:inset 0 -8px 16px rgba(115,60,40,.10); }
+.lina-hair { position:absolute; left:-9%; top:-12%; width:118%; height:55%; border-radius:55% 55% 35% 35%; background:linear-gradient(145deg,#332522,#171210); }
+.lina-eye { position:absolute; top:47%; width:7px; height:5px; border-radius:50%; background:#332522; transition:transform .2s ease; }
+.lina-eye-left { left:27%; } .lina-eye-right { right:27%; }
+.lina-mouth { position:absolute; left:50%; top:65%; width:18px; height:6px; transform:translateX(-50%); border-bottom:2px solid #9b4e4e; border-radius:0 0 12px 12px; transition:all .2s ease; }
+.lina-avatar-listening { box-shadow:0 0 0 7px rgba(94,159,112,.12),0 16px 38px rgba(94,159,112,.16); }
+.lina-avatar-listening .lina-eye { transform:scaleY(1.35); }
+.lina-avatar-thinking { animation:thinking 2.2s ease-in-out infinite; }
+.lina-avatar-thinking .lina-eye { transform:translateY(-2px); }
+.lina-avatar-speaking { animation:speaking .32s ease-in-out infinite alternate; }
+.lina-avatar-speaking .lina-mouth { height:10px; width:15px; border:2px solid #9b4e4e; border-radius:50%; }
+.lina-avatar-happy .lina-mouth, .lina-avatar-encouraging .lina-mouth { width:24px; height:11px; border-bottom-width:3px; }
+.lina-avatar-happy { transform:translateY(-2px); }
+.lina-avatar-encouraging { animation:encourage 1.4s ease-in-out infinite; }
+.lina-avatar-confused .lina-eye-left { transform:rotate(8deg); } .lina-avatar-confused .lina-eye-right { transform:rotate(-8deg); }
+.lina-avatar-confused .lina-mouth { transform:translateX(-50%) rotate(-8deg); }
+.lina-avatar-error { filter:saturate(.7); }
+@keyframes encourage { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
