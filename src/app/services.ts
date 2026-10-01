@@ -48,3 +48,5 @@ export const avatarService={
 
 export { lessonEngine, validateGeneratedLesson, normalizeGeneratedLesson, lessonToStructured } from './services/lessonEngine';
 export type { LessonSchema, LessonGenerationParameters, LessonQuizQuestion, LessonType } from './learning/types';
+
+export { motivationService } from './services/motivation';
