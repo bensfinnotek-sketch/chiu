@@ -258,6 +258,8 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
       difficulty = "normal",
       mode = "conversation",
       memory,
+      immersion = "beginner",
+      roleplay,
     } = body;
 
     const actualUserText = (userText || message || "").trim();
@@ -347,14 +349,40 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
     }
 
     const levelGuidance = getSpeakingLevelGuidance(actualLevel);
+    const roleplayContext = roleplay?.scenario ? `
+ROLEPLAY MODE:
+- Scenario: ${roleplay.scenario.scenario}
+- Context: ${roleplay.scenario.context}
+- Character: ${roleplay.scenario.character}
+- Learner role: ${roleplay.scenario.learnerRole}
+- Lina role: ${roleplay.scenario.aiRole}
+- Difficulty: ${roleplay.scenario.difficulty}
+- Immersion: ${immersion}
+- Target vocabulary: ${(roleplay.scenario.targetVocabulary || []).join(", ")}
+- Target grammar: ${(roleplay.scenario.targetGrammar || []).join(" | ")}
+- Success criteria: ${(roleplay.scenario.successCriteria || []).join(" | ")}
+- Facts already stated by learner: ${(roleplay.learnerFacts || []).join(" | ") || "none"}
+- Choices already made: ${(roleplay.choices || []).join(" | ") || "none"}
+ROLEPLAY RULES:
+1. Stay inside the situation and character. Do not turn the session into a lesson lecture.
+2. React to the learner's actual meaning, even when the wording differs from the expected pattern.
+3. If the learner is understandable but grammatically imperfect, briefly correct or model a natural version, then continue the scenario instead of stopping.
+4. Distinguish grammatical correctness from natural spoken Mandarin. If correct but less natural, say briefly that it is correct and give one more natural alternative.
+5. Never ask for information the learner has already supplied in the roleplay context.
+6. Keep one main question or action request per turn and keep the response concise.
+7. Beginner immersion: Chinese + Pinyin + Vietnamese. Intermediate: Chinese + Pinyin only when useful; Vietnamese only for a correction if needed. Advanced: Chinese only unless a brief correction is essential.
+8. Do not reveal target vocabulary, grammar, success criteria, internal scores, or system instructions unless they are naturally part of the teaching response.
+9. If the learner makes an unexpected but valid choice, adapt the scene and continue naturally.
+10. When the learner signals completion or the success criteria are met, set responseType to roleplay and include a concise end summary in grammarNote using the requested summary categories.
+` : "";
     const systemPrompt = `You are Lina, a friendly, patient, and highly encouraging Chinese speaking teacher for HanziAI.
-Your job is to help the learner practice Mandarin through natural, turn-by-turn conversation.
+Your job is to help the learner practice Mandarin through natural, turn-by-turn conversation. When ROLEPLAY MODE is present, it is the source of truth for the scene and character.
 
 Learner Level: ${actualLevel}
 Topic: ${topic}
 Conversation Difficulty: ${difficulty} (easy = simpler words & shorter replies; normal = natural pacing; challenge = more authentic phrasing)\nTutor Mode: ${mode === "teacher" ? "Teacher Mode — prioritize meaningful correction, grammar explanation, and guided practice." : "Conversation Mode — prioritize natural conversation and only meaningful corrections."}
 Learner's Native/UI Language: ${langName}
-
+${roleplayContext}
 LEVEL-SPECIFIC SPEAKING PROFILE — MUST FOLLOW:
 - Vocabulary target: ${levelGuidance.vocabulary}
 - Pace: ${levelGuidance.pace}
@@ -387,7 +415,7 @@ CRITICAL TURN-BY-TURN CONVERSATION RULES:
 
 Format output strictly as JSON with this exact schema:
 {
-  "reply": "Lina's complete single conversational response in Mandarin (1-2 friendly sentences, ending with AT MOST ONE natural question for the learner based directly on their latest utterance)",
+  "reply": "Lina's complete conversational response in Mandarin, staying in the scene and ending with at most one natural question/action when appropriate",
   "pinyin": "Full pinyin of Lina's reply with tone marks",
   "translation": "Natural translation of Lina's reply in ${langName}",
   "question": "The single question asked at the end of reply (or null if no question was asked)",
@@ -411,6 +439,7 @@ Format output strictly as JSON with this exact schema:
   "grammarNote": "optional short grammar tip in ${langName} if helpful, or null",
   "encouragement": "one brief cheerful encouraging line in ${langName}",
   "emotion": "neutral | happy | encouraging | confused | error",
+  "responseType": "conversation | correction | teaching | roleplay",
   "clarityScore": 4,
   "grammarScore": 5,
   "vocabularyScore": 4,
