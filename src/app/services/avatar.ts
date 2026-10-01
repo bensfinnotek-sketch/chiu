@@ -1,6 +1,30 @@
 export type AvatarState='idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'error';
-export interface AvatarDesign { face:string; hair:string; outfit:string; background:string; expression:string; lighting:string; cameraAngle:string; }
+
+export type AvatarRenderMode='animated-fallback'|'live-provider';
+
+export interface AvatarDesign {
+  name:string;
+  face:string;
+  hair:string;
+  outfit:string;
+  background:string;
+  expression:string;
+  lighting:string;
+  cameraAngle:string;
+}
+
+export interface AvatarCapabilities {
+  renderMode:AvatarRenderMode;
+  realtime:boolean;
+  streamingTts:boolean;
+  lipSync:boolean;
+  facialAnimation:boolean;
+  webrtc:boolean;
+}
+
 export interface AvatarProvider {
+  readonly id:string;
+  readonly capabilities:AvatarCapabilities;
   initialize():void;
   setState(state:AvatarState):void;
   getState():AvatarState;
@@ -9,16 +33,38 @@ export interface AvatarProvider {
   stop():void;
   destroy():void;
 }
-const design:AvatarDesign={face:'semi-realistic fictional young adult woman',hair:'dark shoulder-length hair',outfit:'warm modern tutor outfit',background:'soft neutral studio',expression:'friendly',lighting:'soft diffused',cameraAngle:'front-facing portrait'};
+
+export const linaAvatarDesign:AvatarDesign={
+  name:'Lina / 林娜',
+  face:'fictional young adult Vietnamese-facing Mandarin tutor',
+  hair:'dark shoulder-length hair',
+  outfit:'warm modern tutor top',
+  background:'soft neutral studio',
+  expression:'friendly and attentive',
+  lighting:'soft diffused',
+  cameraAngle:'front-facing medium shot'
+};
+
 let state:AvatarState='idle';
+let initialized=false;
 const listeners=new Set<(state:AvatarState)=>void>();
+
 export const linaAvatarProvider:AvatarProvider={
-  initialize(){state='idle';},
-  setState(next){state=next;listeners.forEach(fn=>fn(next));},
+  id:'lina-animated-fallback',
+  capabilities:{
+    renderMode:'animated-fallback',
+    realtime:false,
+    streamingTts:false,
+    lipSync:false,
+    facialAnimation:true,
+    webrtc:false
+  },
+  initialize(){initialized=true;state='idle';},
+  setState(next){if(!initialized)initialized=true;if(state===next)return;state=next;listeners.forEach(fn=>fn(next));},
   getState(){return state;},
-  subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
+  subscribe(listener){listeners.add(listener);listener(state);return()=>listeners.delete(listener);},
   speak(){this.setState('speaking');},
   stop(){this.setState('idle');},
-  destroy(){listeners.clear();},
+  destroy(){initialized=false;listeners.clear();state='idle';}
 };
-export const linaAvatarDesign=design;
+export const avatarService=linaAvatarProvider;
