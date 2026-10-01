@@ -838,14 +838,14 @@ export async function handleLesson(req: any, res: any) {
     const {level="HSK 1",topic="Greetings",goal="Build practical Mandarin ability",duration=15,learnerWeaknesses=[],targetVocabulary=[],targetGrammar=[]}=body;
     const ai=getAI();
     if(!ai)return sendJson(res,503,{error:"GEMINI_API_KEY is not configured on the server."});
-    const systemPrompt=String.raw\`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
-Requested level: \${level}
-Topic: \${topic}
-Goal: \${goal}
-Duration: \${duration} minutes
-Learner weaknesses: \${JSON.stringify(learnerWeaknesses)}
-Target vocabulary: \${JSON.stringify(targetVocabulary)}
-Target grammar: \${JSON.stringify(targetGrammar)}
+    const systemPrompt=`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
+Requested level: ${level}
+Topic: ${topic}
+Goal: ${goal}
+Duration: ${duration} minutes
+Learner weaknesses: ${JSON.stringify(learnerWeaknesses)}
+Target vocabulary: ${JSON.stringify(targetVocabulary)}
+Target grammar: ${JSON.stringify(targetGrammar)}
 
 Important content integrity:
 - Only assign an HSK level when the requested level is backed by the application's canonical content data. HSK1 is currently canonical; do not invent HSK2-6 vocabulary labels.
