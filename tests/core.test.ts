@@ -99,7 +99,7 @@ test('timezone-aware motivation uses the resolved local date', () => {
 });
 
 test('avatar lifecycle exposes provider state', async () => {
-  const { linaAvatarProvider } = await import('../src/app/services/avatar');
+  const { linaAvatarProvider, getAvatarProvider, configureAvatarProvider } = await import('../src/app/services/avatar');
   const states: string[] = [];
   const unsubscribe = linaAvatarProvider.subscribe(state => states.push(state));
   linaAvatarProvider.initialize();
@@ -108,6 +108,9 @@ test('avatar lifecycle exposes provider state', async () => {
   unsubscribe();
   linaAvatarProvider.destroy();
   assert.ok(states.includes('speaking'));
+  assert.equal(linaAvatarProvider.capabilities.renderMode, 'animated-fallback');
+  assert.equal(linaAvatarProvider.capabilities.lipSync, false);
+  assert.equal(getAvatarProvider().id, linaAvatarProvider.id);
 });
 
 test('STT and TTS expose browser capability boundaries', async () => {
