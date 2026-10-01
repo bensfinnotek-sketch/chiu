@@ -1,7 +1,7 @@
 export type RoleplayDifficulty = 'beginner'|'intermediate'|'advanced';
 export type ImmersionLevel = 'beginner'|'intermediate'|'advanced';
 export interface RoleplayScenario { id:string; scenario:string; context:string; character:string; learnerRole:string; aiRole:string; difficulty:RoleplayDifficulty; targetVocabulary:string[]; targetGrammar:string[]; successCriteria:string[]; }
-export interface RoleplayTurn { role:'user'|'assistant'; text:string; }
+export interface RoleplayTurn { role:'user'|'assistant'; text:string; pinyin?:string; vietnamese?:string; }
 export interface RoleplaySession { scenario:RoleplayScenario; turns:RoleplayTurn[]; learnerFacts:string[]; choices:string[]; startedAt:string; completed:boolean; }
 export interface RoleplaySummary { summary:string; vocabularyLearned:string[]; grammarLearned:string[]; mistakes:string[]; pronunciationIssues:string[]; usefulExpressions:string[]; suggestedReview:string[]; }
 const S=(id:string,scenario:string,context:string,character:string,learnerRole:string,aiRole:string,difficulty:RoleplayDifficulty,targetVocabulary:string[],targetGrammar:string[],successCriteria:string[]):RoleplayScenario=>({id,scenario,context,character,learnerRole,aiRole,difficulty,targetVocabulary,targetGrammar,successCriteria});
@@ -27,7 +27,7 @@ export class RoleplayEngine {
  createSession(scenario:RoleplayScenario):RoleplaySession{return {scenario,turns:[],learnerFacts:[],choices:[],startedAt:new Date().toISOString(),completed:false};}
  buildPromptContext(session:RoleplaySession,immersion:ImmersionLevel){const s=session.scenario;return {scenario:s.scenario,context:s.context,character:s.character,learnerRole:s.learnerRole,aiRole:s.aiRole,difficulty:immersion==='advanced'?'advanced':immersion==='intermediate'?'intermediate':s.difficulty,targetVocabulary:s.targetVocabulary,targetGrammar:s.targetGrammar,successCriteria:s.successCriteria,immersion,learnerFacts:session.learnerFacts,choices:session.choices};}
  updateSession(session:RoleplaySession,learnerText:string){const facts=this.extractFacts(learnerText);return {...session,turns:[...session.turns,{role:'user',text:learnerText}],learnerFacts:Array.from(new Set([...session.learnerFacts,...facts]))};}
- addAssistantTurn(session:RoleplaySession,text:string){return {...session,turns:[...session.turns,{role:'assistant',text}]};}
+ addAssistantTurn(session:RoleplaySession,text:string,pinyin?:string,vietnamese?:string){return {...session,turns:[...session.turns,{role:'assistant',text,pinyin,vietnamese}]};}
  extractFacts(text:string){const facts:string[]=[];const name=text.match(/(?:我叫|我的名字是)\s*([^，。,.!！?？]+)/);if(name?.[1])facts.push('Tên learner: '+name[1].trim());if(/我来自/.test(text))facts.push(text.slice(Math.max(0,text.indexOf('我来自')),Math.min(text.length,text.indexOf('我来自')+18)));return facts;}
  summarize(session:RoleplaySession,analysis:any):RoleplaySummary{return {summary:analysis?.summary||'Hoàn thành tình huống '+session.scenario.scenario+'.',vocabularyLearned:analysis?.vocabularyLearned||session.scenario.targetVocabulary.slice(0,5),grammarLearned:analysis?.grammarLearned||session.scenario.targetGrammar.slice(0,3),mistakes:analysis?.mistakes||[],pronunciationIssues:analysis?.pronunciationIssues||[],usefulExpressions:analysis?.usefulExpressions||[],suggestedReview:analysis?.suggestedReview||session.scenario.targetVocabulary.slice(0,5)};}
 }
