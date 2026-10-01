@@ -181,7 +181,7 @@ function PronunciationCoach() {
   const chooseTone=(n:number)=>{
     setToneAnswer(n);const ok=n===current[2];setToneCorrect(ok);setToneScore(s=>s+(ok?1:0));
     learningEngine.completeSection('pronunciation-coach','pronunciation');
-    if(!ok)aiMemoryService.recordMistake({type:'tone',original:current[0],corrected:tones.find(x=>x[2]===n)?.[0]||current[0],explanation:'Thanh điệu cần luyện thêm.',severity:'medium',relatedPronunciation:[\`tone-\${current[2]}\`]});
+    if(!ok)aiMemoryService.recordMistake({type:'tone',original:current[0],corrected:tones.find(x=>x[2]===n)?.[0]||current[0],explanation:'Thanh điệu cần luyện thêm.',severity:'medium',relatedPronunciation:['tone-'+current[2]]});
   };
   const next=()=>{setActive(i=>(i+1)%tones.length);setToneAnswer(null);setToneCorrect(null);setFeedback('Chưa thể đánh giá chính xác.');};
   const play=()=>void textToSpeechService.speak(current[0],1).catch(()=>setFeedback('Trình duyệt chưa hỗ trợ phát âm thanh.'));
