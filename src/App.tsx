@@ -271,9 +271,9 @@ function Onboarding({ profile, onComplete }: { profile: UserProfile; onComplete:
   const [draft, setDraft] = useState(profile);
   const next = () => step < 3 ? setStep(step + 1) : onComplete(draft);
   const options = [
-    { title: 'Bạn học tiếng Trung để làm gì?', values: (Object.keys(goalLabels) as LearningGoal[]), labels: goalLabels },
-    { title: 'Bạn đang ở trình độ nào?', values: (Object.keys(levelLabels) as SkillLevel[]), labels: levelLabels },
-    { title: 'Bạn muốn học bao lâu mỗi ngày?', values: [5,10,15,20] as const, labels: {5:'5 phút',10:'10 phút',15:'15 phút',20:'20 phút'} }
+    { title: 'Bạn học tiếng Trung để làm gì?', values: Object.keys(goalLabels) as LearningGoal[], labels: goalLabels },
+    { title: 'Bạn đang ở trình độ nào?', values: Object.keys(levelLabels) as SkillLevel[], labels: levelLabels },
+    { title: 'Bạn muốn học bao lâu mỗi ngày?', values: [5, 10, 15, 20] as number[], labels: {5:'5 phút',10:'10 phút',15:'15 phút',20:'20 phút'} }
   ];
   return <div className="fixed inset-0 z-[100] overflow-y-auto bg-[var(--bg)]/95 backdrop-blur-xl"><div className="mx-auto flex min-h-full max-w-lg items-center px-4 py-8"><section className="card w-full p-6 sm:p-8">
     <div className="flex items-center justify-between"><div><span className="eyebrow">Bắt đầu cùng Lina</span><p className="mt-2 text-xs text-[var(--muted)]">Bước {Math.min(step + 1, 3)}/3</p></div><Sparkles className="text-[var(--accent)]"/></div>
