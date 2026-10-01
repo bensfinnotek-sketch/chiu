@@ -112,13 +112,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .tone-5{clip-path:polygon(0 48%,100% 52%,100% 62%,0 58%)}
 
 /* Lina animated fallback: bust, gaze, blink and state-driven expression */
-.lina-avatar-stage{position:relative;width:min(320px,92vw);height:260px;display:grid;place-items:end center;isolation:isolate;flex:0 0 auto;overflow:visible;aspect-ratio:4/3}
+.lina-avatar-stage{position:relative;width:min(320px,92vw);height:260px;display:grid;place-items:end center;isolation:isolate;flex:0 0 auto;overflow:visible;aspect-ratio:4/3;--lina-smile:0;--lina-brow:0;--lina-head-tilt:0}
 .lina-avatar-stage.compact{width:150px;height:170px;aspect-ratio:auto}
 .lina-avatar-bust{position:relative;width:78%;height:96%;transform-origin:50% 100%;transition:transform .35s ease,filter .35s ease}
 .lina-avatar-hair-back{position:absolute;z-index:1;left:8%;top:7%;width:84%;height:54%;border-radius:48% 48% 38% 38%;background:linear-gradient(145deg,#3b2b28,#171210);box-shadow:0 16px 20px rgba(42,25,20,.14)}
-.lina-avatar-shoulders{position:absolute;z-index:2;left:0;bottom:0;width:100%;height:40%;border-radius:52% 52% 12% 12%;background:linear-gradient(160deg,#f3a17f,var(--accent));box-shadow:inset 0 7px 0 rgba(255,255,255,.22),0 -8px 25px rgba(231,111,81,.13)}
+.lina-avatar-shoulders{position:absolute;z-index:2;left:-7%;bottom:0;width:114%;height:41%;border-radius:52% 52% 12% 12%;background:linear-gradient(160deg,#eab0a0,#c98276 62%,#b86f68);box-shadow:inset 0 7px 0 rgba(255,255,255,.22),0 -8px 25px rgba(231,111,81,.13)}
 .lina-avatar-neck{position:absolute;z-index:3;left:42%;bottom:27%;width:16%;height:20%;border-radius:0 0 30% 30%;background:#e5a47f}
-.lina-avatar-face{position:absolute;z-index:4;left:16%;top:11%;width:68%;height:50%;border-radius:47% 47% 43% 43%;background:linear-gradient(145deg,#f6ccb0,#e5a17d);box-shadow:inset -8px -9px 18px rgba(115,60,40,.1)}
+.lina-avatar-face{position:absolute;z-index:4;left:16%;top:11%;width:68%;height:50%;border-radius:47% 47% 43% 43%;background:linear-gradient(145deg,#f7ceb5,#e4a07b);transform:rotate(calc(var(--lina-head-tilt) * 5deg));box-shadow:inset -8px -9px 18px rgba(115,60,40,.1)}
 .lina-avatar-hair-front{position:absolute;left:-4%;top:-7%;width:108%;height:40%;border-radius:52% 52% 28% 25%;background:linear-gradient(145deg,#3b2b28,#171210);clip-path:polygon(0 0,100% 0,95% 75%,78% 58%,64% 77%,48% 56%,32% 76%,18% 56%,0 78%)}
 .lina-avatar-ear{position:absolute;z-index:3;top:34%;width:8%;height:15%;border-radius:50%;background:#e5a47f}
 .lina-avatar-ear.left{left:9%}.lina-avatar-ear.right{right:9%}
@@ -128,7 +128,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-brow{position:absolute;z-index:6;top:42%;width:14px;height:3px;border-radius:99px;background:#563a32;transition:transform .3s ease}
 .lina-avatar-brow.left{left:23%;transform:rotate(-5deg)}.lina-avatar-brow.right{right:23%;transform:rotate(5deg)}
 .lina-avatar-nose{position:absolute;z-index:5;left:49%;top:51%;width:5px;height:16px;border-right:1px solid rgba(120,65,45,.28);border-bottom:1px solid rgba(120,65,45,.22);border-radius:0 0 5px 0}
-.lina-avatar-mouth{position:absolute;z-index:6;left:50%;top:67%;width:20px;height:7px;transform:translateX(-50%);border-bottom:2px solid #9b4e4e;border-radius:0 0 14px 14px;transition:all .18s ease}
+.lina-avatar-mouth{position:absolute;z-index:6;left:50%;top:67%;width:20px;height:7px;transform:translateX(-50%) scaleX(calc(.82 + var(--lina-mouth-width,.3) * .18 + var(--lina-smile) * .16)) scaleY(calc(1 + var(--lina-mouth-open,0) * .9));border-bottom:2px solid #9b4e4e;border-radius:0 0 14px 14px;transition:all .18s ease}
 .lina-avatar-stage-listening .lina-avatar-bust{transform:translateY(-3px) scale(1.015)}
 .lina-avatar-stage-listening .lina-avatar-eye{transform:scaleY(1.25)}
 .lina-avatar-stage-thinking .lina-avatar-bust{animation:lina-thinking 2.2s ease-in-out infinite}
@@ -161,3 +161,18 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-stage .lina-avatar-hair-front,
 .lina-avatar-stage .lina-avatar-shoulders,
 .lina-avatar-stage .lina-avatar-neck{display:block;visibility:visible;opacity:1;}
+
+
+/* Photo-reference framing: wider bust, soft pink top and a friendly raised-hand gesture. */
+.lina-avatar-shoulders{box-shadow:inset 0 7px 0 rgba(255,255,255,.22),0 -8px 25px rgba(180,92,82,.13)}
+.lina-avatar-neckline{position:absolute;left:22%;top:13%;width:56%;height:56%;border:3px solid rgba(112,65,57,.28);border-top:0;border-radius:0 0 50% 50%;background:transparent;transform:scaleX(1.05)}
+.lina-avatar-hair-front::after{content:"";position:absolute;right:5%;top:5%;width:38%;height:88%;border-radius:55% 45% 60% 35%;background:linear-gradient(150deg,rgba(76,55,50,.78),rgba(23,18,16,.2));transform:rotate(10deg)}
+.lina-avatar-hand{position:absolute;z-index:8;left:2%;bottom:14%;width:20%;height:54%;pointer-events:none;filter:drop-shadow(0 10px 12px rgba(112,65,50,.10))}
+.lina-avatar-hand:before{content:"";position:absolute;left:31%;bottom:0;width:42%;height:43%;border-radius:48% 48% 42% 42%;background:linear-gradient(145deg,#f7c9ae,#e3a17e)}
+.lina-avatar-hand .finger{position:absolute;bottom:31%;width:18%;border-radius:999px;background:linear-gradient(145deg,#f7c9ae,#e3a17e);transform-origin:50% 100%}
+.lina-avatar-hand .index{left:24%;height:53%;transform:rotate(-9deg)}
+.lina-avatar-hand .middle{left:41%;height:64%;transform:rotate(-2deg)}
+.lina-avatar-hand .ring{left:58%;height:58%;transform:rotate(5deg)}
+.lina-avatar-hand .pinky{left:74%;height:46%;transform:rotate(11deg)}
+.lina-avatar-hand .thumb{left:60%;bottom:28%;width:25%;height:38%;transform:rotate(43deg)}
+@media (max-width:560px){.lina-avatar-hand{left:0;width:21%;bottom:13%}}
