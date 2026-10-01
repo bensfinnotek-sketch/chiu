@@ -99,7 +99,7 @@ test('timezone-aware motivation uses the resolved local date', () => {
 });
 
 test('avatar lifecycle exposes provider state', async () => {
-  const { linaAvatarProvider, getAvatarProvider, configureAvatarProvider } = await import('../src/app/services/avatar');
+  const { linaAvatarProvider, getAvatarProvider } = await import('../src/app/services/avatar');
   const states: string[] = [];
   const unsubscribe = linaAvatarProvider.subscribe(state => states.push(state));
   linaAvatarProvider.initialize();
