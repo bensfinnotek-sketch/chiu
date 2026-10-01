@@ -392,7 +392,7 @@ function LearnScreen({ setRoute }: { setRoute: (r: Route) => void }) {
   const lesson=progressService.getLesson(lessonId); const state=progressService.getState();
   const progress=state.progress.lessonProgress[lesson.id]||0;
   const sections=['objective','vocabulary','grammar','listening','speaking','roleplay','review'] as const;
-  const complete=(section:any)=>{progressService.completeSection(lesson.id,section);setActive(i=>Math.min(i+1,sections.length-1));};
+  const complete=(section:any)=>{progressService.completeSection(lesson.id,section);if(section==='review'){motivationService.track('lesson',1,'lesson-'+lesson.id);motivationService.unlock('first-lesson');}setActive(i=>Math.min(i+1,sections.length-1));};
   const displayPinyin=(p:string)=>pinyinMode==='hidden'?'':pinyinMode==='numbers'?toneNumbers(p):p;
   const nextLesson=HSK1_LESSONS.find(x=>x.lessonNumber===lesson.lessonNumber+1);
   return <div className="space-y-6">
@@ -419,7 +419,7 @@ function ReviewScreen() {
   const due=progressService.dueReviews(8); const pool=due.length?due.map(r=>HSK1_VOCABULARY.find(v=>v.id===r.vocabularyId)).filter(Boolean) as Vocabulary[]:HSK1_VOCABULARY.slice(0,8);
   const [index,setIndex]=useState(0),[revealed,setRevealed]=useState(false),[type,setType]=useState('zh-vi');
   const card=pool[index%pool.length];
-  const rate=(rating:'again'|'hard'|'good'|'easy')=>{progressService.review(card.id,rating);setRevealed(false);setIndex(i=>(i+1)%pool.length);};
+  const rate=(rating:'again'|'hard'|'good'|'easy')=>{progressService.review(card.id,rating);motivationService.track('review',1,'review-'+card.id+'-'+rating+'-'+index);setRevealed(false);setIndex(i=>(i+1)%pool.length);};
   return <div className="mx-auto max-w-2xl space-y-6 text-center">
     <div><span className="eyebrow">Ôn tập thông minh</span><h1 className="mt-2 text-3xl font-extrabold">{due.length||pool.length} thẻ hôm nay</h1><p className="mt-2 text-[var(--muted)]">SRS đơn giản, nhiều kiểu luyện tập, không chỉ trắc nghiệm.</p></div>
     <div className="flex flex-wrap justify-center gap-2">{progressService.reviewTypes().map(t=><button key={t} onClick={()=>setType(t)} className={`toggle-chip ${type===t?'active':''}`}>{t}</button>)}</div>
