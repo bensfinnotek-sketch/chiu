@@ -35,10 +35,7 @@ export async function getUserProfile(ctx: DatabaseContext): Promise<RepositoryRe
   const provider = createSupabaseProvider(ctx.accessToken);
   if (!provider) return { data: null, error: "DATABASE_NOT_CONFIGURED" };
   try {
-    const row = await provider.query<any>("profiles", "select", {
-      filters: [{ column: "id", value: ctx.userId }],
-      single: true,
-    });
+    const row = await provider.query<any>("profiles", "select", { filters: [{ column: "id", value: ctx.userId }], single: true });
     return { data: row ? mapProfile(row) : null };
   } catch (error: any) {
     return { data: null, error: error?.message || "PROFILE_READ_FAILED" };
@@ -54,9 +51,9 @@ export async function upsertUserProfile(
   try {
     const values = {
       id: ctx.userId,
-      email: input.email || undefined,
-      display_name: input.displayName || undefined,
-      avatar: input.avatar ?? undefined,
+      email: input.email || "",
+      display_name: input.displayName || "",
+      avatar: input.avatar ?? null,
       native_language: input.nativeLanguage || "vi",
       target_language: input.targetLanguage || "zh-CN",
       level: input.level || "new",
@@ -64,7 +61,7 @@ export async function upsertUserProfile(
       goals: input.goals || [],
       updated_at: new Date().toISOString(),
     };
-    const row = await provider.query<any>("profiles", "insert", { values, single: true });
+    const row = await provider.query<any>("profiles", "upsert", { values, onConflict: "id", single: true });
     return { data: mapProfile(row) };
   } catch (error: any) {
     return { data: null, error: error?.message || "PROFILE_WRITE_FAILED" };
