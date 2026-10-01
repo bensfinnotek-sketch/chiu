@@ -157,7 +157,8 @@ function PronunciationCoach() {
   const tones=[['mā','Thanh 1',1],['má','Thanh 2',2],['mǎ','Thanh 3',3],['mà','Thanh 4',4],['ma','Thanh nhẹ',5]] as const;
   const initials=[['b','p','m','f'],['d','t','n','l'],['g','k','h'],['j','q','x'],['zh','ch','sh','r'],['z','c','s']];
   const finals=[['a','o','e'],['ai','ei','ao','ou'],['an','en','ang','eng'],['ong'],['iao','ian','iang'],['uang','uai','ui','un']];
-  const [active,setActive]=useState(0);
+  const weakTone=aiMemoryService.getLearnerProfile(loadProfile()).pronunciationStats.weakTones[0];
+  const [active,setActive]=useState(()=>{const i=tones.findIndex(x=>x[0]===weakTone);return i>=0?i:0;});
   const [mode,setMode]=useState<'Word'|'Minimal Pair'|'Tone'|'Sentence'|'Free Speaking'>('Tone');
   const [recording,setRecording]=useState(false);
   const [feedback,setFeedback]=useState('Chưa thể đánh giá chính xác.');
@@ -199,7 +200,7 @@ function PronunciationCoach() {
       <div className="space-y-4">
         <div className="rounded-2xl border border-[var(--border)] p-4"><b>Nghe → chọn thanh</b><p className="mt-1 text-xs text-[var(--muted)]">Nghe mẫu rồi chọn 1–4 hoặc thanh nhẹ.</p><button onClick={play} className="tool-btn mt-3"><Volume2 size={15}/> Phát mẫu</button><div className="mt-3 grid grid-cols-5 gap-2">{[1,2,3,4,5].map(n=><button key={n} onClick={()=>chooseTone(n)} className={'rounded-xl border p-2 text-sm '+(toneAnswer===n?'border-[var(--accent)] bg-[var(--accent-soft)]':'')}>{n===5?'轻':n}</button>)}</div>{toneCorrect!==null&&<p className={'mt-3 text-sm font-semibold '+(toneCorrect?'text-emerald-600':'text-amber-600')}>{toneCorrect?'Chính xác!':'Chưa đúng. Nghe lại và thử lại nhé.'}</p>}<p className="mt-2 text-xs text-[var(--muted)]">Đúng: {toneScore} · Không dùng điểm âm học giả.</p></div>
         <div className="rounded-2xl border border-[var(--border)] p-4"><b>Pinyin practice</b><p className="mt-2 text-xs text-[var(--muted)]">Nhóm phù hợp HSK 1 trước, sau đó mở rộng theo tiến độ.</p><div className="mt-3 flex flex-wrap gap-2">{initials.flat().map(x=><span key={x} className="pill">{x}</span>)}</div><div className="mt-2 flex flex-wrap gap-2">{finals.flat().map(x=><span key={x} className="pill">{x}</span>)}</div></div>
-        <div className="rounded-2xl bg-[var(--accent-soft)] p-4"><b>Cá nhân hóa</b><p className="mt-1 text-sm">Lina ưu tiên các thanh có lỗi lặp lại và có thể dùng cặp tối thiểu như <span className="font-mono">zh / z</span> khi memory ghi nhận nhầm lẫn.</p><p className="mt-2 text-xs text-[var(--muted)]">Chế độ: {mode} · Tiến độ phát âm được lưu cùng Learning Memory.</p></div>
+        <div className="rounded-2xl bg-[var(--accent-soft)] p-4"><b>Cá nhân hóa</b><p className="mt-1 text-sm">{weakTone?`Lina đang ưu tiên ${weakTone} vì đây là điểm yếu phát âm gần đây.`:'Lina sẽ ưu tiên thanh hoặc âm thường bị nhầm khi Memory có đủ dữ liệu.'} Có thể dùng cặp tối thiểu như <span className="font-mono">zh / z</span> khi memory ghi nhận nhầm lẫn.</p><p className="mt-2 text-xs text-[var(--muted)]">Chế độ: {mode} · Tiến độ phát âm được lưu cùng Learning Memory.</p></div>
       </div>
     </div>
   </section>;
