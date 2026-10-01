@@ -1,6 +1,8 @@
 // Browser Speech Recognition adapter. The UI talks to the modular speech facade instead.
 export type SpeechLanguage = 'zh-CN' | 'zh-TW' | 'en-US' | 'vi-VN';
 
+export type SpeechLanguage = 'zh-CN' | 'zh-TW' | 'en-US' | 'vi-VN';
+
 export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
   onInterimResult?: (interim: string) => void;
@@ -69,7 +71,7 @@ export class SpeechRecognitionService {
       this.shouldFinalizeOnEnd = false;
       const code = event?.error || 'unknown';
       const userMsg =
-        code === 'not-allowed' || code === 'service-not-allowed'
+        code === 'not-allowed' || code === 'service-not-allowed' || code === 'service-not-allowed'
           ? 'Bạn chưa cấp quyền microphone.'
           : code === 'no-speech'
           ? 'Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.'

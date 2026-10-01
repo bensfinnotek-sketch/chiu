@@ -3,6 +3,8 @@ import { X, Volume2, Sparkles, Sliders, Check } from 'lucide-react';
 import { SpeakingSettings } from '../../services/progressService';
 import { speechService } from '../../services/speech';
 import { TonePracticePanel } from './TonePracticePanel';
+import { speechService } from '../../services/speech';
+import { TonePracticePanel } from './TonePracticePanel';
 
 interface SpeakingSettingsModalProps {
   isOpen: boolean;
@@ -51,9 +53,9 @@ export const SpeakingSettingsModal: React.FC<SpeakingSettingsModalProps> = ({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: 'Chậm (0.8x)', value: 0.8 },
-                { label: 'Chuẩn (1.0x)', value: 0.95 },
-                { label: 'Tự nhiên (1.2x)', value: 1.15 },
+                { label: 'Chậm (0.75x)', value: 0.75 },
+                { label: 'Chuẩn (1.0x)', value: 1 },
+                { label: 'Nhanh (1.25x)', value: 1.25 },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -80,6 +82,15 @@ export const SpeakingSettingsModal: React.FC<SpeakingSettingsModalProps> = ({
               disabled={!speechService.isTtsSupported()}
               className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#211A17] border border-[#EADCCF] dark:border-[#3A2F28] text-sm disabled:opacity-50"
             >
+              <option value="Lina">Tự động chọn giọng tiếng Trung</option>
+              {speechService.getChineseVoices().map((voice) => <option key={voice.name} value={voice.name}>{voice.name} · {voice.lang}</option>)}
+            </select>
+            {!speechService.isTtsSupported() && <p className="text-[11px] text-[#D0533C] mt-1">Trình duyệt này chưa hỗ trợ đọc tiếng Trung.</p>}
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-[#716761] dark:text-[#A89E97] mb-2.5 block">Giọng Lina</label>
+            <select value={settings.voice} onChange={(e) => onSave({ voice: e.target.value })} disabled={!speechService.isTtsSupported()} className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#211A17] border border-[#EADCCF] dark:border-[#3A2F28] text-sm disabled:opacity-50">
               <option value="Lina">Tự động chọn giọng tiếng Trung</option>
               {speechService.getChineseVoices().map((voice) => <option key={voice.name} value={voice.name}>{voice.name} · {voice.lang}</option>)}
             </select>
@@ -204,6 +215,7 @@ export const SpeakingSettingsModal: React.FC<SpeakingSettingsModalProps> = ({
               </button>
             </div>
           </div>
+          <TonePracticePanel />
           <TonePracticePanel />
         </div>
 

@@ -3,6 +3,7 @@ export interface SpeakOptions {
   rate?: number;
   pitch?: number;
   voice?: string;
+  voice?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err: any) => void;
@@ -35,6 +36,13 @@ export class TextToSpeechService {
       const lang = voice.lang.toLowerCase();
       return lang === 'zh-cn' || lang.startsWith('zh-') || lang.startsWith('cmn');
     });
+  }
+
+  public setVoice(voiceName?: string): void { this.selectedVoiceName = voiceName || ''; }
+
+  public getChineseVoices(): SpeechSynthesisVoice[] {
+    if (!this.cachedVoices.length) this.loadVoices();
+    return this.cachedVoices.filter((voice) => voice.lang.toLowerCase() === 'zh-cn' || voice.lang.toLowerCase().startsWith('zh-') || voice.lang.toLowerCase().startsWith('cmn'));
   }
 
   public setVoice(voiceName?: string): void { this.selectedVoiceName = voiceName || ''; }

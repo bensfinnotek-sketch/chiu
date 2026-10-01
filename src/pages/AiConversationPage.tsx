@@ -30,8 +30,7 @@ import { LinaAvatar, LinaTeacherState } from '../components/common/LinaAvatar';
 import { AudioButton } from '../components/common/AudioButton';
 import { MicrophoneButton, MicrophoneState } from '../components/common/MicrophoneButton';
 import { storageService } from '../services/storageService';
-import { speechRecognitionService } from '../services/speechRecognitionService';
-import { textToSpeechService } from '../services/textToSpeechService';
+import { speechService } from '../services/speech';
 import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis, TutorMode } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
@@ -101,6 +100,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
   useEffect(() => { speechService.setVoice(settings.voice === 'Lina' ? undefined : settings.voice); }, [settings.voice]);
+  useEffect(() => { speechService.setVoice(settings.voice === 'Lina' ? undefined : settings.voice); }, [settings.voice]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
@@ -147,8 +147,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       setGuestRemainingSeconds(remaining);
       if (remaining <= 0) {
         setGuestLimitReached(true);
-        speechRecognitionService.stopListening();
-        textToSpeechService.stopSpeaking();
+        speechService.stopListening();
+        speechService.stopSpeaking();
         setMicState('IDLE');
         setTeacherState('idle');
         setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí.');
@@ -276,7 +276,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             translation: firstMsg.translation, timestamp: new Date().toISOString() });
           if (settings.autoPlayAi) {
             setTeacherState('speaking');
-            textToSpeechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
+            speechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
               setTeacherState('idle'); if (settings.autoListen) handleStartListening();
             }});
           }
@@ -294,12 +294,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } finally { if (!cancelled) setConversationReady(true); }
     };
     initialiseConversation();
-    return () => { cancelled = true; textToSpeechService.stopSpeaking(); speechRecognitionService.abortListening(); };
+    return () => { cancelled = true; speechService.stopSpeaking(); speechService.abortListening(); };
   }, [activeTopic, initialSpeakingLevel, selectedSessionId, authUser?.id, authLoading]);
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
-    textToSpeechService.stopSpeaking();
+    speechService.stopSpeaking();
     setTeacherState('idle');
   }, []);
 
@@ -320,7 +320,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       } else if (e.code === 'Escape') {
         e.preventDefault();
         stopLinaSpeech();
-        if (speechRecognitionService.isListening()) {          speechRecognitionService.abortListening();
+        if (speechService.isListening()) {          speechService.abortListening();
           setMicState('IDLE');
           setInterimTranscript('');
         }
@@ -355,7 +355,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
     setTeacherState('thinking');
-    setStatusMessage('Cô Lina đang suy nghĩ phản hồi...');
+    setStatusMessage('Đang hiểu...');
     setMicState('PROCESSING');
 
     try {
@@ -465,8 +465,9 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       // Speak Lina's reply
       if (settings.autoPlayAi) {
         setTeacherState('speaking');
-        setStatusMessage('Cô Lina đang nói...');
-        textToSpeechService.speakChinese(analysis.reply, {
+        setMicState('AI_SPEAKING');
+        setStatusMessage('Lina đang nói...');
+        speechService.speakChinese(analysis.reply, {
           rate: settings.speed,
           voice: settings.voice === 'Lina' ? undefined : settings.voice,
           onEnd: () => {
@@ -499,9 +500,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí. Hãy tiếp tục với Google.');
         return;
       }
-      const errorMsg = errorMessage.includes('429')
-        ? 'Hệ thống AI đang bận (429 Rate limit). Vui lòng thử lại sau giây lát!'
-        : (errorMessage || 'Đã có lỗi kết nối đến AI. Hãy thử gửi lại nhé!');
+      const errorMsg = 'Đang gặp sự cố kết nối. Bạn thử lại nhé.';
       setStatusMessage(errorMsg);
     }
   };
@@ -519,10 +518,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
     setMicState('LISTENING');
     setTeacherState('listening');
-    setStatusMessage('Cô Lina đang lắng nghe bạn nói tiếng Trung...');
+    setStatusMessage('Đang nghe...');
     setInterimTranscript('');
 
-    const started = speechRecognitionService.startListening({
+    const started = speechService.startListening({
       onStart: () => {
         setMicState('LISTENING');
       },
@@ -554,7 +553,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           setMicState('IDLE');
           setTeacherState('idle');
           setInterimTranscript('');
-          setStatusMessage('Chưa ghi nhận đủ câu. Nhấn mic để nói lại nhé.');
+          setStatusMessage('Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.');
         }
       },
     });
@@ -573,7 +572,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     if (micState === 'LISTENING') {
       // Let the speech service finish and deliver the accumulated final transcript.
       // Do not submit the current interim text here: it may still be incomplete.
-      speechRecognitionService.stopListening();
+      speechService.stopListening();
       setStatusMessage('Đang hoàn tất câu nói...');
     } else {
       handleStartListening();
@@ -623,7 +622,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // End Session and Show Summary
   const handleEndSession = async () => {
     stopLinaSpeech();
-    speechRecognitionService.stopListening();
+    speechService.stopListening();
 
     const durationMinutes = (Date.now() - sessionStartTime) / 60000;
     const turnsCount = messages.filter((m) => m.sender === 'user').length;
@@ -693,7 +692,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Navigation handlers
   const handleGoBack = () => {
     stopLinaSpeech();
-    speechRecognitionService.stopListening();
+    speechService.stopListening();
     if (onBackToTopics) {
       onBackToTopics();
     } else {

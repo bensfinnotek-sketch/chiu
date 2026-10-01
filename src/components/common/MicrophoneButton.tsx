@@ -80,7 +80,7 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
         <button
           type="button"
           onClick={onClick}
-          disabled={effectiveState === 'DISABLED' || effectiveState === 'PROCESSING'}
+          disabled={effectiveState === 'DISABLED' || effectiveState === 'PROCESSING' || effectiveState === 'AI_SPEAKING'}
           aria-label={
             effectiveState === 'LISTENING'
               ? 'Dừng ghi âm (Stop listening)'
@@ -102,7 +102,9 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
               : 'bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] text-white hover:shadow-xl hover:shadow-[#E86F51]/30 hover:scale-105'
           }`}
         >
-          {effectiveState === 'PROCESSING' ? (
+          {effectiveState === 'AI_SPEAKING' ? (
+            <Volume2 className={`${isLarge ? 'w-9 h-9' : 'w-6 h-6'} animate-pulse`} />
+          ) : effectiveState === 'PROCESSING' ? (
             <Loader2 className={`animate-spin ${isLarge ? 'w-10 h-10' : 'w-6 h-6'}`} />
           ) : effectiveState === 'LISTENING' ? (
             <div className="flex items-center gap-1">
@@ -130,6 +132,8 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
           <span>{formatTimer(seconds)}</span>
           <span className="text-[11px] font-normal opacity-80">• Đang lắng nghe...</span>
         </div>
+      ) : effectiveState === 'AI_SPEAKING' ? (
+        <p className="text-xs sm:text-sm font-medium text-[#E86F51] text-center max-w-xs">Lina đang nói...</p>
       ) : statusText ? (
         <p className="text-xs sm:text-sm font-medium text-[#716761] dark:text-[#A89E97] text-center max-w-xs">
           {statusText}
