@@ -937,8 +937,11 @@ export async function handleTutorHint(req: any, res: any) {
   try {
     const body = parseBody(req);
     const { prompt = "", targetLevel = "HSK 1", level = 1 } = body;
+    const safeHintPrompt=safeText(prompt,2000);
+    const safeHintLevel=safeText(targetLevel,40)||"HSK 1";
     const ai = getAI();
     if (!ai) return sendJson(res, 503, { error: "GEMINI_API_KEY is not configured on the server." });
+    if(!safeHintPrompt)return sendJson(res,400,{error:"Bạn chưa nhập nội dung cần gợi ý."});
     const hintLevel = Math.min(4, Math.max(1, Number(level)));
     const instruction = hintLevel === 1
       ? "Give only a semantic clue in Vietnamese. Do not reveal Chinese keywords."
