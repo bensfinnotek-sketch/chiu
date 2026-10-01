@@ -741,6 +741,31 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             </button>
           )}
 
+          {/* Language layer controls — each layer can be shown independently. */}
+          <div className="hidden sm:flex items-center gap-1.5 rounded-2xl bg-white/75 dark:bg-[#251D19]/80 backdrop-blur border border-[#E8DACD] dark:border-[#3B3029] p-1.5" aria-label="Lớp hiển thị hội thoại">
+            {[
+              { key: 'hanzi', label: 'Hán', enabled: true },
+              { key: 'pinyin', label: 'Pinyin', enabled: settings.showPinyin },
+              { key: 'translation', label: 'Việt', enabled: settings.showTranslation },
+            ].map((layer) => (
+              <button
+                key={layer.key}
+                type="button"
+                onClick={() => {
+                  if (layer.key === 'hanzi') return;
+                  const field = layer.key === 'pinyin' ? 'showPinyin' : 'showTranslation';
+                  const next = !layer.enabled;
+                  const updated = progressService.saveSettings({ [field]: next });
+                  setSettings(updated);
+                }}
+                aria-pressed={layer.enabled}
+                className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all ${layer.enabled ? 'bg-[#E86F51] text-white shadow-sm' : 'text-[#716761] dark:text-[#A89E97] hover:bg-black/5 dark:hover:bg-white/5'}`}
+              >
+                {layer.label}
+              </button>
+            ))}
+          </div>
+
           {/* Settings Modal Button */}
           <button
             type="button"
@@ -824,7 +849,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                       : 'bg-[#65A873]'
                   }`}
                 />
-                <span className="capitalize">{statusMessage}</span>
+                <span className="text-left">{teacherState === 'listening' ? 'Đang lắng nghe' : teacherState === 'thinking' ? 'Đang suy nghĩ' : teacherState === 'speaking' ? 'Đang nói' : 'Sẵn sàng'}</span>
               </div>
             </div>
 
@@ -1300,8 +1325,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         }}
         onGoHome={() => {
           setSummaryOpen(false);
-          window.location.hash = '#dashboard';
-          window.dispatchEvent(new CustomEvent('app_navigate', { detail: { route: 'dashboard' } }));
+          window.location.hash = '';
+          window.dispatchEvent(new CustomEvent('app_navigate', { detail: { route: 'home' } }));
         }}
         stats={{
           durationMinutes: (Date.now() - sessionStartTime) / 60000,

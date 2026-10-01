@@ -11,7 +11,6 @@ import { useAuth } from './hooks/useAuth';
 import { checkHasGuestData } from './services/migration/guestMigration';
 import { GuestMigrationModal } from './components/auth/GuestMigrationModal';
 
-import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CurriculumLearnPage } from './pages/CurriculumLearnPage';
 import { CurriculumLessonViewer } from './pages/CurriculumLessonViewer';
@@ -156,12 +155,8 @@ function AppContent() {
 
       <main className="flex-1 pb-20 lg:pb-10">
         <ErrorBoundary>
-          {currentRoute === 'home' && (
-            <HomePage
-              onStartLearning={() => handleNavigate('dashboard')}
-              onTryAiConversation={() => handleNavigate('practice-conversation')}
-              onNavigate={handleNavigate}
-            />
+          {(currentRoute === 'home' || currentRoute === 'dashboard') && (
+            <DashboardPage user={user} onNavigate={handleNavigate} language="vi" />
           )}
           {currentRoute === 'dashboard' && (
             <DashboardPage user={user} onNavigate={handleNavigate} language="vi" />

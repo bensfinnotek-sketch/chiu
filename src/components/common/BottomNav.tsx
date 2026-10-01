@@ -11,11 +11,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onNavigate
 }) => {
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'learn', label: 'Học tập', icon: BookOpen },
-    { id: 'practice', label: 'Luyện nói', icon: Mic, isCenter: true },
+    { id: 'home', label: 'Trang chủ', icon: Home },
+    { id: 'learn', label: 'Học', icon: BookOpen },
+    { id: 'practice', label: 'Nói', icon: Mic, isCenter: true },
     { id: 'review', label: 'Ôn tập', icon: RotateCcw },
-    { id: 'profile', label: 'Hồ sơ', icon: User },
+    { id: 'profile', label: 'Tôi', icon: User },
   ];
 
   return (

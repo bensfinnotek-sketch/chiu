@@ -30,12 +30,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, theme,
   }, []);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Sparkles },
-    { id: 'learn', label: 'Học tập', icon: BookOpen },
-    { id: 'practice', label: 'Luyện nói', icon: Mic },
-    { id: 'flashcards', label: 'Flashcards', icon: Layers },
-    { id: 'conversations', label: 'Hội thoại', icon: MessageSquare },
-    { id: 'progress', label: 'Tiến độ', icon: BarChart3 },
+    { id: 'home', label: 'Trang chủ', icon: Sparkles },
+    { id: 'learn', label: 'Học', icon: BookOpen },
+    { id: 'practice', label: 'Nói', icon: Mic },
+    { id: 'review', label: 'Ôn tập', icon: Layers },
+    { id: 'profile', label: 'Tôi', icon: User },
   ];
 
   const displayName = authUser?.displayName || user.name || 'Học viên';
@@ -53,10 +52,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, theme,
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-[#181412]/90 border-b border-[#E86F51]/10 dark:border-white/10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        <button type="button" onClick={() => onNavigate('home')} className="flex items-center gap-2.5 group cursor-pointer focus:outline-none" aria-label="Về trang chủ Bentalk AI">
+        <button type="button" onClick={() => onNavigate('home')} className="flex items-center gap-2.5 group cursor-pointer focus:outline-none" aria-label="Về trang chủ Lina AI Chinese">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E86F51] to-[#F5A28E] flex items-center justify-center text-white font-bold text-xl shadow-md shadow-[#E86F51]/25 group-hover:scale-105 transition-transform font-chinese">汉</div>
           <div className="flex flex-col text-left">
-            <span className="font-extrabold text-xl tracking-tight text-[#211A17] dark:text-white flex items-center gap-1">Bentalk<span className="text-[#E86F51]"> AI</span></span>
+            <span className="font-extrabold text-xl tracking-tight text-[#211A17] dark:text-white flex items-center gap-1">Lina<span className="text-[#E86F51]"> AI</span></span>
             <span className="text-[10px] uppercase font-semibold tracking-wider text-[#716761] dark:text-[#A89E97] hidden sm:inline-block">Speak Naturally</span>
           </div>
         </button>
@@ -95,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate, theme,
         <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
           <button type="button" onClick={() => { onToggleTheme(); closeMobileMenu(); }} className="w-full min-h-11 flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#716761] dark:text-[#A89E97] hover:bg-[#FFF0EB] dark:hover:bg-[#342822]" aria-pressed={theme === 'dark'}><span className="flex items-center gap-3">{theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-[#E86F51]" />}<span>{theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}</span></span><span className="text-[10px] font-black px-2 py-1 rounded-full bg-black/5 dark:bg-white/10">{theme === 'dark' ? 'DARK' : 'LIGHT'}</span></button>
           {isAuthenticated ? <><button type="button" onClick={() => { onNavigate('settings'); closeMobileMenu(); }} className="w-full min-h-11 flex items-center gap-3 px-3.5 py-2 text-sm text-[#716761] dark:text-[#A89E97]"><Settings size={18} /><span>Cài đặt hệ thống</span></button><button type="button" onClick={() => { handleSignOut(); closeMobileMenu(); }} className="w-full min-h-11 flex items-center gap-3 px-3.5 py-2 text-sm text-red-600 dark:text-red-400"><LogOut size={18} /><span>Đăng xuất</span></button></> : <div className="flex gap-2 pt-1"><button type="button" onClick={() => { onNavigate('login'); closeMobileMenu(); }} className="flex-1 min-h-11 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-center">Đăng nhập</button><button type="button" onClick={() => { onNavigate('register'); closeMobileMenu(); }} className="flex-1 min-h-11 py-2 rounded-xl bg-[#E86F51] text-white text-xs font-bold text-center shadow-xs">Đăng ký</button></div>}
-          <button type="button" onClick={() => { onOpenPricing(); closeMobileMenu(); }} className="w-full min-h-11 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-[#D5A85C] to-[#E5BE79] text-white text-sm font-bold shadow-sm"><Crown size={16} /><span>Nâng cấp Bentalk AI Pro</span></button>
+          <button type="button" onClick={() => { onOpenPricing(); closeMobileMenu(); }} className="w-full min-h-11 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-[#D5A85C] to-[#E5BE79] text-white text-sm font-bold shadow-sm"><Crown size={16} /><span>Nâng cấp Lina AI Chinese Pro</span></button>
         </div>
       </div>}
     </header>
