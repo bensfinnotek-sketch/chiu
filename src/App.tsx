@@ -196,7 +196,7 @@ function TutorScreen() {
     setNotice('');setInterim('');setListening(true);setStatus('Listening');
     let finalText='';
     try{
-      await speechToTextService.start(text=>{finalText=text;setInput(text);},text=>{setInterim(text);setInput(text)},message=>{setNotice(message);setStatus('Error');setListening(false)});
+      await speechToTextService.start(text=>{finalText=text;setInput(text);},text=>{setInterim(text);setInput(text)},message=>{setNotice(message);setStatus('Error');setListening(false)},language);
       setListening(false);setInterim('');
       if(finalText.trim()) await submit(finalText); else {setStatus('Idle');setNotice('Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.');}
     }catch(error){setListening(false);setInterim('');setStatus('Idle');if(!notice)setNotice(error instanceof Error&&error.message.includes('permission')?'Bạn chưa cấp quyền microphone.':'Mình chưa nghe rõ. Bạn thử lại nhé.');}
