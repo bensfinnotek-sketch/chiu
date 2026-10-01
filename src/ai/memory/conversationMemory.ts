@@ -49,6 +49,14 @@ export interface ConversationMemory {
   vocabulary: string[];
   grammarIssues: GrammarIssue[];
   srsContext?: SrsContext;
+  studyCoachContext?: {
+    decision: string;
+    reason: string;
+    focus: string;
+    targets: string[];
+    lesson?: string;
+    scores?: string;
+  };
   recentMessages: ConversationMessage[];
   updatedAt: number;
 }

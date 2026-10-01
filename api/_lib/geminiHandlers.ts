@@ -328,6 +328,12 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
           .join("\n");
         memoryContext += `\nRECURRING GRAMMAR WEAKNESSES:\n${recurringGrammar}`;
       }
+      if (memory.studyCoachContext) {
+        const coach = memory.studyCoachContext;
+        const targets = Array.isArray(coach.targets) ? coach.targets.slice(0, 3) : [];
+        memoryContext += `\nPERSONAL STUDY PLAN FOCUS:\n- Decision: ${coach.decision || "learn_lesson"}\n- Focus: ${coach.focus || "balanced"}\n- Reason: ${coach.reason || "Keep the current learning rhythm."}\n- Targets: ${targets.join(", ") || "none"}${coach.lesson ? "\n- Recommended lesson: " + coach.lesson : ""}${coach.scores ? "\n- Recent outcome: " + coach.scores : ""}\nLINA COACH RULE: Align this speaking session with the study-plan focus when it fits naturally. If vocabulary or grammar targets are listed, create natural opportunities to use them. Do not force targets or reveal internal scoring/decision labels to the learner.`;
+      }
+
       if (memory.srsContext) {
         const due = Array.isArray(memory.srsContext.due) ? memory.srsContext.due.slice(0, 6) : [];
         const weak = Array.isArray(memory.srsContext.weak) ? memory.srsContext.weak.slice(0, 6) : [];

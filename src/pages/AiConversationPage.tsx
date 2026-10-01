@@ -35,6 +35,8 @@ import { textToSpeechService } from '../services/textToSpeechService';
 import { geminiSpeakingService } from '../services/geminiSpeakingService';
 import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
+import { recommendationService } from '../curriculum/recommendationService';
+import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
 import { subscriptionService } from '../services/subscriptionService';
 import { flashcardService } from '../services/flashcardService';
 import { SpeakingSettingsModal } from '../components/speaking/SpeakingSettingsModal';
@@ -110,6 +112,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   const [editingText, setEditingText] = useState('');
 
   // Conversation Memory State (Sections 11-20)
+  const [studyCoachContext, setStudyCoachContext] = useState<{ decision: string; reason: string; focus: string; targets: string[]; lesson?: string; scores?: string } | null>(null);
+
   const [memory, setMemory] = useState<ConversationMemory>(() => {
     return createEmptyMemory(`speaking_${activeTopic}`, activeTopic, activeLevel);
   });
@@ -190,6 +194,37 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, interimTranscript, teacherState]);
+
+  // Keep Lina synchronized with the learner's current study-plan recommendation.
+  useEffect(() => {
+    let cancelled = false;
+    const loadStudyCoachContext = async () => {
+      try {
+        const parsedLevel = Number(activeLevel.replace(/[^0-9]/g, '')) || 1;
+        const level = Math.min(6, Math.max(1, parsedLevel)) as 1 | 2 | 3 | 4 | 5 | 6;
+        const userId = authUser?.id || 'guest-user';
+        const repo = getLessonProgressRepository(authUser?.id || null);
+        const recommendations = await recommendationService.getRecommendations(userId, level, repo);
+        const primary = recommendations[0];
+        if (cancelled) return;
+        const metadata = primary?.metadata as any;
+        const focus = metadata?.diagnosticFocus === 'vocabulary' ? 'từ vựng' : metadata?.diagnosticFocus === 'grammar' ? 'ngữ pháp' : metadata?.diagnosticFocus === 'quiz' ? 'quiz' : 'cân bằng';
+        const targets = Array.isArray(metadata?.diagnosticTargetLabels) ? metadata.diagnosticTargetLabels.slice(0, 3) : [];
+        setStudyCoachContext(primary ? {
+          decision: metadata?.decision || 'learn_lesson',
+          reason: metadata?.reason || primary.description || '',
+          focus,
+          targets,
+          lesson: primary.title,
+          scores: typeof metadata?.score === 'number' ? 'Điểm gần nhất: ' + metadata.score + '%' : undefined,
+        } : null);
+      } catch {
+        if (!cancelled) setStudyCoachContext(null);
+      }
+    };
+    loadStudyCoachContext();
+    return () => { cancelled = true; };
+  }, [activeLevel, authUser?.id]);
 
   // Load an existing conversation or create a new persisted session.
   useEffect(() => {
@@ -335,7 +370,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         conversationHistory: historyFormatted,
         nativeLanguage: 'vi',
         difficulty: settings.difficulty,
-        memory,
+        memory: {
+          ...memory,
+          studyCoachContext,
+        },
       });
 
       // Update user message with correction if any
