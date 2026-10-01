@@ -44,6 +44,7 @@ export const learningEngine={
   getMemory(profile:UserProfile):LearnerMemory{const s=read();return s.memory||this.updateMemory(profile);},
   dailyPlan(profile:UserProfile):DailyPlan{const s=read();const next=HSK1_LESSONS.find(x=>!s.progress.completedLessons.includes(x.id))||HSK1_LESSONS[0];return {minutes:profile.dailyMinutes,lessonId:next.id,reviewCount:Math.min(8,Math.max(5,this.dueReviews(8).length)),speakingCount:2,newWords:3,grammarPoints:1};},
   adaptiveDifficulty(base:1|2|3|4|5){const s=read();const recent=s.mistakes.slice(0,8);const errors=recent.reduce((n,x)=>n+x.frequency,0);return Math.max(1,Math.min(5,base+(errors>=4?-1:errors===0?1:0))) as 1|2|3|4|5;},
+  resetProgress(){const s=read();s.progress={lessonProgress:{},completedLessons:[],speakingPractice:0,listeningPractice:0,grammarPractice:0,pronunciationPractice:0,tonePractice:0,reviewsCompleted:0,streak:0};s.reviews=[];s.mistakes=[];s.memory=null;write(s);},
   weakAreas(){const s=read();return {grammar:s.mistakes.filter(x=>x.type==='grammar').slice(0,5),vocabulary:s.mistakes.filter(x=>x.type==='vocabulary').slice(0,5),tones:s.mistakes.filter(x=>x.type==='tone').slice(0,5)}},
   reviewTypes():ReviewType[]{return ['zh-vi','vi-zh','audio-meaning','pinyin-zh','zh-speak','listen-repeat','fill-blank','conversation'];}
 };
