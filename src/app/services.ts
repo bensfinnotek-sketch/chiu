@@ -1,6 +1,7 @@
 import type { ConversationMessage, TutorResponse, TutorMode, TutorHint } from './types';
 import { speechService } from './services/speech';
 import { ttsService } from './services/tts';
+import { linaAvatarProvider } from './services/avatar';
 
 export interface AiTutorService {
   respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';signal?:AbortSignal;}):Promise<TutorResponse>;
@@ -24,7 +25,19 @@ export const speechToTextService={
   stop(){speechService.stop();}, abort(){speechService.abort();}, isSupported(){return speechService.isSupported();}
 };
 export const textToSpeechService={
-  async speak(text:string,rate:0.75|1|1.25=1){return ttsService.speakChinese(text,{rate,lang:'zh-CN'});},
-  stop(){ttsService.stopSpeaking();}, pause(){ttsService.pauseSpeaking();}, resume(){ttsService.resumeSpeaking();}, isSupported(){return ttsService.isSupported();}
+  async speak(text:string,rate:0.75|1|1.25=1){
+    linaAvatarProvider.setState('speaking');
+    try { return await ttsService.speakChinese(text,{rate,lang:'zh-CN'}); }
+    finally { linaAvatarProvider.setState('idle'); }
+  },
+  stop(){ttsService.stopSpeaking();linaAvatarProvider.setState('idle');},
+  pause(){ttsService.pauseSpeaking();}, resume(){ttsService.resumeSpeaking();}, isSupported(){return ttsService.isSupported();}
 };
-export const avatarService:{setState(state:'idle'|'listening'|'thinking'|'speaking'|'error'):void}={setState(){}};
+export const avatarService={
+  initialize(){linaAvatarProvider.initialize();},
+  setState(state:'idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'error'){linaAvatarProvider.setState(state);},
+  subscribe(listener:(state:import('./services/avatar').AvatarState)=>void){return linaAvatarProvider.subscribe(listener);},
+  speak(text:string,options?:{rate?:0.75|1|1.25}){linaAvatarProvider.speak(text,options);},
+  stop(){linaAvatarProvider.stop();},
+  destroy(){linaAvatarProvider.destroy();}
+};
