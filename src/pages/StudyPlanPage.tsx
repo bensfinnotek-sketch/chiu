@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../auth/AuthProvider';
+import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
+import { recommendationService } from '../curriculum/recommendationService';
 import {
   ArrowRight, BookOpen, Brain, CalendarDays, CheckCircle2, Clock3,
   Flame, MessageCircle, Mic2, RefreshCw, Sparkles, Target, TrendingUp,
@@ -22,6 +25,22 @@ interface WeekPlan {
   focus: string;
   tasks: string[];
   minutes: number;
+}
+
+interface AdaptiveSignals {
+  decision: 'review_srs' | 'review_quiz' | 'learn_lesson' | 'advance_hsk';
+  reason: string;
+  completionPercent: number;
+  vocabularyScore: number;
+  grammarScore: number;
+  quizScore: number;
+  masteryScore: number;
+  weakVocabularyCount: number;
+  weakGrammarCount: number;
+  diagnosticFocus: 'vocabulary' | 'grammar' | 'quiz' | 'balanced';
+  diagnosticTargets: string[];
+  recommendationTitle: string;
+  recentOutcomeScore: number | null;
 }
 
 const STORAGE_KEY = 'chiu_personal_study_plan';
@@ -77,6 +96,7 @@ function buildWeeks(plan: StudyPlan): WeekPlan[] {
 }
 
 export const StudyPlanPage: React.FC = () => {
+  const { user } = useAuth();
   const [goal, setGoal] = useState<Goal>('conversation');
   const [currentLevel, setCurrentLevel] = useState(1);
   const [targetLevel, setTargetLevel] = useState(3);
@@ -107,7 +127,89 @@ export const StudyPlanPage: React.FC = () => {
   const weeks = useMemo(() => (plan ? buildWeeks(plan) : []), [plan]);
   const activeWeekData = weeks.find((item) => item.week === activeWeek) || weeks[0];
   const weeklyMinutes = (plan?.dailyMinutes || dailyMinutes) * (plan?.daysPerWeek || daysPerWeek);
-  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;\n  const completedPlanDays = Object.values(adaptiveDays).filter((day) => day.completed).length;\n  const recentPlanDays = Object.values(adaptiveDays).slice(-7);\n  const recentCompletionRate = recentPlanDays.length ? (recentPlanDays.filter((day) => day.completed).length / recentPlanDays.length) * 100 : 50;\n  const adaptiveDecision = speakingProgress.streak >= 5 && recentCompletionRate >= 70 ? 'advance_hsk' : speakingProgress.streak <= 1 || recentCompletionRate < 40 ? 'learn_lesson' : 'review_quiz';\n  const adaptivePlan = plan ? buildPersonalizedLearningPlan({ dailyMinutes: plan.dailyMinutes, learningGoal: plan.goal, decision: adaptiveDecision, completionPercent: Math.min(100, Math.round((completedPlanDays / Math.max(1, plan.durationWeeks * plan.daysPerWeek)) * 100)), vocabularyScore: 70, grammarScore: 70, quizScore: 75, momentumScore: Math.min(100, 50 + speakingProgress.streak * 8), momentumTrend: speakingProgress.streak >= 5 ? 'rising' : speakingProgress.streak <= 1 ? 'falling' : 'stable', recentCompletionRate, consistencyScore: recentCompletionRate }) : null;\n  const todayKey = new Date().toISOString().slice(0, 10);\n  const todayDone = adaptiveDays[todayKey]?.completed === true;
+  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;\n  const completedPlanDays = Object.values(adaptiveDays).filter((day) => day.completed).length;
+  const recentPlanDays = Object.values(adaptiveDays).slice(-7);
+  const recentCompletionRate = recentPlanDays.length ? (recentPlanDays.filter((day) => day.completed).length / recentPlanDays.length) * 100 : 50;
+
+  useEffect(() => {
+    if (!plan) {
+      setAdaptiveSignals(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadAdaptiveSignals = async () => {
+      setAdaptiveLoading(true);
+      try {
+        const userId = user?.id || 'guest-user';
+        const repo = getLessonProgressRepository(user?.id || null);
+        const [completion, recommendations] = await Promise.all([
+          recommendationService.calculateLevelCompletion(userId, plan.currentLevel as 1 | 2 | 3 | 4 | 5 | 6, repo),
+          recommendationService.getRecommendations(userId, plan.currentLevel as 1 | 2 | 3 | 4 | 5 | 6, repo),
+        ]);
+        if (cancelled) return;
+
+        const primary = recommendations[0];
+        const metadata = primary?.metadata;
+        setAdaptiveSignals({
+          decision: metadata?.decision || 'learn_lesson',
+          reason: metadata?.reason || 'Chưa có đủ dữ liệu gần đây; giữ nhịp học ổn định và tiếp tục thu thập kết quả.',
+          completionPercent: completion.completionPercent,
+          vocabularyScore: completion.vocabularyMastery,
+          grammarScore: completion.grammarMastery,
+          quizScore: completion.quizMastery,
+          masteryScore: completion.masteryScore,
+          weakVocabularyCount: completion.weakVocabularyCount,
+          weakGrammarCount: completion.weakGrammarCount,
+          diagnosticFocus: metadata?.diagnosticFocus || 'balanced',
+          diagnosticTargets: metadata?.diagnosticTargetLabels || [],
+          recommendationTitle: primary?.title || 'Tiếp tục lộ trình hiện tại',
+          recentOutcomeScore: metadata?.score ?? null,
+        });
+      } catch (error) {
+        console.warn('Adaptive study plan sync error:', error);
+        if (!cancelled) setAdaptiveSignals(null);
+      } finally {
+        if (!cancelled) setAdaptiveLoading(false);
+      }
+    };
+
+    loadAdaptiveSignals();
+    setSpeakingProgress(progressService.getProgress());
+
+    return () => {
+      cancelled = true;
+    };
+  }, [plan, user?.id]);
+
+  const adaptiveDecision = adaptiveSignals?.decision || (
+    speakingProgress.streak >= 5 && recentCompletionRate >= 70
+      ? 'advance_hsk'
+      : speakingProgress.streak <= 1 || recentCompletionRate < 40
+        ? 'learn_lesson'
+        : 'review_quiz'
+  );
+
+  const adaptivePlan = plan ? buildPersonalizedLearningPlan({
+    dailyMinutes: plan.dailyMinutes,
+    learningGoal: plan.goal,
+    decision: adaptiveDecision,
+    completionPercent: adaptiveSignals?.completionPercent ?? Math.min(
+      100,
+      Math.round((completedPlanDays / Math.max(1, plan.durationWeeks * plan.daysPerWeek)) * 100)
+    ),
+    vocabularyScore: adaptiveSignals?.vocabularyScore ?? 70,
+    grammarScore: adaptiveSignals?.grammarScore ?? 70,
+    quizScore: adaptiveSignals?.quizScore ?? 75,
+    diagnosticFocus: adaptiveSignals?.diagnosticFocus,
+    momentumScore: Math.min(100, 50 + speakingProgress.streak * 8),
+    momentumTrend: speakingProgress.streak >= 5 ? 'rising' : speakingProgress.streak <= 1 ? 'falling' : 'stable',
+    recentCompletionRate,
+    consistencyScore: recentCompletionRate,
+    recentOutcomeScore: adaptiveSignals?.recentOutcomeScore ?? undefined,
+  }) : null;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayDone = adaptiveDays[todayKey]?.completed === true;
 
   const handleGenerate = () => {
     const next: StudyPlan = {
@@ -247,9 +349,33 @@ export const StudyPlanPage: React.FC = () => {
       {plan && adaptivePlan && (
         <section className="chiu-card p-5 sm:p-7 border-[#E86F51]/20 bg-gradient-to-br from-[#FFF7F2] to-white dark:from-[#2A2320] dark:to-[#241F1C]">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div><p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#E86F51]">Kế hoạch linh động hôm nay</p><h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">{adaptivePlan.focus} · {adaptivePlan.dailyMinutes} phút</h2><p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{adaptivePlan.adaptationReason}</p></div>
+            <div><p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#E86F51]">Kế hoạch linh động hôm nay</p><h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">{adaptivePlan.focus} · {adaptivePlan.dailyMinutes} phút</h2><p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{adaptiveLoading ? 'Đang đồng bộ kết quả học gần đây…' : adaptiveSignals?.reason || adaptivePlan.adaptationReason}</p></div>
             <button type="button" onClick={toggleToday} className={'px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 ' + (todayDone ? 'bg-[#65A873]/15 text-[#4D8A59]' : 'bg-[#E86F51] text-white')}><CheckCircle2 size={15} /> {todayDone ? 'Đã hoàn thành hôm nay' : 'Đánh dấu đã học'}</button>
           </div>
+          {adaptiveSignals && (
+            <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+              <div className="p-4 rounded-2xl bg-white/85 dark:bg-[#181412]/55 border border-[#EDE4DB] dark:border-[#382E27]">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">AI đọc dữ liệu thật</p>
+                <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">{adaptiveSignals.recommendationTitle}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="px-2.5 py-1 rounded-full bg-[#E86F51]/10 text-[#E86F51] text-[10px] font-bold">Mastery {adaptiveSignals.masteryScore}</span>
+                  <span className="px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 text-[#716761] dark:text-[#C7BCB5] text-[10px] font-bold">Vocab {adaptiveSignals.vocabularyScore}</span>
+                  <span className="px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 text-[#716761] dark:text-[#C7BCB5] text-[10px] font-bold">Grammar {adaptiveSignals.grammarScore}</span>
+                  <span className="px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 text-[#716761] dark:text-[#C7BCB5] text-[10px] font-bold">Quiz {adaptiveSignals.quizScore}</span>
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#FFF7F2] dark:bg-[#342822] border border-[#E86F51]/10 min-w-[220px]">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#E86F51]">Điểm cần tập trung</p>
+                <p className="text-sm font-black text-[#211A17] dark:text-white mt-1">
+                  {adaptiveSignals.diagnosticFocus === 'vocabulary' ? 'Từ vựng' : adaptiveSignals.diagnosticFocus === 'grammar' ? 'Ngữ pháp' : adaptiveSignals.diagnosticFocus === 'quiz' ? 'Quiz' : 'Cân bằng'}
+                </p>
+                {adaptiveSignals.diagnosticTargets.length > 0 && (
+                  <p className="text-[10px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-2">{adaptiveSignals.diagnosticTargets.slice(0, 2).join(' · ')}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
             {adaptivePlan.steps.map((step) => <div key={step.id} className="p-3 rounded-2xl bg-white/80 dark:bg-[#181412]/55 border border-[#EDE4DB] dark:border-[#382E27]"><p className="text-[11px] font-black text-[#211A17] dark:text-white">{step.title}</p><p className="text-lg font-black text-[#E86F51] mt-1">{step.minutes}′</p><p className="text-[10px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1">{step.description}</p></div>)}
           </div>
