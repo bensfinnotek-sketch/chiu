@@ -11,6 +11,8 @@ import { aiMemoryService } from './app/services/aiMemory';
 import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
 import { aiTutorService, speechToTextService, textToSpeechService, avatarService, pronunciationEngine } from './app/services';
 import type { AvatarState } from './app/services/avatar';
+import { roleplayEngine, ROLEPLAY_SCENARIOS } from './app/services/roleplay';
+import type { ImmersionLevel, RoleplaySession, RoleplaySummary } from './app/services/roleplay';
 import type { TtsSpeed } from './app/services/tts';
 
 type Route = 'home' | 'learn' | 'speak' | 'review' | 'profile';
@@ -205,6 +207,87 @@ function PronunciationCoach() {
     </div>
   </section>;
 }
+function RoleplayScreen() {
+  const [scenarioId,setScenarioId]=useState('restaurant');
+  const [immersion,setImmersion]=useState<ImmersionLevel>('beginner');
+  const [session,setSession]=useState<RoleplaySession|null>(null);
+  const [input,setInput]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [hintLevel,setHintLevel]=useState<1|2|3|4>(1);
+  const [hint,setHint]=useState('');
+  const [summary,setSummary]=useState<RoleplaySummary|null>(null);
+  const [notice,setNotice]=useState('');
+  const [avatar,setAvatar]=useState<AvatarState>('idle');
+
+  useEffect(()=>{avatarService.initialize();return avatarService.subscribe(setAvatar);},[]);
+
+  const scenario=ROLEPLAY_SCENARIOS.find(x=>x.id===scenarioId)||ROLEPLAY_SCENARIOS[0];
+  const start=()=>{setSession(roleplayEngine.createSession(scenario));setSummary(null);setHint('');setNotice('');setInput('');};
+  const play=(text:string)=>{avatarService.setState('speaking');void textToSpeechService.speak(text,1).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.'));};
+  const submit=async()=>{
+    const value=input.trim(); if(!value||busy)return;
+    const current=session||roleplayEngine.createSession(scenario);
+    const nextSession=roleplayEngine.updateSession(current,value);
+    setSession(nextSession);setInput('');setHint('');setBusy(true);setNotice('');avatarService.setState('thinking');
+    try{
+      const context=roleplayEngine.buildPromptContext(nextSession,immersion);
+      const memory=aiMemoryService.buildTutorContext(loadProfile(),scenario.scenario,null,nextSession.turns.map(t=>t.text));
+      const analysis=await aiTutorService.respond({
+        userText:value,targetLevel:'HSK '+loadProfile().currentHsk,topic:scenario.scenario,mode:'conversation',
+        conversationHistory:nextSession.turns.map((t,i)=>({id:String(i),role:t.role,chinese:t.text,pinyin:'',vietnamese:''})),
+        difficulty:context.difficulty==='advanced'?'challenge':context.difficulty==='intermediate'?'normal':'easy',
+        immersion,roleplay:{scenario,learnerFacts:nextSession.learnerFacts,choices:nextSession.choices},
+        memory:{summary:memory.relevantMemory.map(x=>x.content).join(' | '),keyFacts:nextSession.learnerFacts,vocabulary:memory.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:memory.relevantMistakes.flatMap(x=>x.relatedGrammar)}
+      });
+      const withAssistant=roleplayEngine.addAssistantTurn(nextSession,analysis.reply);
+      setSession(withAssistant);
+      analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'}));
+      analysis.vocabulary.forEach(v=>aiMemoryService.rememberFact('learning-history',v.hanzi+' · '+v.meaning,[v.hanzi]));
+      nextSession.learnerFacts.forEach(f=>aiMemoryService.rememberFact('learner-fact',f));
+      aiMemoryService.summarizeConversation(withAssistant.turns.slice(-8).map(t=>t.text));
+      avatarService.setState(analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':'idle');
+      play(analysis.reply);
+      if(analysis.responseType==='roleplay' && /hoàn thành|kết thúc|xong/i.test(analysis.grammarNote||'')) finish(withAssistant,analysis);
+    }catch{avatarService.setState('error');setNotice('Lina chưa thể tiếp tục tình huống lúc này. Bạn thử lại nhé.');}
+    finally{setBusy(false);}
+  };
+  const requestHint=async()=>{
+    const prompt='Roleplay: '+scenario.scenario+' | Bối cảnh: '+scenario.context+' | Learner role: '+scenario.learnerRole+' | Lina role: '+scenario.aiRole+' | Learner đang muốn nói: '+(input||'chưa nhập');
+    try{const r=await aiTutorService.hint({prompt,targetLevel:'HSK '+loadProfile().currentHsk,level:hintLevel});setHint(r.hint);setHintLevel(Math.min(4,hintLevel+1) as 1|2|3|4);}catch{setNotice('Không thể tạo gợi ý lúc này.');}
+  };
+  const finish=(s=session||roleplayEngine.createSession(scenario),analysis?:TutorResponse)=>{
+    const result=roleplayEngine.summarize(s,analysis);
+    setSummary(result);setSession({...s,completed:true});setBusy(false);avatarService.setState('happy');
+    aiMemoryService.rememberFact('conversation-summary',result.summary);
+    result.vocabularyLearned.forEach(v=>aiMemoryService.rememberFact('learning-history','Ôn roleplay: '+v));
+  };
+  const reset=()=>{setSession(null);setSummary(null);setHint('');setInput('');setNotice('');avatarService.setState('idle');};
+
+  return <section className="card overflow-hidden">
+    <div className="border-b border-[var(--border)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="eyebrow"><Sparkles size={14}/> Roleplay thực tế</span><h2 className="mt-1 text-xl font-bold">Hội thoại theo tình huống với Lina</h2><p className="mt-1 text-sm text-[var(--muted)]">Gemini phản ứng theo câu bạn nói, không ép theo một kịch bản cố định.</p></div><span className="pill">Avatar · {avatar}</span></div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <select value={scenarioId} onChange={e=>{setScenarioId(e.target.value);reset();}} className="input"><option value="">Chọn tình huống</option>{ROLEPLAY_SCENARIOS.map(s=><option key={s.id} value={s.id}>{s.scenario}</option>)}</select>
+        <div className="flex gap-2">{(['beginner','intermediate','advanced'] as ImmersionLevel[]).map(x=><button key={x} onClick={()=>setImmersion(x)} className={'toggle-chip '+(immersion===x?'active':'')}>{x==='beginner'?'Cơ bản':x==='intermediate'?'Trung cấp':'Nâng cao'}</button>)}</div>
+      </div>
+      <div className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm"><b>{scenario.scenario}</b><span className="ml-2 text-[var(--muted)]">{scenario.context}</span><div className="mt-2 flex flex-wrap gap-2">{scenario.targetVocabulary.slice(0,6).map(x=><span className="pill" key={x}>{x}</span>)}</div></div>
+    </div>
+    {!session&&!summary&&<div className="p-5 sm:p-6"><p className="text-sm text-[var(--muted)]">Bạn đóng vai <b>{scenario.learnerRole}</b>. Lina đóng vai <b>{scenario.aiRole}</b>. Mục tiêu: {scenario.successCriteria.join(' · ')}.</p><button onClick={start} className="btn-primary mt-4">Bắt đầu tình huống <ArrowRight size={17}/></button></div>}
+    {session&&!summary&&<div>
+      <div className="max-h-[42vh] space-y-3 overflow-y-auto p-4 sm:p-6">
+        {session.turns.length===0&&<div className="rounded-2xl bg-[var(--accent-soft)] p-4 text-sm"><b>Lina sẽ bắt đầu khi bạn gửi câu đầu tiên.</b><p className="mt-1 text-[var(--muted)]">Bạn có thể dùng gợi ý theo 4 mức nếu cần.</p></div>}
+        {session.turns.map((t,i)=>{const assistant=t.role==='assistant';return <div key={i} className={'flex '+(assistant?'justify-start':'justify-end')}><div className={'max-w-[90%] rounded-3xl px-4 py-3 '+(assistant?'bg-[var(--surface-2)]':'bg-[var(--accent)] text-white')}><div className="font-chinese text-lg">{t.text}</div></div></div>})}
+      </div>
+      {hint&&<div className="mx-4 mb-3 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm"><b>Gợi ý {Math.max(1,hintLevel-1)}:</b> {hint}</div>}
+      {notice&&<div className="mx-4 mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{notice}</div>}
+      <div className="border-t border-[var(--border)] p-3 sm:p-4"><div className="flex gap-2"><textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();void submit();}}} placeholder={immersion==='advanced'?'只用中文回答…':'输入你的中文…'} rows={1} className="input min-h-12 flex-1 resize-none"/><button onClick={()=>void submit()} disabled={busy} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white"><ArrowRight size={20}/></button></div>
+        <div className="mt-3 flex flex-wrap gap-2"><button onClick={()=>void requestHint()} className="tool-btn"><Lightbulb size={16}/> Gợi ý {hintLevel}</button><button onClick={()=>play(session.turns.filter(t=>t.role==='assistant').slice(-1)[0]?.text||'你好')} className="tool-btn"><Volume2 size={16}/> Nghe Lina</button><button onClick={()=>finish()} className="tool-btn"><Check size={16}/> Kết thúc & tổng kết</button></div>
+      </div>
+    </div>}
+    {summary&&<div className="p-5 sm:p-6"><div className="flex items-center justify-between"><div><span className="eyebrow">Roleplay Summary</span><h3 className="mt-1 text-xl font-bold">{summary.summary}</h3></div><Sparkles className="text-[var(--accent)]"/></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-[var(--surface-2)] p-4"><b>Từ vựng đã học</b><p className="mt-2 text-sm">{summary.vocabularyLearned.join(' · ')||'Chưa có dữ liệu.'}</p></div><div className="rounded-2xl bg-[var(--surface-2)] p-4"><b>Ngữ pháp</b><p className="mt-2 text-sm">{summary.grammarLearned.join(' · ')||'Chưa có dữ liệu.'}</p></div><div className="rounded-2xl bg-[var(--surface-2)] p-4"><b>Lỗi cần xem lại</b><p className="mt-2 text-sm">{summary.mistakes.join(' · ')||'Không có lỗi đáng chú ý trong dữ liệu hiện có.'}</p></div><div className="rounded-2xl bg-[var(--surface-2)] p-4"><b>Phát âm</b><p className="mt-2 text-sm">{summary.pronunciationIssues.join(' · ')||'Chưa có dữ liệu âm thanh đủ tin cậy để kết luận.'}</p></div><div className="rounded-2xl bg-[var(--surface-2)] p-4 sm:col-span-2"><b>Cách nói hữu ích & đề xuất ôn</b><p className="mt-2 text-sm">{summary.usefulExpressions.join(' · ')||'Ôn lại: '+summary.suggestedReview.join(' · ')}</p></div></div><button onClick={reset} className="btn-primary mt-5">Tình huống mới</button></div>}
+  </section>;
+}
+
 function TutorScreen() {
   const [messages,setMessages]=useState<Array<{id?:string;role:'user'|'assistant';chinese:string;pinyin:string;vietnamese:string}>>([{id:'welcome',role:'assistant',chinese:'你好，你叫什么名字？',pinyin:'Nǐ hǎo, nǐ jiào shénme míngzi?',vietnamese:'Xin chào, bạn tên là gì?'}]);
   const [input,setInput]=useState(''); const [listening,setListening]=useState(false); const [status,setStatus]=useState<'Idle'|'Listening'|'Thinking'|'Speaking'|'Error'>('Idle');
@@ -272,6 +355,7 @@ function TutorScreen() {
     </section>
 
     <section className="card p-4 sm:p-5"><div className="flex flex-wrap items-center gap-3"><Settings2 size={18} className="text-[var(--accent)]"/><b className="text-sm">Cài đặt giọng nói</b><label className="text-xs text-[var(--muted)]">Ngôn ngữ <select value={language} onChange={e=>setLanguage(e.target.value as typeof language)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="zh-CN">中文 zh-CN</option><option value="zh-TW">中文 zh-TW</option><option value="en-US">English</option><option value="vi-VN">Tiếng Việt</option></select></label><label className="text-xs text-[var(--muted)]">Tốc độ <select value={speed} onChange={e=>setSpeed(Number(e.target.value) as TtsSpeed)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="0.75">0.75x</option><option value="1">1.0x</option><option value="1.25">1.25x</option></select></label><button onClick={()=>setAutoPlay(v=>!v)} className={`toggle-chip ${autoPlay?'active':''}`}>{autoPlay?'✓ Tự phát':'Tự phát'}</button></div></section>
+    <RoleplayScreen/>
     <PronunciationCoach/>
   </div>;
 }
