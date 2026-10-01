@@ -2,7 +2,7 @@ import type { ConversationMessage, TutorResponse, TutorMode, TutorHint } from '.
 import { speechService } from './services/speech';
 import { ttsService } from './services/tts';
 import { aiMemoryService } from './services/aiMemory';
-import { linaAvatarProvider } from './services/avatar';
+import { getAvatarProvider } from './services/avatar';
 import type { ImmersionLevel, RoleplayScenario } from './services/roleplay';
 export { pronunciationEngine } from './services/pronunciationEngine';
 export type { PronunciationEngine, WordPronunciationResult, SentencePronunciationResult, TonePronunciationResult } from './services/pronunciationEngine';
@@ -27,20 +27,20 @@ export const speechToTextService={
 };
 export const textToSpeechService={
   async speak(text:string,rate:0.75|1|1.25=1){
-    linaAvatarProvider.setState('speaking');
+    getAvatarProvider().setState('speaking');
     try { return await ttsService.speakChinese(text,{rate,lang:'zh-CN'}); } catch(error){appLogger.error('tts-error',error);throw error;}
-    finally { linaAvatarProvider.setState('idle'); }
+    finally { getAvatarProvider().setState('idle'); }
   },
-  stop(){ttsService.stopSpeaking();linaAvatarProvider.setState('idle');},
+  stop(){ttsService.stopSpeaking();getAvatarProvider().setState('idle');},
   pause(){ttsService.pauseSpeaking();}, resume(){ttsService.resumeSpeaking();}, isSupported(){return ttsService.isSupported();}
 };
 export const avatarService={
-  initialize(){linaAvatarProvider.initialize();},
-  setState(state:'idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'error'){linaAvatarProvider.setState(state);},
-  subscribe(listener:(state:import('./services/avatar').AvatarState)=>void){return linaAvatarProvider.subscribe(listener);},
-  speak(text:string,options?:{rate?:0.75|1|1.25}){linaAvatarProvider.speak(text,options);},
-  stop(){linaAvatarProvider.stop();},
-  destroy(){linaAvatarProvider.destroy();}
+  initialize(){getAvatarProvider().initialize();},
+  setState(state:'idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'error'){getAvatarProvider().setState(state);},
+  subscribe(listener:(state:import('./services/avatar').AvatarState)=>void){return getAvatarProvider().subscribe(listener);},
+  speak(text:string,options?:{rate?:0.75|1|1.25}){getAvatarProvider().speak(text,options);},
+  stop(){getAvatarProvider().stop();},
+  destroy(){getAvatarProvider().destroy();}
 };
 
 export { lessonEngine, validateGeneratedLesson, normalizeGeneratedLesson, lessonToStructured } from './services/lessonEngine';
