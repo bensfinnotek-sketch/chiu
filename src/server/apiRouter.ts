@@ -21,6 +21,7 @@ import {
   handleGetUserProfile,
   handleReviewFlashcard,
 } from "../../api/_lib/flashcardHandlers.ts";
+import { handlePasswordReset, handleDeleteAccount } from "../../api/_lib/authHandlers.ts";
 
 export {
   handleHealth,
@@ -60,6 +61,10 @@ export function createApiRouter(): Router {
 
   // Health check endpoint
   router.get("/health", handleHealth);
+
+  // Authentication lifecycle (Supabase/Auth provider-backed)
+  router.post("/auth/reset-password", handlePasswordReset);
+  router.post("/auth/delete-account", handleDeleteAccount);
 
   // AI Conversation with Teacher Lina
   router.post("/gemini/conversation", handleConversation);
