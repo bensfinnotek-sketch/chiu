@@ -9,7 +9,9 @@
     "start": "vite preview",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "tsx --test tests/core.test.ts",
+    "test:watch": "tsx --test --watch tests/core.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
