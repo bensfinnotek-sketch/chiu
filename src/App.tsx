@@ -210,7 +210,11 @@ function TutorScreen() {
       <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><div className={`lina-avatar ${status.toLowerCase()}`}><span>👩🏻‍🏫</span></div><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung</p></div>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
         <button onClick={()=>setMode('conversation')} className={`toggle-chip ${mode==='conversation'?'active':''}`}>Trò chuyện</button><button onClick={()=>setMode('teacher')} className={`toggle-chip ${mode==='teacher'?'active':''}`}>Gia sư</button>
-        {[['Hán tự',showChinese,setShowChinese],['Pinyin',showPinyin,setShowPinyin],['Tiếng Việt',showVietnamese,setShowVietnamese]].map(([label,value,setter])=><button key={String(label)} onClick={()=>setter(v=>!v)} className={`toggle-chip ${value?'active':''}`}><Check size={13} className={value?'':'opacity-0'}/>{label}</button>)}
+        {[
+  ['Hán tự',showChinese,()=>setShowChinese(v=>!v)],
+  ['Pinyin',showPinyin,()=>setShowPinyin(v=>!v)],
+  ['Tiếng Việt',showVietnamese,()=>setShowVietnamese(v=>!v)]
+].map(([label,value,toggle])=><button key={String(label)} onClick={()=> (toggle as ()=>void)()} className={`toggle-chip ${value?'active':''}`}><Check size={13} className={value?'':'opacity-0'}/>{label}</button>)}
       </div>
       <div className="max-h-[46vh] min-h-64 space-y-3 overflow-y-auto p-4 sm:p-6">
         {messages.map((m,i)=><TutorMessage key={i} {...m} showChinese={showChinese} showPinyin={showPinyin} showVietnamese={showVietnamese} onPlay={()=>play(m.chinese)}/>)}
