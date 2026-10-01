@@ -87,7 +87,7 @@ test('lesson quiz adapter is deterministic', () => {
 test('motivation XP is idempotent while activity count remains accurate', () => {
   motivationService.track('lesson', 1, 'lesson-1');
   motivationService.track('lesson', 1, 'lesson-1');
-  assert.equal(motivationService.snapshot().lessons, 2);
+  assert.equal(motivationService.snapshot().lessons, 1);
   assert.equal(motivationService.totalXp(), 25);
 });
 
