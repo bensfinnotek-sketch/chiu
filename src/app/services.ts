@@ -3,6 +3,8 @@ import { speechService } from './services/speech';
 import { ttsService } from './services/tts';
 import { aiMemoryService } from './services/aiMemory';
 import { linaAvatarProvider } from './services/avatar';
+export { pronunciationEngine } from './services/pronunciationEngine';
+export type { PronunciationEngine, WordPronunciationResult, SentencePronunciationResult, TonePronunciationResult } from './services/pronunciationEngine';
 
 export interface AiTutorService {
   respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';signal?:AbortSignal;}):Promise<TutorResponse>;
