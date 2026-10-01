@@ -9,23 +9,17 @@ export function createSupabaseProvider(accessToken?: string | null): SupabasePro
   const baseUrl = url();
   const key = serviceRoleKey() || anonKey();
   if (!baseUrl || !key) return null;
-
-  const options: Record<string, unknown> = {
-    auth: { persistSession: false, autoRefreshToken: false },
-  };
-  if (accessToken && !serviceRoleKey()) {
-    options.global = { headers: { Authorization: `Bearer ${accessToken}` } };
-  }
+  const options: Record<string, unknown> = { auth: { persistSession: false, autoRefreshToken: false } };
+  if (accessToken && !serviceRoleKey()) options.global = { headers: { Authorization: `Bearer ${accessToken}` } };
   return new SupabaseProvider(createClient(baseUrl, key, options));
 }
 
 export class SupabaseProvider implements DatabaseProvider {
   readonly kind = "supabase" as const;
   readonly configured = true;
-
   constructor(private readonly client: SupabaseClient) {}
 
-  async query<T = unknown>(table: string, operation: "select" | "insert" | "update" | "delete", input: any): Promise<T> {
+  async query<T = unknown>(table: string, operation: "select" | "insert" | "update" | "delete" | "upsert", input: any): Promise<T> {
     let query: any = this.client.from(table);
     if (operation === "select") {
       query = query.select(input?.columns || "*");
@@ -33,6 +27,9 @@ export class SupabaseProvider implements DatabaseProvider {
       if (input?.single) query = query.maybeSingle();
     } else if (operation === "insert") {
       query = query.insert(input.values).select(input.columns || "*");
+      if (input.single !== false) query = query.single();
+    } else if (operation === "upsert") {
+      query = query.upsert(input.values, { onConflict: input.onConflict, ignoreDuplicates: false }).select(input.columns || "*");
       if (input.single !== false) query = query.single();
     } else if (operation === "update") {
       query = query.update(input.values);
@@ -44,7 +41,6 @@ export class SupabaseProvider implements DatabaseProvider {
       for (const filter of input?.filters || []) query = query.eq(filter.column, filter.value);
       if (input.select) query = query.select(input.select);
     }
-
     const { data, error } = await query;
     if (error) throw error;
     return data as T;
