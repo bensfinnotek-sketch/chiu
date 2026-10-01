@@ -1,5 +1,6 @@
 import { extractBearerToken, requireAuth, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
 import { parseBody, sendJson } from "./httpUtils.ts";
+import { getUserProfile } from "./repositories/userRepository.ts";
 
 export interface FlashcardItem {
   id: string;
@@ -527,24 +528,22 @@ export async function handleGetUserProfile(req: any, res: any) {
   const user = await requireAuth(req, res, sendJson);
   if (!user) return;
 
-  const supabase = getSupabaseServerClient(extractBearerToken(req));
-  if (supabase) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (data) {
-      return sendJson(res, 200, { profile: data });
-    }
+  const result = await getUserProfile({ userId: user.id, accessToken: extractBearerToken(req) });
+  if (result.data) {
+    return sendJson(res, 200, { profile: result.data });
   }
 
-  return sendJson(res, 200, {
-    profile: {
-      id: user.id,
-      email: user.email || "",
-      display_name: user.email?.split("@")[0] || "Learner",
-    },
-  });
+  // Keep the existing local/demo mode when no database provider is configured.
+  if (result.error === "DATABASE_NOT_CONFIGURED") {
+    return sendJson(res, 200, {
+      profile: {
+        id: user.id,
+        email: user.email || "",
+        display_name: user.email?.split("@")[0] || "Learner",
+      },
+      mode: "local-demo",
+    });
+  }
+
+  return sendJson(res, 500, { error: "Unable to load profile." });
 }
