@@ -14,6 +14,8 @@ export interface VocabularyItem {
   hskLevel?: number | string;
 }
 
+export type TutorMode = 'conversation' | 'teacher';
+
 export interface SpeakingAnalysis {
   reply: string;
   pinyin: string;
@@ -23,6 +25,7 @@ export interface SpeakingAnalysis {
   vocabulary: VocabularyItem[];
   grammarNote: string | null;
   encouragement: string;
+  responseType?: 'conversation' | 'correction' | 'teaching' | 'roleplay';
   followUpQuestion?: string;
   clarityScore?: number;
   grammarScore?: number;

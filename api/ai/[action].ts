@@ -1,4 +1,4 @@
-import { handleSpeakingAnalyze, handleSummarize, sendJson } from "../_lib/geminiHandlers.ts";
+import { handleSpeakingAnalyze, handleSummarize, handleTutorHint, sendJson } from "../_lib/geminiHandlers.ts";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {
@@ -13,6 +13,8 @@ export default async function handler(req: any, res: any) {
   if (action === "speaking") {
     return handleSpeakingAnalyze(req, res);
   }
+
+  if (action === "hint") return handleTutorHint(req, res);
 
   if (action === "summarize") {
     return handleSummarize(req, res);

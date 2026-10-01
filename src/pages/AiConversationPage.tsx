@@ -33,7 +33,7 @@ import { storageService } from '../services/storageService';
 import { speechRecognitionService } from '../services/speechRecognitionService';
 import { textToSpeechService } from '../services/textToSpeechService';
 import { geminiSpeakingService } from '../services/geminiSpeakingService';
-import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { SpeakingAnalysis, TutorMode } from '../ai/schemas/speakingSchema';
 import { progressService, SpeakingSettings } from '../services/progressService';
 import { recommendationService } from '../curriculum/recommendationService';
 import { getLessonProgressRepository } from '../curriculum/lessonProgressRepository';
@@ -102,6 +102,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
 
   // Conversation state
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -370,6 +371,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         conversationHistory: historyFormatted,
         nativeLanguage: 'vi',
         difficulty: settings.difficulty,
+        mode: tutorMode,
         memory: {
           ...memory,
           studyCoachContext,
@@ -764,6 +766,11 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                 {layer.label}
               </button>
             ))}
+          </div>
+
+          <div className="hidden md:flex items-center gap-1 rounded-2xl bg-white/75 dark:bg-[#251D19]/80 border border-[#E8DACD] dark:border-[#3B3029] p-1" aria-label="Chế độ Lina">
+            <button type="button" onClick={() => setTutorMode('conversation')} aria-pressed={tutorMode === 'conversation'} className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold ${tutorMode === 'conversation' ? 'bg-[#E86F51] text-white' : 'text-[#716761] dark:text-[#A89E97]'}`}>Trò chuyện</button>
+            <button type="button" onClick={() => setTutorMode('teacher')} aria-pressed={tutorMode === 'teacher'} className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold ${tutorMode === 'teacher' ? 'bg-[#E86F51] text-white' : 'text-[#716761] dark:text-[#A89E97]'}`}>Gia sư</button>
           </div>
 
           {/* Settings Modal Button */}

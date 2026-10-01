@@ -888,3 +888,32 @@ Output JSON:
     });
   }
 }
+
+
+export async function handleTutorHint(req: any, res: any) {
+  try {
+    const body = parseBody(req);
+    const { prompt = "", targetLevel = "HSK 1", level = 1 } = body;
+    const ai = getAI();
+    if (!ai) return sendJson(res, 503, { error: "GEMINI_API_KEY is not configured on the server." });
+    const hintLevel = Math.min(4, Math.max(1, Number(level)));
+    const instruction = hintLevel === 1
+      ? "Give only a semantic clue in Vietnamese. Do not reveal Chinese keywords."
+      : hintLevel === 2
+      ? "Give 1-3 useful Chinese keywords with Pinyin and Vietnamese meaning. Do not give the full answer."
+      : hintLevel === 3
+      ? "Give the sentence structure/template with blanks. Do not give the complete answer."
+      : "Give the complete natural answer in Chinese, Pinyin, and concise Vietnamese translation.";
+    const response = await generateContentSafely(ai, {
+      contents: `Learner level: ${targetLevel}\nTask/prompt: ${prompt}\nHint level: ${hintLevel}\n${instruction}`,
+      config: {
+        systemInstruction: "You are Lina (林娜), a patient Mandarin tutor for Vietnamese learners. Never shame the learner. Keep hints concise and accurate. If uncertain, say so rather than inventing a grammar rule. Return JSON only.",
+        responseMimeType: "application/json",
+      },
+    });
+    const data = JSON.parse(response.text || "{}");
+    return sendJson(res, 200, { level: hintLevel, hint: String(data.hint || data.answer || response.text || "") });
+  } catch (error: any) {
+    return sendJson(res, 500, { error: error?.message || "Không thể tạo gợi ý." });
+  }
+}

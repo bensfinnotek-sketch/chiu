@@ -10,6 +10,7 @@ import {
 import { mockGeminiService } from './mockGeminiService';
 import { ConversationMessage, SpeakingFeedback, TranslationResult, DictionaryEntry } from '../types';
 import { getAuthHeaders } from './flashcardService';
+import type { TutorMode } from '../ai/schemas/speakingSchema';
 
 export interface AIService {
   generateConversation(params: any): Promise<any>;
@@ -20,6 +21,7 @@ export interface AIService {
     conversationHistory?: Array<{ role: 'user' | 'assistant'; chinese: string }>;
     nativeLanguage?: string;
     difficulty?: 'easy' | 'normal' | 'challenge';
+    mode?: TutorMode;
     memory?: any;
     signal?: AbortSignal;
   }): Promise<SpeakingAnalysis>;
@@ -56,6 +58,7 @@ export class GeminiServiceImpl implements AIService {
       conversationHistory = [],
       nativeLanguage = 'vi',
       difficulty = 'normal',
+      mode = 'conversation',
       memory,
       signal,
     } = params;
@@ -73,6 +76,7 @@ export class GeminiServiceImpl implements AIService {
           conversationHistory: attempt === 1 ? conversationHistory : conversationHistory.slice(-6),
           nativeLanguage,
           difficulty,
+          mode,
           memory: {
             summary: memory?.summary,
             keyFacts: memory?.keyFacts,
