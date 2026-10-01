@@ -3,8 +3,6 @@ import { X, Volume2, Sparkles, Sliders, Check } from 'lucide-react';
 import { SpeakingSettings } from '../../services/progressService';
 import { speechService } from '../../services/speech';
 import { TonePracticePanel } from './TonePracticePanel';
-import { speechService } from '../../services/speech';
-import { TonePracticePanel } from './TonePracticePanel';
 
 interface SpeakingSettingsModalProps {
   isOpen: boolean;

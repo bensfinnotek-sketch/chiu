@@ -100,7 +100,6 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
   useEffect(() => { speechService.setVoice(settings.voice === 'Lina' ? undefined : settings.voice); }, [settings.voice]);
-  useEffect(() => { speechService.setVoice(settings.voice === 'Lina' ? undefined : settings.voice); }, [settings.voice]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
@@ -276,7 +275,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             translation: firstMsg.translation, timestamp: new Date().toISOString() });
           if (settings.autoPlayAi) {
             setTeacherState('speaking');
-            speechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
+            speechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
               setTeacherState('idle'); if (settings.autoListen) handleStartListening();
             }});
           }
