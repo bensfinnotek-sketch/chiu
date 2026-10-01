@@ -384,7 +384,7 @@ function TutorScreen() {
   return <div className="mx-auto max-w-5xl space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="eyebrow">Nói với Lina</span><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">Luyện hội thoại Mandarin</h1></div><span className={`status-dot ${status.toLowerCase()}`}><span className="h-2 w-2 rounded-full bg-current"/>{statusText}</span></div>
     <section className="card overflow-hidden">
-      <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><LinaAvatar state={avatarState}/><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung · realtime pipeline + fallback trình duyệt</p></div>
+      <div className="flex min-h-[330px] flex-col items-center justify-end border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 pb-4 pt-5 sm:min-h-[360px] sm:pt-7"><div className="flex w-full justify-center"><LinaAvatar state={avatarState}/></div><p className="mt-1 text-sm font-bold">Lina 林娜</p><p className="text-center text-xs text-[var(--muted)]">Gia sư tiếng Trung · realtime pipeline + fallback trình duyệt</p></div>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
         <button onClick={()=>setMode('conversation')} className={`toggle-chip ${mode==='conversation'?'active':''}`}>Trò chuyện</button><button onClick={()=>setMode('teacher')} className={`toggle-chip ${mode==='teacher'?'active':''}`}>Gia sư</button>
         {[

@@ -111,7 +111,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .tone-5{clip-path:polygon(0 48%,100% 52%,100% 62%,0 58%)}
 
 /* Lina animated fallback: bust, gaze, blink and state-driven expression */
-.lina-avatar-stage{position:relative;width:min(300px,82vw);height:290px;display:grid;place-items:end center;isolation:isolate}
+.lina-avatar-stage{position:relative;width:min(300px,82vw);height:290px;display:grid;place-items:end center;isolation:isolate;flex:0 0 auto;overflow:visible}
 .lina-avatar-stage.compact{width:150px;height:170px}
 .lina-avatar-bust{position:relative;width:76%;height:94%;transform-origin:50% 100%;transition:transform .35s ease,filter .35s ease}
 .lina-avatar-hair-back{position:absolute;z-index:1;left:8%;top:7%;width:84%;height:59%;border-radius:48% 48% 38% 38%;background:linear-gradient(145deg,#3b2b28,#171210);box-shadow:0 16px 20px rgba(42,25,20,.14)}
@@ -149,6 +149,14 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion:reduce){.lina-avatar-stage *{animation:none!important;transition:none!important}}
 
 /* Prompt 14C: imperative audio-driven avatar parameters. These variables are only driven when an actual audio source is attached. */
-.lina-avatar-mouth{transform:scaleX(calc(.82 + var(--lina-mouth-width, .3) * .18)) scaleY(calc(1 + var(--lina-mouth-open, 0) * .9));transform-origin:center;}
+.lina-avatar-mouth{transform:translateX(-50%) scaleX(calc(.82 + var(--lina-mouth-width, .3) * .18)) scaleY(calc(1 + var(--lina-mouth-open, 0) * .9));transform-origin:center;}
 .lina-avatar-stage-speaking .lina-avatar-mouth{transition:none;}
 @media (prefers-reduced-motion: reduce){.lina-avatar-mouth{transition:none!important;}}
+
+/* Avatar visibility guard: keep Lina visible even when surrounding layout utilities change. */
+.lina-avatar-stage .lina-avatar-bust{min-height:1px;visibility:visible;opacity:1;}
+.lina-avatar-stage .lina-avatar-face,
+.lina-avatar-stage .lina-avatar-hair-back,
+.lina-avatar-stage .lina-avatar-hair-front,
+.lina-avatar-stage .lina-avatar-shoulders,
+.lina-avatar-stage .lina-avatar-neck{display:block;visibility:visible;opacity:1;}
