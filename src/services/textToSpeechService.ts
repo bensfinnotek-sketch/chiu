@@ -3,7 +3,6 @@ export interface SpeakOptions {
   rate?: number;
   pitch?: number;
   voice?: string;
-  voice?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err: any) => void;

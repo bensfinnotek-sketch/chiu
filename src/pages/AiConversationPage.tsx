@@ -27,6 +27,7 @@ import { useAuth } from '../hooks/useAuth';
 import { getConversationRepository } from '../services/repositories/repositoryFactory';
 import { supabase, isSupabaseConfigured } from '../database/supabaseClient';
 import { LinaAvatar, LinaTeacherState } from '../components/common/LinaAvatar';
+import { avatarProvider, type AvatarState } from '../services/avatarProvider';
 import { AudioButton } from '../components/common/AudioButton';
 import { MicrophoneButton, MicrophoneState } from '../components/common/MicrophoneButton';
 import { storageService } from '../services/storageService';
@@ -149,7 +150,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         speechService.stopListening();
         speechService.stopSpeaking();
         setMicState('IDLE');
-        setTeacherState('idle');
+        setAvatarState('idle');
         setStatusMessage('Bạn đã dùng hết 5 phút AI Speaking miễn phí.');
       }
     };
@@ -174,6 +175,14 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
   const [micState, setMicState] = useState<MicrophoneState>('IDLE');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [teacherState, setTeacherState] = useState<LinaTeacherState>('idle');
+  const setAvatarState = useCallback((state: AvatarState) => {
+    avatarProvider.setState(state);
+  }, []);
+
+  useEffect(() => {
+    avatarProvider.initialize();
+    return avatarProvider.subscribe((state) => setAvatarState(state));
+  }, []);
   const [statusMessage, setStatusMessage] = useState('Nhấn mic để bắt đầu nói tiếng Trung');
   const [sessionStartTime] = useState<number>(Date.now());
   const [wordsLearnedSession, setWordsLearnedSession] = useState<
@@ -274,10 +283,10 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             userId: persistenceUserId, role: 'assistant', chinese: firstMsg.chinese, pinyin: firstMsg.pinyin,
             translation: firstMsg.translation, timestamp: new Date().toISOString() });
           if (settings.autoPlayAi) {
-            setTeacherState('speaking');
+            setAvatarState('speaking');
             setMicState('AI_SPEAKING');
-            speechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
-              setTeacherState('idle'); if (settings.autoListen) handleStartListening();
+            avatarProvider.speak(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
+              setAvatarState('idle'); if (settings.autoListen) handleStartListening();
             }});
           }
         }
@@ -299,8 +308,8 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Stop Lina speech helper (Voice interruption)
   const stopLinaSpeech = useCallback(() => {
-    speechService.stopSpeaking();
-    setTeacherState('idle');
+    avatarProvider.stop();
+    setAvatarState('idle');
   }, []);
 
   // Keyboard shortcut listener (Space = toggle mic, Escape = stop Lina speech)
@@ -354,7 +363,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
-    setTeacherState('thinking');
+    setAvatarState('thinking');
     setStatusMessage('Đang hiểu...');
     setMicState('PROCESSING');
 
@@ -464,14 +473,15 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
       // Speak Lina's reply
       if (settings.autoPlayAi) {
-        setTeacherState('speaking');
+        const emotionState: AvatarState = analysis.emotion === 'happy' ? 'happy' : analysis.emotion === 'encouraging' ? 'encouraging' : analysis.emotion === 'confused' ? 'confused' : analysis.emotion === 'error' ? 'error' : 'idle';
+        setAvatarState(emotionState);
         setMicState('AI_SPEAKING');
         setStatusMessage('Lina đang nói...');
-        speechService.speakChinese(analysis.reply, {
+        avatarProvider.speak(analysis.reply, {
           rate: settings.speed,
           voice: settings.voice === 'Lina' ? undefined : settings.voice,
           onEnd: () => {
-            setTeacherState('idle');
+            setAvatarState('idle');
             setStatusMessage('Đến lượt bạn nói!');
             setMicState('IDLE');
             if (settings.autoListen) {
@@ -479,19 +489,19 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             }
           },
           onError: () => {
-            setTeacherState('idle');
+            setAvatarState('idle');
             setMicState('IDLE');
             setStatusMessage('Giọng đọc chưa khả dụng trên trình duyệt này. Bạn vẫn có thể tiếp tục bằng văn bản.');
           },
         });
       } else {
-        setTeacherState('idle');
+        setAvatarState('idle');
         setStatusMessage('Đến lượt bạn nói!');
         setMicState('IDLE');
       }
     } catch (err: unknown) {
       console.error('Error generating AI response:', err);
-      setTeacherState('idle');
+      setAvatarState('idle');
       setMicState('IDLE');
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('Guest AI Speaking limit reached')) {
@@ -502,6 +512,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       }
       const errorMsg = 'Đang gặp sự cố kết nối. Bạn thử lại nhé.';
       setStatusMessage(errorMsg);
+      window.setTimeout(() => setAvatarState('idle'), 1800);
     }
   };
 
@@ -517,7 +528,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
     stopLinaSpeech();
 
     setMicState('LISTENING');
-    setTeacherState('listening');
+    setAvatarState('listening');
     setStatusMessage('Đang nghe...');
     setInterimTranscript('');
 
@@ -535,7 +546,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
       },
       onError: (errMsg) => {
         setMicState('ERROR');
-        setTeacherState('idle');
+        setAvatarState('idle');
         setStatusMessage(errMsg);
         setTimeout(() => {
           setMicState('IDLE');
@@ -546,12 +557,12 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         // temporary/interim result or a short pause from sending a partial sentence.
         if (finalTranscript?.trim()) {
           setMicState('PROCESSING');
-          setTeacherState('thinking');
+          setAvatarState('thinking');
           setInterimTranscript('');
           processUserMessage(finalTranscript);
         } else {
           setMicState('IDLE');
-          setTeacherState('idle');
+          setAvatarState('idle');
           setInterimTranscript('');
           setStatusMessage('Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.');
         }
@@ -560,7 +571,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
     if (!started) {
       setMicState('ERROR');
-      setTeacherState('idle');
+      setAvatarState('idle');
     }
   };
   // Toggle Microphone
@@ -858,7 +869,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
                       : 'bg-[#65A873]'
                   }`}
                 />
-                <span className="text-left">{teacherState === 'listening' ? 'Đang lắng nghe' : teacherState === 'thinking' ? 'Đang suy nghĩ' : teacherState === 'speaking' ? 'Đang nói' : 'Sẵn sàng'}</span>
+                <span className="text-left">{teacherState === 'listening' ? 'Đang lắng nghe' : teacherState === 'thinking' ? 'Đang suy nghĩ' : teacherState === 'speaking' ? 'Đang nói' : teacherState === 'happy' ? 'Vui' : teacherState === 'encouraging' ? 'Đang động viên' : teacherState === 'confused' ? 'Chưa hiểu rõ' : teacherState === 'error' ? 'Có lỗi' : 'Sẵn sàng'}</span>
               </div>
             </div>
 
