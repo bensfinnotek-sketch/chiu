@@ -62,7 +62,10 @@ function AppShell({ route, setRoute, theme, setTheme, children }: {
     ['review', 'Ôn tập', RotateCcw], ['profile', 'Tôi', User]
   ] as const;
 
+  const [online,setOnline]=useState(typeof navigator==='undefined'||navigator.onLine);
+  useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener('online',on);window.addEventListener('offline',off);return()=>{window.removeEventListener('online',on);window.removeEventListener('offline',off);};},[]);
   return <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    {!online&&<div className="border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-center text-xs text-[var(--muted)]">Bạn đang offline. Bài học đã lưu và ôn tập cục bộ vẫn dùng được; AI và giọng nói có thể tạm thời không khả dụng.</div>}
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <button onClick={() => setRoute('home')} className="flex items-center gap-3" aria-label="Về trang chủ">
