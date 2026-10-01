@@ -1,11 +1,12 @@
 import type { UserProfile } from '../types';
 import type { AIMemoryEntry, IntelligentMistake, LearnerProfile, StructuredLesson, TutorContext, DailyPersonalizedPlan } from '../learning/types';
 import { learningEngine } from '../learning/engine';
+import { storage } from './storage';
 const KEY='lina_ai_memory_v1'; const now=()=>new Date().toISOString();
 type MemoryState={profile:LearnerProfile|null;entries:AIMemoryEntry[];mistakes:IntelligentMistake[];conversationSummaries:string[]};
 const blank=():MemoryState=>({profile:null,entries:[],mistakes:[],conversationSummaries:[]});
-const read=():MemoryState=>{try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return blank()}};
-const write=(s:MemoryState)=>localStorage.setItem(KEY,JSON.stringify(s));
+const read=():MemoryState=>storage.readJson(KEY, blank());
+const write=(s:MemoryState)=>storage.writeJson(KEY,s);
 export const aiMemoryService={
  getState:()=>read(),
  getLearnerProfile(profile:UserProfile):LearnerProfile{const s=read(),old=s.profile,l=learningEngine.getState(),w=learningEngine.weakAreas();const p:LearnerProfile={id:old?.id||'local-learner',displayName:profile.name,nativeLanguage:'vi',targetLanguage:'zh-CN',currentLevel:profile.level,hskLevel:profile.currentHsk||1,pinyinLevel:old?.pinyinLevel||'marks',learningGoal:profile.goal,dailyGoalMinutes:profile.dailyMinutes,streak:profile.streak,totalStudyMinutes:old?.totalStudyMinutes||0,vocabularyStats:{learned:profile.vocabularyLearned,mastered:l.reviews.filter(x=>x.mastery>=80).length,weak:w.vocabulary.length},grammarStats:{practiced:l.progress.grammarPractice,weak:w.grammar.length},pronunciationStats:{practiced:l.progress.pronunciationPractice,weakTones:w.tones.map(x=>x.original)},speakingStats:{sessions:l.progress.speakingPractice,confidence:Math.min(100,50+l.progress.speakingPractice*3)},listeningStats:{sessions:l.progress.listeningPractice,accuracy:Math.min(100,60+l.progress.listeningPractice*2)},readingStats:old?.readingStats||{sessions:0,accuracy:0},writingStats:old?.writingStats||{sessions:0,accuracy:0},weakAreas:[...w.grammar.map(x=>x.original),...w.vocabulary.map(x=>x.original),...w.tones.map(x=>x.original)].slice(0,8),strongAreas:l.reviews.filter(x=>x.mastery>=80).slice(0,5).map(x=>x.vocabularyId),recentLessons:l.progress.completedLessons.slice(-5),recentMistakes:l.mistakes.slice(0,8).map(x=>x.original),preferredTopics:old?.preferredTopics||['daily life','conversation'],lastActiveAt:now()};s.profile=p;write(s);return p;},
