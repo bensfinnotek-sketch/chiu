@@ -239,7 +239,7 @@ function RoleplayScreen() {
         immersion,roleplay:{scenario,learnerFacts:nextSession.learnerFacts,choices:nextSession.choices},
         memory:{summary:memory.relevantMemory.map(x=>x.content).join(' | '),keyFacts:nextSession.learnerFacts,vocabulary:memory.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:memory.relevantMistakes.flatMap(x=>x.relatedGrammar)}
       });
-      const withAssistant=roleplayEngine.addAssistantTurn(nextSession,analysis.reply);
+      const withAssistant=roleplayEngine.addAssistantTurn(nextSession,analysis.reply,analysis.pinyin,analysis.translation);
       setSession(withAssistant);
       analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'}));
       analysis.vocabulary.forEach(v=>aiMemoryService.rememberFact('learning-history',v.hanzi+' · '+v.meaning,[v.hanzi]));
@@ -276,7 +276,7 @@ function RoleplayScreen() {
     {session&&!summary&&<div>
       <div className="max-h-[42vh] space-y-3 overflow-y-auto p-4 sm:p-6">
         {session.turns.length===0&&<div className="rounded-2xl bg-[var(--accent-soft)] p-4 text-sm"><b>Lina sẽ bắt đầu khi bạn gửi câu đầu tiên.</b><p className="mt-1 text-[var(--muted)]">Bạn có thể dùng gợi ý theo 4 mức nếu cần.</p></div>}
-        {session.turns.map((t,i)=>{const assistant=t.role==='assistant';return <div key={i} className={'flex '+(assistant?'justify-start':'justify-end')}><div className={'max-w-[90%] rounded-3xl px-4 py-3 '+(assistant?'bg-[var(--surface-2)]':'bg-[var(--accent)] text-white')}><div className="font-chinese text-lg">{t.text}</div></div></div>})}
+        {session.turns.map((t,i)=>{const assistant=t.role==='assistant';return <div key={i} className={'flex '+(assistant?'justify-start':'justify-end')}><div className={'max-w-[90%] rounded-3xl px-4 py-3 '+(assistant?'bg-[var(--surface-2)]':'bg-[var(--accent)] text-white')}><div className="font-chinese text-lg">{t.text}</div>{assistant&&immersion!=='advanced'&&t.pinyin&&<div className="mt-1 text-sm text-[var(--accent)]">{t.pinyin}</div>}{assistant&&immersion==='beginner'&&t.vietnamese&&<div className="mt-1 text-sm text-[var(--muted)]">{t.vietnamese}</div>}</div></div>})}
       </div>
       {hint&&<div className="mx-4 mb-3 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm"><b>Gợi ý {Math.max(1,hintLevel-1)}:</b> {hint}</div>}
       {notice&&<div className="mx-4 mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{notice}</div>}
