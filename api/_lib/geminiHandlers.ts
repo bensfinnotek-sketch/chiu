@@ -72,7 +72,7 @@ export async function generateContentSafely(
 ): Promise<{ text: string }> {
   let lastError: any = null;
 
-  for (const model of MODEL_CANDIDATES) {
+  for (let modelIndex=0; modelIndex<MODEL_CANDIDATES.length; modelIndex++) { const model=MODEL_CANDIDATES[modelIndex];
     try {
       const response = await Promise.race([
         ai.models.generateContent({model,contents: options.contents,config: options.config}),
@@ -90,10 +90,10 @@ export async function generateContentSafely(
         errMsg.includes("RESOURCE_EXHAUSTED");
 
       if (isQuotaOrRate) {
-        aiSafeLog("ai-error","model fallback after quota/rate limit");
+        aiSafeLog("ai-error","model fallback after quota/rate limit"); await wait(Math.min(1000*Math.pow(2,modelIndex),3000));
         continue;
       }
-      aiSafeLog("ai-error","model request failed; trying bounded fallback");
+      aiSafeLog("ai-error","model request failed; trying bounded fallback"); await wait(Math.min(500*Math.pow(2,modelIndex),2000));
     }
   }
 
