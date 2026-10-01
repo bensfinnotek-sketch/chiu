@@ -170,12 +170,10 @@ function TutorScreen() {
   const submit = (text: string) => {
     const value = text.trim(); if (!value) return;
     setMessages(m => [...m, { role: 'user', chinese: value, pinyin: '', vietnamese: '' }]);
-    setInput(''); setStatus('Thinking');
-    window.setTimeout(() => {
-      setMessages(m => [...m, { role: 'assistant', chinese: '很好！你叫什么名字？', pinyin: 'Hěn hǎo! Nǐ jiào shénme míngzi?', vietnamese: 'Rất tốt! Bạn tên là gì?' }]);
-      setStatus('Speaking'); void textToSpeechService.speak('很好！你叫什么名字？').catch(() => undefined);
-      window.setTimeout(() => setStatus('Idle'), 800);
-    }, 450);
+    setInput('');
+    setStatus('Thinking');
+    setNotice('AI Tutor chưa được kết nối ở phiên bản này. Tin nhắn của bạn đã được giữ trong phiên học để sẵn sàng cho phase Gemini tiếp theo.');
+    window.setTimeout(() => setStatus('Idle'), 500);
   };
 
   const toggleMic = async () => {
