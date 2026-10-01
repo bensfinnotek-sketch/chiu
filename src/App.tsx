@@ -104,7 +104,7 @@ function VocabularyCard({ item }: { item: Vocabulary }) {
       <button onClick={() => setSaved(!saved)} className={`icon-btn ${saved ? 'text-[var(--accent)]' : ''}`} aria-label="Lưu từ">{saved ? <Star size={18} fill="currentColor"/> : <Star size={18}/>}</button>
     </div>
     <div className="mt-4 rounded-xl bg-[var(--surface-2)] p-3"><p className="font-chinese text-sm">{item.example}</p><p className="mt-1 text-xs text-[var(--accent)]">{item.examplePinyin}</p><p className="mt-1 text-xs text-[var(--muted)]">{item.exampleVi}</p></div>
-    <button onClick={() => void textToSpeechService.speak(item.hanzi)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-sm font-semibold hover:bg-[var(--surface-2)]"><Volume2 size={16}/> Nghe</button>
+    <button onClick={() => void textToSpeechService.speak(item.hanzi).catch(() => undefined)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-sm font-semibold hover:bg-[var(--surface-2)]"><Volume2 size={16}/> Nghe</button>
   </article>;
 }
 
