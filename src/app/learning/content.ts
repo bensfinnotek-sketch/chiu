@@ -72,8 +72,8 @@ const grammar: Record<string,GrammarRecord> = {
   zai: g('g-zai','在 + nơi chốn / 在 + Verb','Ở / đang','在 có thể chỉ vị trí hoặc hành động đang diễn ra tùy cấu trúc.',[['我在家。','Wǒ zài jiā.','Tôi ở nhà.'],['我在学习。','Wǒ zài xuéxí.','Tôi đang học.']],['Đồng nhất 在 với “đang” trong mọi câu.'],['Nói “Tôi đang học”.'])
 };
 
-const L = (n:number,title:string,objective:string,ids:string[],grammarIds:string[],dialogue:StructuredLesson['dialogue'],listening:string[],speaking:string[],roleTitle:string,scenario:string,prompt:string,expectedPatterns:string[],difficulty:1|2|3|4|5):StructuredLesson => ({
- id:`hsk1-lesson-${n}`,hskLevel:1,lessonNumber:n,title,objective,vocabulary:by(ids),grammar:grammarIds.map(x=>grammar[x]),dialogue,listening,speaking,
+const L = (n:number,title:string,objective:string,ids:string[],grammarIds:string[],dialogue:Array<[string,string,string,string]>,listening:string[],speaking:string[],roleTitle:string,scenario:string,prompt:string,expectedPatterns:string[],difficulty:1|2|3|4|5):StructuredLesson => ({
+ id:`hsk1-lesson-${n}`,hskLevel:1,lessonNumber:n,title,objective,vocabulary:by(ids),grammar:grammarIds.map(x=>grammar[x]),dialogue:dialogue.map(([speaker,chinese,pinyin,vietnamese])=>({speaker: speaker as 'ai'|'learner',chinese,pinyin,vietnamese})),listening,speaking,
  roleplay:{title:roleTitle,scenario,prompt,expectedPatterns},review:['zh-vi','vi-zh','audio-meaning','pinyin-zh','zh-speak','listen-repeat','fill-blank','conversation'],difficulty
 });
 
