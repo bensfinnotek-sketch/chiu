@@ -85,7 +85,7 @@ export const StudyPlanPage: React.FC = () => {
   const [durationWeeks, setDurationWeeks] = useState(12);
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [activeWeek, setActiveWeek] = useState(1);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(false);\n  const [adaptiveDays, setAdaptiveDays] = useState<Record<string, AdaptiveDay>>({});\n  const [speakingProgress, setSpeakingProgress] = useState(() => progressService.getProgress());
 
   useEffect(() => {
     try {
@@ -107,7 +107,7 @@ export const StudyPlanPage: React.FC = () => {
   const weeks = useMemo(() => (plan ? buildWeeks(plan) : []), [plan]);
   const activeWeekData = weeks.find((item) => item.week === activeWeek) || weeks[0];
   const weeklyMinutes = (plan?.dailyMinutes || dailyMinutes) * (plan?.daysPerWeek || daysPerWeek);
-  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;
+  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;\n  const completedPlanDays = Object.values(adaptiveDays).filter((day) => day.completed).length;\n  const recentPlanDays = Object.values(adaptiveDays).slice(-7);\n  const recentCompletionRate = recentPlanDays.length ? (recentPlanDays.filter((day) => day.completed).length / recentPlanDays.length) * 100 : 50;\n  const adaptiveDecision = speakingProgress.streak >= 5 && recentCompletionRate >= 70 ? 'advance_hsk' : speakingProgress.streak <= 1 || recentCompletionRate < 40 ? 'learn_lesson' : 'review_quiz';\n  const adaptivePlan = plan ? buildPersonalizedLearningPlan({ dailyMinutes: plan.dailyMinutes, learningGoal: plan.goal, decision: adaptiveDecision, completionPercent: Math.min(100, Math.round((completedPlanDays / Math.max(1, plan.durationWeeks * plan.daysPerWeek)) * 100)), vocabularyScore: 70, grammarScore: 70, quizScore: 75, momentumScore: Math.min(100, 50 + speakingProgress.streak * 8), momentumTrend: speakingProgress.streak >= 5 ? 'rising' : speakingProgress.streak <= 1 ? 'falling' : 'stable', recentCompletionRate, consistencyScore: recentCompletionRate }) : null;\n  const todayKey = new Date().toISOString().slice(0, 10);\n  const todayDone = adaptiveDays[todayKey]?.completed === true;
 
   const handleGenerate = () => {
     const next: StudyPlan = {
@@ -244,6 +244,18 @@ export const StudyPlanPage: React.FC = () => {
         </aside>
       </section>
 
+      {plan && adaptivePlan && (
+        <section className="chiu-card p-5 sm:p-7 border-[#E86F51]/20 bg-gradient-to-br from-[#FFF7F2] to-white dark:from-[#2A2320] dark:to-[#241F1C]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div><p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#E86F51]">Kế hoạch linh động hôm nay</p><h2 className="text-xl sm:text-2xl font-black text-[#211A17] dark:text-white mt-1">{adaptivePlan.focus} · {adaptivePlan.dailyMinutes} phút</h2><p className="text-xs text-[#716761] dark:text-[#A89E97] mt-1">{adaptivePlan.adaptationReason}</p></div>
+            <button type="button" onClick={toggleToday} className={'px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 ' + (todayDone ? 'bg-[#65A873]/15 text-[#4D8A59]' : 'bg-[#E86F51] text-white')}><CheckCircle2 size={15} /> {todayDone ? 'Đã hoàn thành hôm nay' : 'Đánh dấu đã học'}</button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+            {adaptivePlan.steps.map((step) => <div key={step.id} className="p-3 rounded-2xl bg-white/80 dark:bg-[#181412]/55 border border-[#EDE4DB] dark:border-[#382E27]"><p className="text-[11px] font-black text-[#211A17] dark:text-white">{step.title}</p><p className="text-lg font-black text-[#E86F51] mt-1">{step.minutes}′</p><p className="text-[10px] leading-relaxed text-[#716761] dark:text-[#A89E97] mt-1">{step.description}</p></div>)}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-bold"><span className="px-3 py-1.5 rounded-full bg-[#E86F51]/10 text-[#E86F51]">Độ khó: {adaptivePlan.difficulty}</span><span className="px-3 py-1.5 rounded-full bg-[#65A873]/10 text-[#4D8A59]">Từ mới: {adaptivePlan.newWordsTarget}/ngày</span><span className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300">Streak Lina: {speakingProgress.streak} ngày</span><span className="px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 text-[#716761] dark:text-[#C7BCB5]">Đã hoàn thành: {completedPlanDays} ngày</span></div>
+        </section>
+      )}
       {plan ? (
         <section className="space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
