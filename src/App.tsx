@@ -17,6 +17,7 @@ import type { ImmersionLevel, RoleplaySession, RoleplaySummary } from './app/ser
 import type { TtsSpeed } from './app/services/tts';
 import { LinaAvatar } from './app/components/LinaAvatar';
 import { realtimeConversationController } from './app/services/realtimeConversation';
+import { realtimeSpeechOrchestrator } from './app/services/realtimeOrchestrator';
 import { RealtimeDebugPanel } from './app/components/RealtimeDebugPanel';
 const appLoggerFallback=(setNotice:(v:string)=>void)=>setNotice('Streaming đang tạm thời không khả dụng; Lina sẽ dùng chế độ phát thông thường.');
 import { AccountPanel } from './app/components/AccountPanel';
@@ -323,40 +324,52 @@ function TutorScreen() {
   const [speed,setSpeed]=useState<TtsSpeed>(1); const [autoPlay,setAutoPlay]=useState(true); const [language,setLanguage]=useState<'zh-CN'|'zh-TW'|'en-US'|'vi-VN'>('zh-CN');
   const [interim,setInterim]=useState('');
   const [avatarState,setAvatarState]=useState<AvatarState>('idle');
-  const requestAbortRef=useRef<AbortController|null>(null);
-  useEffect(()=>{avatarService.initialize();const unsubscribe=avatarService.subscribe(setAvatarState);return()=>{unsubscribe();realtimeConversationController.destroy();};},[]);
+  useEffect(()=>{avatarService.initialize();const unsubscribe=avatarService.subscribe(setAvatarState);return()=>{unsubscribe();realtimeConversationController.destroy();realtimeSpeechOrchestrator.destroy();};},[]);
 
   const play=(text:string)=>{setStatus('Speaking');void realtimeConversationController.speak(text,{rate:speed}).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.')).finally(()=>{avatarService.setState('idle');setStatus('Idle');});};
   const submit=async(text:string)=>{
     const value=text.trim(); if(!value||busy)return;
-    requestAbortRef.current?.abort(); requestAbortRef.current=new AbortController();
     realtimeConversationController.interrupt();
+    realtimeSpeechOrchestrator.interrupt();
     const history=messages.slice(-12).map((m,i)=>({id:m.id||String(i),role:m.role,chinese:m.chinese,pinyin:m.pinyin,vietnamese:m.vietnamese}));
     setMessages(m=>[...m,{id:String(Date.now()),role:'user',chinese:value,pinyin:'',vietnamese:''}]); setInput('');setHint('');setNotice('');setBusy(true);setStatus('Thinking');
+    const turn=realtimeSpeechOrchestrator.startConversationTurn({rate:speed,speak:autoPlay});
     try{
-      let streamedReply='';
-      if(autoPlay){
-        await realtimeConversationController.beginStream({rate:speed});
-        try{
-          streamedReply=await aiTutorService.stream({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,signal:requestAbortRef.current.signal,onDelta:async(chunk)=>{await realtimeConversationController.pushStreamChunk(chunk)}});
-        }catch(streamError){
-          realtimeConversationController.endStream();
-          appLoggerFallback(setNotice);
-        }
+      let streamed;
+      streamed=await aiTutorService.stream({
+        userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,
+        signal:turn.signal,
+        onDelta:chunk=>{realtimeSpeechOrchestrator.receiveStreamingText(chunk,{turnId:turn.turnId,speak:autoPlay,onText:()=>{}});}
+      });
+      const analysis=streamed.response;
+      if(!analysis){
+        if(streamed.text){
+          const fallback:TutorResponse={reply:streamed.text,pinyin:'',translation:'',question:'',corrections:[],vocabulary:[],encouragement:'',responseType:'conversation',emotion:'neutral'};
+          setLastAnalysis(fallback);
+          setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:fallback.reply,pinyin:'',vietnamese:''}]);
+          if(autoPlay)await realtimeSpeechOrchestrator.finalizeTurn(fallback); else realtimeSpeechOrchestrator.interrupt();
+        } else throw new Error('stream-empty');
+      } else {
+        setLastAnalysis(analysis);
+        analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'}));
+        aiMemoryService.summarizeConversation([...history.map(h=>h.chinese),value,analysis.reply]);
+        setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
+        motivationService.track('conversation',1,'conversation-'+(turn.turnId));
+        const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='correcting'?'correcting':'idle';
+        avatarService.setState(emotion);
+        if(autoPlay)await realtimeSpeechOrchestrator.finalizeTurn(analysis); else realtimeSpeechOrchestrator.interrupt();
       }
-      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',signal:requestAbortRef.current.signal,memory:(()=>{const c=aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history.map(h=>h.chinese));return {summary:c.relevantMemory.map(x=>x.content).join(' | '),keyFacts:c.learner.weakAreas,vocabulary:c.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:c.relevantMistakes.flatMap(x=>x.relatedGrammar)}})()});
-      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history.map(h=>h.chinese), value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]); motivationService.track('conversation',1,'conversation-'+(history[0]?.id||Date.now()));
-      const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='error'?'error':'idle';
-      avatarService.setState(emotion);
-      if(autoPlay){
-        if(streamedReply) realtimeConversationController.endStream(); else play(analysis.reply);
-      } else setStatus('Idle');
-    }catch(error){setStatus('Error');setNotice(error instanceof Error&&error.message.startsWith('AI server')?'Đang gặp sự cố kết nối. Bạn thử lại nhé.':'Lina chưa thể trả lời lúc này. Bạn thử lại nhé.');setStatus('Idle');}
-    finally{setBusy(false);}
+      setStatus(autoPlay?'Speaking':'Idle');
+    }catch(error){
+      realtimeSpeechOrchestrator.interrupt();
+      setStatus('Error');
+      setNotice(error instanceof Error&&error.name==='AbortError'?'Lina đã dừng để nghe bạn.':'Lina chưa thể trả lời lúc này. Bạn thử lại nhé.');
+      setStatus('Idle');
+    }finally{setBusy(false);}
   };
 
   const toggleMic=async()=>{
-    if(status==='Speaking'){realtimeConversationController.interrupt();setStatus('Idle');setBusy(false);setNotice('Lina đã dừng nói để nghe bạn.');} if(listening){speechToTextService.stop();setListening(false);setStatus('Thinking');return;}
+    if(status==='Speaking'){realtimeSpeechOrchestrator.interrupt();realtimeConversationController.interrupt();setStatus('Idle');setBusy(false);setNotice('Lina đã dừng nói để nghe bạn.');} if(listening){speechToTextService.stop();setListening(false);setStatus('Thinking');return;}
     setNotice('');setInterim('');setListening(true);setStatus('Listening');avatarService.setState('listening');
     let finalText='';
     try{

@@ -147,3 +147,8 @@ button { -webkit-tap-highlight-color: transparent; }
 @keyframes lina-speaking{from{transform:translateY(0) scale(1)}to{transform:translateY(-3px) scale(1.018)}}
 @keyframes lina-encourage{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.lina-avatar-stage *{animation:none!important;transition:none!important}}
+
+/* Prompt 14C: imperative audio-driven avatar parameters. These variables are only driven when an actual audio source is attached. */
+.lina-avatar-mouth{transform:scaleX(calc(.82 + var(--lina-mouth-width, .3) * .18)) scaleY(calc(1 + var(--lina-mouth-open, 0) * .9));transform-origin:center;}
+.lina-avatar-stage-speaking .lina-avatar-mouth{transition:none;}
+@media (prefers-reduced-motion: reduce){.lina-avatar-mouth{transition:none!important;}}

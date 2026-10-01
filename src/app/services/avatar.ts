@@ -22,6 +22,8 @@ export interface AvatarCapabilities {
   webrtc:boolean;
 }
 
+export interface AvatarAnimationState { lipSync?:import('./realtimeTypes').LipSyncFrame; facial?:import('./realtimeTypes').FacialExpression; emotion?:'neutral'|'happy'|'encouraging'|'curious'|'confused'|'correcting'; viseme?:import('./realtimeTypes').Viseme; }
+
 export interface AvatarProvider {
   readonly id:string;
   readonly capabilities:AvatarCapabilities;
@@ -34,6 +36,7 @@ export interface AvatarProvider {
   setLipSync?(frame:import('./realtimeTypes').LipSyncFrame):void;
   setFacialExpression?(expression:import('./realtimeTypes').FacialExpression):void;
   setViseme?(viseme:import('./realtimeTypes').Viseme):void;
+  getAnimationState?():AvatarAnimationState;
   stop():void;
   destroy():void;
 }
@@ -51,6 +54,7 @@ export const linaAvatarDesign:AvatarDesign={
 
 let state:AvatarState='idle';
 let initialized=false;
+let animation:AvatarAnimationState={};
 const listeners=new Set<(state:AvatarState)=>void>();
 
 export const linaAvatarProvider:AvatarProvider={
@@ -65,11 +69,16 @@ export const linaAvatarProvider:AvatarProvider={
   },
   initialize(){initialized=true;state='idle';},
   setState(next){if(!initialized)initialized=true;if(state===next)return;state=next;listeners.forEach(fn=>fn(next));},
+  setEmotion(emotion){animation.emotion=emotion;},
+  setLipSync(frame){animation.lipSync=frame;},
+  setFacialExpression(expression){animation.facial=expression;},
+  setViseme(viseme){animation.viseme=viseme;},
+  getAnimationState(){return {...animation}},
   getState(){return state;},
   subscribe(listener){listeners.add(listener);listener(state);return()=>listeners.delete(listener);},
   speak(){this.setState('speaking');},
   stop(){this.setState('idle');},
-  destroy(){initialized=false;listeners.clear();state='idle';}
+  destroy(){initialized=false;listeners.clear();state='idle';animation={};}
 };
 
 let activeAvatarProvider:AvatarProvider=linaAvatarProvider;

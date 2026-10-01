@@ -3,6 +3,7 @@ import type { TtsSpeed } from './tts';
 export interface StreamingTTSProvider {
   readonly id:string;
   readonly streamingAudio:boolean;
+  readonly audioSource:'none'|'pcm'|'media-element';
   start(options?:{rate?:TtsSpeed;lang?:string}):Promise<void>;
   stream(textChunk:string):Promise<void>;
   pause():void; resume():void; stop():void;
@@ -14,7 +15,7 @@ export interface StreamingTTSProvider {
 }
 
 export class BrowserChunkedTTSProvider implements StreamingTTSProvider {
-  readonly id='browser-speech-chunked'; readonly streamingAudio=false;
+  readonly id='browser-speech-chunked'; readonly streamingAudio=false; readonly audioSource='none' as const;
   private rate:TtsSpeed=1; private lang='zh-CN'; private queue:Promise<void>=Promise.resolve(); private stopped=false;
   private starts=new Set<()=>void>(); private ends=new Set<()=>void>(); private errors=new Set<(e:Error)=>void>(); private chunks=new Set<(c:unknown)=>void>();
   async start(options:{rate?:TtsSpeed;lang?:string}={}){this.rate=options.rate||1;this.lang=options.lang||'zh-CN';this.stopped=false;synth()?.cancel();this.starts.forEach(fn=>fn())}

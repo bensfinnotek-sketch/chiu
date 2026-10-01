@@ -157,3 +157,34 @@ test('realtime controller supports interruption without throwing', async () => {
   realtimeConversationController.interrupt();
   assert.equal(realtimeConversationController.state().status, 'idle');
 });
+
+
+test('SpeechChunker waits for natural Chinese sentence boundaries', async () => {
+  const { SpeechChunker } = await import('../src/app/services/speechChunker');
+  const chunker = new SpeechChunker();
+  assert.deepEqual(chunker.push('你好！很高兴认识你。'), ['你好！','很高兴认识你。']);
+});
+
+test('realtime orchestrator assigns monotonic turn ids and ignores stale turn callbacks', async () => {
+  const { RealtimeSpeechOrchestrator } = await import('../src/app/services/realtimeOrchestrator');
+  const orchestrator = new RealtimeSpeechOrchestrator();
+  const first = orchestrator.startConversationTurn({speak:false});
+  const second = orchestrator.startConversationTurn({speak:false});
+  orchestrator.receiveStreamingText('old', {turnId:first.turnId, speak:false});
+  assert.equal(orchestrator.state().turnId, second.turnId);
+  assert.equal(orchestrator.state().text, '');
+  orchestrator.interrupt();
+  orchestrator.destroy();
+});
+
+test('TTS queue enforces sequential ordering and bounded pending work', async () => {
+  const { TTSQueue } = await import('../src/app/services/ttsQueue');
+  const played:string[]=[];
+  const provider={streamingAudio:false,audioSource:'none' as const,stream:async(text:string)=>{played.push(text)},stop:()=>{},start:async()=>{},pause:()=>{},resume:()=>{},onAudioChunk:()=>()=>{},onStart:()=>()=>{},onEnd:()=>()=>{},onError:()=>()=>{},destroy:()=>{},id:'test'} as any;
+  const queue=new TTSQueue(provider,2);
+  assert.equal(queue.enqueue('one'),true);
+  assert.equal(queue.enqueue('two'),true);
+  assert.equal(queue.enqueue('three'),false);
+  await queue.waitForIdle();
+  assert.deepEqual(played,['one','two']);
+});
