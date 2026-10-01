@@ -9,7 +9,7 @@ import { HSK1_LESSONS, HSK1_VOCABULARY, HSK_PATHS } from './app/learning/content
 import { learningEngine } from './app/learning/engine';
 import { aiMemoryService } from './app/services/aiMemory';
 import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
-import { aiTutorService, speechToTextService, textToSpeechService, avatarService, pronunciationEngine } from './app/services';
+import { aiTutorService, speechToTextService, textToSpeechService, avatarService, pronunciationEngine, motivationService } from './app/services';
 import type { AvatarState } from './app/services/avatar';
 import { roleplayEngine, ROLEPLAY_SCENARIOS } from './app/services/roleplay';
 import type { ImmersionLevel, RoleplaySession, RoleplaySummary } from './app/services/roleplay';
@@ -25,6 +25,23 @@ const goalLabels: Record<LearningGoal, string> = {
 const levelLabels: Record<SkillLevel, string> = {
   new: 'Chưa biết gì', basic: 'Cơ bản', intermediate: 'Trung cấp', advanced: 'Nâng cao'
 };
+
+
+function MotivationCard() {
+  const [goal,setGoal]=useState(motivationService.getGoal());
+  const [snap,setSnap]=useState(motivationService.snapshot());
+  const [streak,setStreak]=useState(motivationService.streak());
+  const [xp,setXp]=useState(motivationService.totalXp());
+  const [summary,setSummary]=useState(motivationService.weeklySummary());
+  const refresh=()=>{setGoal(motivationService.getGoal());setSnap(motivationService.snapshot());setStreak(motivationService.streak());setXp(motivationService.totalXp());setSummary(motivationService.weeklySummary());};
+  useEffect(()=>{refresh();},[]);
+  return <section className="card p-4 sm:p-5">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="eyebrow"><Flame size={14}/> Thói quen nhẹ nhàng</span><h2 className="mt-1 text-lg font-bold">Hôm nay bạn chỉ cần {goal.selectedMinutes} phút</h2></div><span className="pill"><Star size={13}/> {xp} XP</span></div>
+    <div className="mt-4 flex flex-wrap gap-2">{motivationService.goals().map(x=><button key={x} onClick={()=>{motivationService.setGoal(x);refresh();}} className={'toggle-chip '+(goal.selectedMinutes===x?'active':'')}>{x} phút</button>)}</div>
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5"><div className="stat-card"><b>{snap.minutes}</b><span>phút</span></div><div className="stat-card"><b>{snap.lessons}</b><span>bài học</span></div><div className="stat-card"><b>{snap.vocabulary}</b><span>từ</span></div><div className="stat-card"><b>{snap.speaking}</b><span>nói</span></div><div className="stat-card"><b>{snap.review}</b><span>ôn tập</span></div></div>
+    <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]"><span>🔥 {streak} ngày liên tiếp</span><span>Tuần này: {summary.minutesStudied} phút · {summary.lessonsCompleted} bài · {summary.wordsReviewed} lượt ôn</span></div>
+  </section>;
+}
 
 const defaultProfile: UserProfile = {
   name: 'bạn', goal: 'conversation', level: 'new', dailyMinutes: 10,
@@ -62,7 +79,7 @@ function AppShell({ route, setRoute, theme, setTheme, children }: {
         </div>
       </div>
     </header>
-    <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-10 lg:pt-8">{children}</main>
+    <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-10 lg:pt-8">{children}<div className="mb-4"><MotivationCard/></div></main>
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--surface)]/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5">
         {tabs.map(([id, label, Icon]) => <button key={id} onClick={() => setRoute(id)} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold ${route === id ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`}><Icon size={20}/>{label}</button>)}
