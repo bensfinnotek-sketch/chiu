@@ -43,13 +43,13 @@ export interface AvatarProvider {
 
 export const linaAvatarDesign:AvatarDesign={
   name:'Lina / 林娜',
-  face:'fictional young adult Vietnamese-facing Mandarin tutor',
+  face:'fictional young adult Mandarin tutor with an original face; proportions inspired by a 4:3 medium bust reference',
   hair:'dark shoulder-length hair',
-  outfit:'warm modern tutor top',
-  background:'soft neutral studio',
+  outfit:'soft dusty-rose ribbed tutor top with a modest scoop neckline',
+  background:'soft neutral studio composition, 4:3 bust framing',
   expression:'friendly and attentive',
   lighting:'soft diffused',
-  cameraAngle:'front-facing medium shot'
+  cameraAngle:'front-facing 4:3 medium bust shot with wider shoulders and optional raised-hand greeting'
 };
 
 let state:AvatarState='idle';
@@ -63,7 +63,7 @@ export const linaAvatarProvider:AvatarProvider={
     renderMode:'animated-fallback',
     realtime:false,
     streamingTts:false,
-    lipSync:false,
+    lipSync:true,
     facialAnimation:true,
     webrtc:false
   },
