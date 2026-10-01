@@ -2,12 +2,14 @@ export interface StorageAdapter {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  keys(): string[];
 }
 class MemoryStorageAdapter implements StorageAdapter {
   private store = new Map<string, string>();
   getItem(key: string) { return this.store.get(key) ?? null; }
   setItem(key: string, value: string) { this.store.set(key, value); }
   removeItem(key: string) { this.store.delete(key); }
+  keys() { return [...this.store.keys()]; }
 }
 const browserStorage = (): StorageAdapter | null => {
   try { return typeof globalThis !== 'undefined' && 'localStorage' in globalThis ? (globalThis.localStorage as StorageAdapter) : null; }
