@@ -182,7 +182,7 @@ function TutorScreen() {
     const history=messages.slice(-12).map((m,i)=>({id:m.id||String(i),role:m.role,chinese:m.chinese,pinyin:m.pinyin,vietnamese:m.vietnamese}));
     setMessages(m=>[...m,{id:String(Date.now()),role:'user',chinese:value,pinyin:'',vietnamese:''}]); setInput('');setHint('');setNotice('');setBusy(true);setStatus('Thinking');
     try{
-      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history)});
+      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:(()=>{const c=aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history);return {summary:c.relevantMemory.map(x=>x.content).join(' | '),keyFacts:c.learner.weakAreas,vocabulary:c.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:c.relevantMistakes.flatMap(x=>x.relatedGrammar)}})()});
       setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history, value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
       const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='error'?'error':'idle';
       avatarService.setState(emotion);
