@@ -834,47 +834,45 @@ Output JSON:
 // AI Lesson Generator handler
 export async function handleLesson(req: any, res: any) {
   try {
-    const body = parseBody(req);
-    const { level = "HSK 1", lessonNumber = 1, topic = "Greetings" } = body;
-    const ai = getAI();
+    const body=parseBody(req);
+    const {level="HSK 1",topic="Greetings",goal="Build practical Mandarin ability",duration=15,learnerWeaknesses=[],targetVocabulary=[],targetGrammar=[]}=body;
+    const ai=getAI();
+    if(!ai)return sendJson(res,503,{error:"GEMINI_API_KEY is not configured on the server."});
+    const systemPrompt=String.raw\`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
+Requested level: \${level}
+Topic: \${topic}
+Goal: \${goal}
+Duration: \${duration} minutes
+Learner weaknesses: \${JSON.stringify(learnerWeaknesses)}
+Target vocabulary: \${JSON.stringify(targetVocabulary)}
+Target grammar: \${JSON.stringify(targetGrammar)}
 
-    if (!ai) {
-      return sendJson(res, 503, {
-        error: "GEMINI_API_KEY is not configured on the server.",
-      });
-    }
+Important content integrity:
+- Only assign an HSK level when the requested level is backed by the application's canonical content data. HSK1 is currently canonical; do not invent HSK2-6 vocabulary labels.
+- For HSK1, vocabulary must be selected from the supplied canonical HSK1 vocabulary context when possible and grammar from known grammar points.
+- Every Chinese item must have accurate Pinyin and Vietnamese meaning.
+- Keep vocabulary consistent with dialogue, quiz, and objectives.
+- Make a 5-10 minute micro lesson when duration <= 10.
+- Adapt to learner weaknesses instead of adding unrelated content.
 
-    const systemPrompt = `You are a curriculum designer for HanziAI. Generate a structured Chinese lesson for ${level}, Lesson #${lessonNumber} about "${topic}".
-Output JSON:
+Return exactly this JSON shape:
 {
-  "title": "Lesson title in Vietnamese and Chinese",
-  "vocabulary": [
-    { "chinese": "字/词", "pinyin": "pīnyīn", "meaning": "nghĩa tiếng Việt", "example": "ví dụ" }
-  ],
-  "grammar": [
-    { "point": "Điểm ngữ pháp", "structure": "Cấu trúc", "explanation": "Giải thích ngắn gọn", "example": "Ví dụ minh họa" }
-  ],
-  "dialogue": [
-    { "role": "A/B", "chinese": "中文", "pinyin": "pinyin", "translation": "Bản dịch" }
-  ]
-}`;
-
-    const response = await generateContentSafely(ai, {
-      contents: `Generate lesson for ${level}, topic: ${topic}`,
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-      },
-    });
-
-    const data = JSON.parse(response.text || "{}");
-    return sendJson(res, 200, data);
-  } catch (error: any) {
-    console.error("Lesson generation API error:", error?.message || error);
-    return sendJson(res, 500, {
-      error: error?.message || "Internal server error during lesson generation.",
-    });
-  }
+"id":"","title":"","description":"","hskLevel":1,
+"level":"","objectives":[],
+"vocabulary":[{"id":"","hanzi":"","pinyin":"","vietnamese":"","partOfSpeech":"","exampleChinese":"","examplePinyin":"","exampleVietnamese":"","category":"","hskLevel":1,"audio":"","difficulty":1}],
+"grammar":[{"id":"","pattern":"","meaning":"","explanationVi":"","examples":[{"chinese":"","pinyin":"","vietnamese":""}],"commonMistakes":[],"practiceQuestions":[]}],
+"dialogue":[{"speaker":"ai","chinese":"","pinyin":"","vietnamese":""}],
+"listening":[],"speaking":[],"reading":[],"writing":[],
+"roleplay":{"title":"","scenario":"","prompt":"","expectedPatterns":[]},
+"quiz":[{"id":"","type":"multiple-choice","question":"","options":[],"answer":"","explanation":"","difficulty":1,"skill":"vocabulary","relatedVocabulary":[],"relatedGrammar":[]}],
+"review":["zh-vi","vi-zh","audio-meaning","pinyin-zh","zh-speak","listen-repeat","fill-blank","conversation"],
+"estimatedMinutes":15,"lessonType":"mixed"
+}
+No markdown, no commentary, JSON only.\`;
+    const response=await generateContentSafely(ai,{contents:\`Create a \${duration}-minute lesson about \${topic} for \${level}. Goal: \${goal}.\`,config:{systemInstruction:systemPrompt,responseMimeType:"application/json"}});
+    const data=JSON.parse(response.text||"{}");
+    return sendJson(res,200,data);
+  }catch(error:any){console.error("Lesson generation API error:",error?.message||error);return sendJson(res,500,{error:error?.message||"Internal server error during lesson generation."});}
 }
 
 // AI Quiz Generator handler
