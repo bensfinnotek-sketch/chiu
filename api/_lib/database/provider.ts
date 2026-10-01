@@ -1,7 +1,7 @@
 export interface DatabaseProvider {
   readonly kind: "supabase" | "postgres" | "none";
   readonly configured: boolean;
-  query<T = unknown>(table: string, operation: "select" | "insert" | "update" | "delete", input: unknown): Promise<T>;
+  query<T = unknown>(table: string, operation: "select" | "insert" | "update" | "delete" | "upsert", input: unknown): Promise<T>;
 }
 
 export interface DatabaseContext {
