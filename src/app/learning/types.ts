@@ -109,3 +109,72 @@ export const defaultLearnerMemory = (profile: UserProfile): LearnerMemory => ({
   preferredTopics: ['daily life', 'conversation'],
   recentMistakes: [],
 });
+
+export interface LearnerProfile {
+  id: string;
+  displayName: string;
+  nativeLanguage: string;
+  targetLanguage: string;
+  currentLevel: string;
+  hskLevel: number;
+  pinyinLevel: PinyinDisplay;
+  learningGoal: string;
+  dailyGoalMinutes: number;
+  streak: number;
+  totalStudyMinutes: number;
+  vocabularyStats: { learned: number; mastered: number; weak: number };
+  grammarStats: { practiced: number; weak: number };
+  pronunciationStats: { practiced: number; weakTones: string[] };
+  speakingStats: { sessions: number; confidence: number };
+  listeningStats: { sessions: number; accuracy: number };
+  readingStats: { sessions: number; accuracy: number };
+  writingStats: { sessions: number; accuracy: number };
+  weakAreas: string[];
+  strongAreas: string[];
+  recentLessons: string[];
+  recentMistakes: string[];
+  preferredTopics: string[];
+  lastActiveAt: string;
+}
+
+export interface AIMemoryEntry {
+  id: string;
+  kind: 'learner-fact'|'learning-history'|'mistake'|'mastered-vocabulary'|'weak-vocabulary'|'grammar-weakness'|'pronunciation-weakness'|'conversation-summary'|'goal'|'preference';
+  content: string;
+  relatedVocabulary?: string[];
+  relatedGrammar?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IntelligentMistake extends MistakeRecord {
+  mistakeId: string;
+  originalInput: string;
+  correctedInput: string;
+  severity: 'low'|'medium'|'high';
+  firstSeen: string;
+  resolved: boolean;
+  relatedVocabulary: string[];
+  relatedGrammar: string[];
+  relatedPronunciation: string[];
+  priority: number;
+}
+
+export interface DailyPersonalizedPlan extends DailyPlan {
+  reviewMinutes: number;
+  weakVocabulary: string[];
+  grammarPoint: string | null;
+  pronunciationMinutes: number;
+  conversationMinutes: number;
+  miniQuiz: boolean;
+  reason: string;
+}
+
+export interface TutorContext {
+  learner: LearnerProfile;
+  relevantMemory: AIMemoryEntry[];
+  relevantMistakes: IntelligentMistake[];
+  currentLesson?: StructuredLesson | null;
+  currentConversation: string[];
+  difficulty: 1|2|3|4|5;
+}
