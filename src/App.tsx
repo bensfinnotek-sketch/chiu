@@ -4,32 +4,16 @@ import {
   Home, Lightbulb, LockKeyhole, Menu, Mic, Moon, Play, RotateCcw,
   Search, Settings2, Sparkles, Star, Sun, User, Volume2, X
 } from 'lucide-react';
-import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, Lesson, ConversationMessage, TutorMode, TutorResponse } from './app/types';
+import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, ConversationMessage, TutorMode, TutorResponse } from './app/types';
+import { HSK1_LESSONS, HSK1_VOCABULARY } from './app/learning/content';
+import { learningEngine } from './app/learning/engine';
+import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
 import { aiTutorService, speechToTextService, textToSpeechService, avatarService } from './app/services';
 import type { AvatarState } from './app/services/avatar';
 import type { TtsSpeed } from './app/services/tts';
 
 type Route = 'home' | 'learn' | 'speak' | 'review' | 'profile';
 type Theme = 'light' | 'dark';
-
-const vocabulary: Vocabulary[] = [
-  { id: 'nihao', hanzi: '你好', pinyin: 'nǐ hǎo', meaningVi: 'xin chào', example: '你好，我叫林娜。', examplePinyin: 'Nǐ hǎo, wǒ jiào Lín Nà.', exampleVi: 'Xin chào, tôi tên là Lina.' },
-  { id: 'jia', hanzi: '叫', pinyin: 'jiào', meaningVi: 'tên là / gọi là', example: '你叫什么名字？', examplePinyin: 'Nǐ jiào shénme míngzi?', exampleVi: 'Bạn tên là gì?' },
-  { id: 'shenme', hanzi: '什么', pinyin: 'shénme', meaningVi: 'gì, cái gì', example: '你喜欢什么？', examplePinyin: 'Nǐ xǐhuan shénme?', exampleVi: 'Bạn thích gì?' },
-  { id: 'mingzi', hanzi: '名字', pinyin: 'míngzi', meaningVi: 'tên', example: '我的名字叫安。', examplePinyin: 'Wǒ de míngzi jiào Ān.', exampleVi: 'Tên tôi là An.' },
-  { id: 'xihuan', hanzi: '喜欢', pinyin: 'xǐhuan', meaningVi: 'thích', example: '我喜欢学中文。', examplePinyin: 'Wǒ xǐhuan xué Zhōngwén.', exampleVi: 'Tôi thích học tiếng Trung.' },
-  { id: 'xue', hanzi: '学', pinyin: 'xué', meaningVi: 'học', example: '我学习汉语。', examplePinyin: 'Wǒ xuéxí Hànyǔ.', exampleVi: 'Tôi học tiếng Trung.' },
-];
-
-const lesson: Lesson = {
-  id: 'hsk1-lesson1',
-  level: 1,
-  lessonNumber: 1,
-  title: 'Tự giới thiệu',
-  progress: 28,
-  sections: ['vocabulary', 'grammar', 'listening', 'speaking', 'roleplay', 'review'],
-  vocabulary,
-};
 
 const goalLabels: Record<LearningGoal, string> = {
   travel: 'Du lịch', work: 'Công việc', conversation: 'Giao tiếp', hsk: 'HSK', school: 'Học tập', culture: 'Văn hóa'
@@ -98,15 +82,25 @@ function ChineseSentence({ chinese, pinyin, vietnamese, showChinese, showPinyin,
   </div>;
 }
 
-function VocabularyCard({ item }: { item: Vocabulary }) {
-  const [saved, setSaved] = useState(false);
+function toneNumbers(pinyin:string){
+  const map:Record<string,string>={ā:'a1',á:'a2',ǎ:'a3',à:'a4',ē:'e1',é:'e2',ě:'e3',è:'e4',ī:'i1',í:'i2',ǐ:'i3',ì:'i4',ō:'o1',ó:'o2',ǒ:'o3',ò:'o4',ū:'u1',ú:'u2',ǔ:'u3',ù:'u4',ǖ:'v1',ǘ:'v2',ǚ:'v3',ǜ:'v4'};
+  return pinyin.split(/(\\s+)/).map(part=>{let tone='';let base=part.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g,m=>{const x=map[m];tone=x.slice(1);return x[0];});return base+(tone||'')}).join('');
+}
+
+function VocabularyCard({ item, onReview }: { item: Vocabulary; onReview?: (id:string)=>void }) {
+  const [saved,setSaved]=useState(false); const [open,setOpen]=useState(false);
   return <article className="card card-hover p-5">
-    <div className="flex items-start justify-between gap-3">
-      <div><div className="font-chinese text-3xl font-semibold">{item.hanzi}</div><div className="mt-1 text-sm text-[var(--accent)]">{item.pinyin}</div><div className="mt-1 text-sm text-[var(--muted)]">{item.meaningVi}</div></div>
-      <button onClick={() => setSaved(!saved)} className={`icon-btn ${saved ? 'text-[var(--accent)]' : ''}`} aria-label="Lưu từ">{saved ? <Star size={18} fill="currentColor"/> : <Star size={18}/>}</button>
+    <button className="w-full text-left" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>
+      <div className="flex items-start justify-between gap-3"><div><div className="font-chinese text-3xl font-semibold">{item.hanzi}</div><div className="mt-1 text-sm text-[var(--accent)]">{item.pinyin}</div><div className="mt-1 text-sm text-[var(--muted)]">{item.vietnamese}</div></div><span className="pill">HSK {item.hskLevel}</span></div>
+    </button>
+    <div className="mt-4 rounded-xl bg-[var(--surface-2)] p-3"><p className="font-chinese text-sm">{item.exampleChinese}</p><p className="mt-1 text-xs text-[var(--accent)]">{item.examplePinyin}</p><p className="mt-1 text-xs text-[var(--muted)]">{item.exampleVietnamese}</p></div>
+    <div className="mt-4 flex flex-wrap gap-2">
+      <button onClick={()=>void textToSpeechService.speak(item.hanzi).catch(()=>undefined)} className="tool-btn"><Volume2 size={15}/> Nghe</button>
+      <button onClick={()=>setSaved(v=>!v)} className="tool-btn"><Star size={15} fill={saved?'currentColor':'none'}/> {saved?'Đã lưu':'Lưu'}</button>
+      <button onClick={()=>setOpen(v=>!v)} className="tool-btn"><BookOpen size={15}/> Xem ví dụ</button>
+      <button onClick={()=>onReview?.(item.id)} className="tool-btn"><Mic size={15}/> Luyện nói</button>
     </div>
-    <div className="mt-4 rounded-xl bg-[var(--surface-2)] p-3"><p className="font-chinese text-sm">{item.example}</p><p className="mt-1 text-xs text-[var(--accent)]">{item.examplePinyin}</p><p className="mt-1 text-xs text-[var(--muted)]">{item.exampleVi}</p></div>
-    <button onClick={() => void textToSpeechService.speak(item.hanzi).catch(() => undefined)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-sm font-semibold hover:bg-[var(--surface-2)]"><Volume2 size={16}/> Nghe</button>
+    {open&&<div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm"><b>{item.hanzi}</b><span className="ml-2 text-[var(--accent)]">{item.pinyin}</span><span className="ml-2 text-[var(--muted)]">{item.vietnamese}</span><p className="mt-2 text-xs text-[var(--muted)]">{item.partOfSpeech} · {item.category}</p></div>}
   </article>;
 }
 
@@ -126,8 +120,8 @@ function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: 
 
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="card p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4"><div><span className="eyebrow">Tiếp tục học</span><h2 className="mt-2 text-xl font-bold">HSK 1 · Bài 1</h2><p className="mt-1 text-[var(--muted)]">Tự giới thiệu</p></div><BookOpen className="text-[var(--accent)]"/></div>
-        <ProgressBar value={lesson.progress}/><div className="mt-2 flex justify-between text-xs text-[var(--muted)]"><span>{lesson.progress}% hoàn thành</span><span>~10 phút</span></div>
+        <div className="flex items-start justify-between gap-4"><div><span className="eyebrow">Tiếp tục học</span><h2 className="mt-2 text-xl font-bold">HSK 1 · Bài 1</h2><p className="mt-1 text-[var(--muted)]">Chào hỏi</p></div><BookOpen className="text-[var(--accent)]"/></div>
+        <ProgressBar value={learningEngine.getState().progress.lessonProgress['hsk1-lesson-1']||1}/><div className="mt-2 flex justify-between text-xs text-[var(--muted)]"><span>{learningEngine.getState().progress.lessonProgress['hsk1-lesson-1']||1}% hoàn thành</span><span>~10 phút</span></div>
         <button onClick={() => setRoute('learn')} className="btn-primary mt-5 w-full">Tiếp tục <ArrowRight size={17}/></button>
       </section>
 
@@ -241,40 +235,51 @@ function TutorScreen() {
   </div>;
 }
 
+function LessonSentence({ chinese,pinyin,vietnamese,showChinese,showPinyin,showVietnamese }:{chinese:string;pinyin:string;vietnamese:string;showChinese:boolean;showPinyin:boolean;showVietnamese:boolean}){
+  return <div className="space-y-1">{showChinese&&<div className="font-chinese text-lg font-semibold">{chinese}</div>}{showPinyin&&<div className="text-sm text-[var(--accent)]">{pinyin}</div>}{showVietnamese&&<div className="text-sm text-[var(--muted)]">{vietnamese}</div>}</div>;
+}
+
 function LearnScreen({ setRoute }: { setRoute: (r: Route) => void }) {
-  const [active, setActive] = useState(0);
-  const sections = [
-    ['vocabulary', 'Vocabulary', 'Từ vựng cốt lõi'], ['grammar', 'Grammar', 'Mẫu câu đơn giản'],
-    ['listening', 'Listening', 'Nghe và nhận diện'], ['speaking', 'Speaking', 'Nói theo mẫu'],
-    ['roleplay', 'Roleplay', 'Đóng vai hội thoại'], ['review', 'Review', 'Ôn lại toàn bài']
-  ];
+  const [lessonId,setLessonId]=useState('hsk1-lesson-1'); const [active,setActive]=useState(0);
+  const [showChinese,setShowChinese]=useState(true),[showPinyin,setShowPinyin]=useState(true),[showVietnamese,setShowVietnamese]=useState(true);
+  const [pinyinMode,setPinyinMode]=useState<PinyinDisplay>('marks');
+  const [selected,setSelected]=useState<Vocabulary|null>(null);
+  const lesson=learningEngine.getLesson(lessonId); const state=learningEngine.getState();
+  const progress=state.progress.lessonProgress[lesson.id]||0;
+  const sections=['objective','vocabulary','grammar','listening','speaking','roleplay','review'] as const;
+  const complete=(section:any)=>{learningEngine.completeSection(lesson.id,section);setActive(i=>Math.min(i+1,sections.length-1));};
+  const displayPinyin=(p:string)=>pinyinMode==='hidden'?'':pinyinMode==='numbers'?toneNumbers(p):p;
+  const nextLesson=HSK1_LESSONS.find(x=>x.lessonNumber===lesson.lessonNumber+1);
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-end justify-between gap-4"><div><span className="eyebrow">HSK 1 · Bài 1</span><h1 className="mt-1 text-3xl font-extrabold">Tự giới thiệu</h1><p className="mt-2 text-[var(--muted)]">Học các mẫu câu cơ bản để giới thiệu bản thân.</p></div><span className="pill"><Clock3 size={14}/> 10 phút</span></div>
-    <div className="card p-4 sm:p-5"><div className="flex justify-between text-sm font-semibold"><span>Tiến độ bài học</span><span className="text-[var(--accent)]">{lesson.progress}%</span></div><ProgressBar value={lesson.progress}/></div>
+    <div className="flex flex-wrap items-end justify-between gap-4"><div><span className="eyebrow">HSK 1 · {lesson.lessonNumber}/10</span><h1 className="mt-1 text-3xl font-extrabold">{lesson.title}</h1><p className="mt-2 text-[var(--muted)]">{lesson.objective}</p></div><span className="pill"><Clock3 size={14}/> {10+lesson.difficulty*2} phút</span></div>
+    <div className="card p-4 sm:p-5"><div className="flex justify-between text-sm font-semibold"><span>Tiến độ bài học</span><span className="text-[var(--accent)]">{progress}%</span></div><ProgressBar value={progress}/><div className="mt-3 flex flex-wrap gap-2">{HSK1_LESSONS.map(l=><button key={l.id} onClick={()=>{setLessonId(l.id);setActive(0);learningEngine.startLesson(l.id)}} className={`toggle-chip ${lesson.id===l.id?'active':''}`}>Bài {l.lessonNumber}</button>)}</div></div>
+    <div className="card flex flex-wrap items-center gap-2 p-3"><b className="mr-2 text-sm">Hiển thị</b><button className={`toggle-chip ${showChinese?'active':''}`} onClick={()=>setShowChinese(v=>!v)}>Hán tự</button><button className={`toggle-chip ${showPinyin?'active':''}`} onClick={()=>setShowPinyin(v=>setPinyinMode(v?'marks':'hidden'))}>Pinyin</button><button className={`toggle-chip ${showVietnamese?'active':''}`} onClick={()=>setShowVietnamese(v=>!v)}>Tiếng Việt</button>{showPinyin&&<select value={pinyinMode} onChange={e=>setPinyinMode(e.target.value as PinyinDisplay)} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2 text-xs"><option value="marks">Dấu thanh</option><option value="numbers">Số thanh</option><option value="hidden">Ẩn Pinyin</option></select>}</div>
     <div className="grid gap-5 lg:grid-cols-[0.85fr_1.5fr]">
-      <div className="card p-3">{sections.map(([id, title, desc], i) => <button key={id} onClick={() => setActive(i)} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left ${active === i ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--surface-2)]'}`}><span className={`grid h-9 w-9 place-items-center rounded-xl text-sm font-bold ${active === i ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-2)]'}`}>{i + 1}</span><span className="min-w-0"><b className="block text-sm">{title}</b><small className="text-xs text-[var(--muted)]">{desc}</small></span>{active === i && <ChevronRight size={16} className="ml-auto text-[var(--accent)]"/>}</button>)}</div>
+      <div className="card p-3">{sections.map((id,i)=><button key={id} onClick={()=>setActive(i)} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left ${active===i?'bg-[var(--accent-soft)]':'hover:bg-[var(--surface-2)]'}`}><span className={`grid h-9 w-9 place-items-center rounded-xl text-sm font-bold ${active===i?'bg-[var(--accent)] text-white':'bg-[var(--surface-2)]'}`}>{i+1}</span><span className="min-w-0"><b className="block text-sm">{id==='objective'?'Objective':id[0].toUpperCase()+id.slice(1)}</b><small className="text-xs text-[var(--muted)]">{id==='vocabulary'?'Từ vựng':id==='grammar'?'Mẫu câu':id==='roleplay'?'Tình huống thực tế':'Luyện tập'}</small></span>{active===i&&<ChevronRight size={16} className="ml-auto text-[var(--accent)]"/>}</button>)}</div>
       <section className="card p-5 sm:p-7">
-        {active === 0 ? <><span className="eyebrow">Vocabulary</span><h2 className="mt-2 text-2xl font-bold">Từ vựng bài 1</h2><div className="mt-5 grid gap-3 sm:grid-cols-2">{vocabulary.slice(0,4).map(v => <VocabularyCard key={v.id} item={v}/>)}</div></> :
-         active === 1 ? <><span className="eyebrow">Grammar</span><h2 className="mt-2 text-2xl font-bold">Mẫu câu “我叫…”</h2><div className="mt-5 rounded-2xl bg-[var(--surface-2)] p-5"><p className="font-chinese text-2xl">我叫 + tên。</p><p className="mt-2 text-[var(--accent)]">Wǒ jiào + tên.</p><p className="mt-2 text-sm text-[var(--muted)]">Dùng để nói “Tôi tên là…”.</p></div><button onClick={() => setRoute('speak')} className="btn-primary mt-5">Luyện nói mẫu này <Mic size={17}/></button></> :
-         <div className="py-8 text-center"><div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><Play/></div><h2 className="mt-4 text-2xl font-bold">{sections[active][1]}</h2><p className="mx-auto mt-2 max-w-md text-[var(--muted)]">Khu vực này đã sẵn sàng cho nội dung học tương ứng và sẽ được mở rộng ở phase tiếp theo.</p><button onClick={() => setActive(Math.min(active + 1, 5))} className="btn-secondary mt-5">Tiếp tục <ArrowRight size={17}/></button></div>}
+        {active===0&&<><span className="eyebrow">Objective</span><h2 className="mt-2 text-2xl font-bold">Mục tiêu bài học</h2><p className="mt-4 text-[var(--muted)]">{lesson.objective}</p><button onClick={()=>complete('objective')} className="btn-primary mt-6">Bắt đầu bài <ArrowRight size={17}/></button></>}
+        {active===1&&<><span className="eyebrow">Vocabulary</span><h2 className="mt-2 text-2xl font-bold">Từ vựng cốt lõi</h2><div className="mt-5 grid gap-3 sm:grid-cols-2">{lesson.vocabulary.map(v=><VocabularyCard key={v.id} item={v} onReview={()=>setRoute('speak')}/>)}</div><button onClick={()=>complete('vocabulary')} className="btn-primary mt-5">Đã học xong từ vựng</button></>}
+        {active===2&&<><span className="eyebrow">Grammar</span><h2 className="mt-2 text-2xl font-bold">Ngữ pháp</h2><div className="mt-5 space-y-4">{lesson.grammar.map(g=><div key={g.id} className="rounded-2xl bg-[var(--surface-2)] p-5"><b>{g.pattern}</b><p className="mt-1 text-sm">{g.meaning}</p><p className="mt-2 text-sm text-[var(--muted)]">{g.explanationVi}</p>{g.examples.map(e=><div key={e.chinese} className="mt-3 border-t border-[var(--border)] pt-3"><LessonSentence chinese={e.chinese} pinyin={displayPinyin(e.pinyin)} vietnamese={e.vietnamese} showChinese={showChinese} showPinyin={showPinyin&&pinyinMode!=='hidden'} showVietnamese={showVietnamese}/></div>)}</div>)}</div><button onClick={()=>complete('grammar')} className="btn-primary mt-5">Luyện ngữ pháp</button></>}
+        {active===3&&<><span className="eyebrow">Listening</span><h2 className="mt-2 text-2xl font-bold">Nghe và hiểu</h2><div className="mt-5 space-y-3">{lesson.dialogue.map((d,i)=><button key={i} onClick={()=>void textToSpeechService.speak(d.chinese).catch(()=>undefined)} className="flex w-full items-center gap-3 rounded-2xl bg-[var(--surface-2)] p-4 text-left"><Volume2 size={18} className="text-[var(--accent)]"/><LessonSentence chinese={d.chinese} pinyin={displayPinyin(d.pinyin)} vietnamese={d.vietnamese} showChinese={showChinese} showPinyin={showPinyin&&pinyinMode!=='hidden'} showVietnamese={showVietnamese}/></button>)}</div><button onClick={()=>complete('listening')} className="btn-primary mt-5">Hoàn thành nghe</button></>}
+        {active===4&&<><span className="eyebrow">Speaking</span><h2 className="mt-2 text-2xl font-bold">Luyện nói</h2><div className="mt-5 space-y-3">{lesson.speaking.map(x=><div key={x} className="rounded-2xl bg-[var(--surface-2)] p-4"><LessonSentence chinese={x} pinyin="" vietnamese="" showChinese={showChinese} showPinyin={false} showVietnamese={false}/></div>)}</div><button onClick={()=>{complete('speaking');setRoute('speak')}} className="btn-primary mt-5"><Mic size={17}/> Luyện với Lina</button></>}
+        {active===5&&<><span className="eyebrow">Roleplay</span><h2 className="mt-2 text-2xl font-bold">{lesson.roleplay.title}</h2><p className="mt-2 text-[var(--muted)]">{lesson.roleplay.scenario}</p><div className="mt-4 rounded-2xl bg-[var(--surface-2)] p-5"><p className="font-chinese text-xl">{lesson.roleplay.prompt}</p><p className="mt-2 text-sm text-[var(--muted)]">Hãy trả lời bằng tiếng Trung. Lina sẽ đánh giá ý nghĩa, ngữ pháp, từ vựng và độ tự nhiên; phát âm chỉ được đánh giá khi dữ liệu âm thanh hỗ trợ.</p></div><button onClick={()=>{complete('roleplay');setRoute('speak')}} className="btn-primary mt-5">Bắt đầu roleplay <Mic size={17}/></button></>}
+        {active===6&&<><span className="eyebrow">Review</span><h2 className="mt-2 text-2xl font-bold">Ôn lại toàn bài</h2><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{learningEngine.reviewTypes().map(t=><div key={t} className="rounded-xl bg-[var(--surface-2)] p-3 text-xs font-semibold">{t}</div>)}</div><p className="mt-4 text-sm text-[var(--muted)]">Ôn theo nhiều chiều: Trung → Việt, Việt → Trung, nghe, Pinyin, nói, điền từ và hội thoại.</p><button onClick={()=>{complete('review'); if(nextLesson)setLessonId(nextLesson.id)}} className="btn-primary mt-5">{nextLesson?'Sang bài tiếp theo':'Hoàn thành HSK 1'} <ArrowRight size={17}/></button></>}
       </section>
     </div>
+    {selected&&<div className="fixed inset-0 z-[90] grid place-items-center bg-black/30 p-4" onClick={()=>setSelected(null)}><div className="card max-w-md p-6" onClick={e=>e.stopPropagation()}><div className="font-chinese text-4xl">{selected.hanzi}</div><p className="mt-2 text-[var(--accent)]">{displayPinyin(selected.pinyin)}</p><p className="mt-1">{selected.vietnamese}</p><button onClick={()=>void textToSpeechService.speak(selected.hanzi)} className="btn-primary mt-5"><Volume2 size={17}/> Nghe</button></div></div>}
   </div>;
 }
 
 function ReviewScreen() {
-  const [index, setIndex] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const card = vocabulary[index % vocabulary.length];
-  const rate = (label: string) => { setRevealed(false); setIndex(i => (i + 1) % vocabulary.length); };
+  const due=learningEngine.dueReviews(8); const pool=due.length?due.map(r=>HSK1_VOCABULARY.find(v=>v.id===r.vocabularyId)).filter(Boolean) as Vocabulary[]:HSK1_VOCABULARY.slice(0,8);
+  const [index,setIndex]=useState(0),[revealed,setRevealed]=useState(false),[type,setType]=useState('zh-vi');
+  const card=pool[index%pool.length];
+  const rate=(rating:'again'|'hard'|'good'|'easy')=>{learningEngine.review(card.id,rating);setRevealed(false);setIndex(i=>(i+1)%pool.length);};
   return <div className="mx-auto max-w-2xl space-y-6 text-center">
-    <div><span className="eyebrow">Ôn tập hôm nay</span><h1 className="mt-2 text-3xl font-extrabold">8 từ cần ôn</h1><p className="mt-2 text-[var(--muted)]">Ôn ngắn, nhớ lâu, không quá tải.</p></div>
-    <div className="card flex min-h-[360px] flex-col items-center justify-center p-8 sm:min-h-[420px]">
-      <span className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">{revealed ? 'Đáp án' : 'Mặt trước'}</span>
-      <button onClick={() => setRevealed(!revealed)} className="mt-8 w-full rounded-3xl bg-[var(--surface-2)] p-10 transition hover:scale-[1.01]"><div className="font-chinese text-5xl font-semibold">{card.hanzi}</div>{revealed && <><div className="mt-4 text-xl text-[var(--accent)]">{card.pinyin}</div><div className="mt-1 text-base text-[var(--muted)]">{card.meaningVi}</div></>}</button>
-      <button onClick={() => setRevealed(true)} className="mt-5 text-sm font-semibold text-[var(--accent)]">{revealed ? 'Chọn mức độ bên dưới' : 'Chạm để xem đáp án'}</button>
-    </div>
-    <div className="grid grid-cols-4 gap-2">{[['Again','again'],['Khó','hard'],['Tốt','good'],['Dễ','easy']].map(([label, value]) => <button key={value} disabled={!revealed} onClick={() => rate(value)} className="review-btn"><span>{label}</span></button>)}</div>
+    <div><span className="eyebrow">Ôn tập thông minh</span><h1 className="mt-2 text-3xl font-extrabold">{due.length||pool.length} thẻ hôm nay</h1><p className="mt-2 text-[var(--muted)]">SRS đơn giản, nhiều kiểu luyện tập, không chỉ trắc nghiệm.</p></div>
+    <div className="flex flex-wrap justify-center gap-2">{learningEngine.reviewTypes().map(t=><button key={t} onClick={()=>setType(t)} className={`toggle-chip ${type===t?'active':''}`}>{t}</button>)}</div>
+    <div className="card flex min-h-[360px] flex-col items-center justify-center p-8 sm:min-h-[420px]"><span className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">{type} · {revealed?'Đáp án':'Mặt trước'}</span><button onClick={()=>setRevealed(v=>!v)} className="mt-8 w-full rounded-3xl bg-[var(--surface-2)] p-10"><div className="font-chinese text-5xl font-semibold">{type==='vi-zh'&&!revealed?card.vietnamese:card.hanzi}</div>{revealed&&<><div className="mt-4 text-xl text-[var(--accent)]">{card.pinyin}</div><div className="mt-1 text-base text-[var(--muted)]">{card.vietnamese}</div><div className="mt-3 text-sm">{card.exampleChinese}</div></>}</button><button onClick={()=>setRevealed(true)} className="mt-5 text-sm font-semibold text-[var(--accent)]">Chạm để xem đáp án</button></div>
+    <div className="grid grid-cols-4 gap-2">{[['Lại','again'],['Khó','hard'],['Tốt','good'],['Dễ','easy']].map(([label,value])=><button key={value} disabled={!revealed} onClick={()=>rate(value as any)} className="review-btn"><span>{label}</span></button>)}</div>
   </div>;
 }
 
