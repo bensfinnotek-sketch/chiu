@@ -225,3 +225,12 @@ export interface LessonGenerationParameters {
   targetVocabulary:string[];
   targetGrammar:string[];
 }
+
+
+export type MotivationActivity='lesson'|'review'|'speaking'|'conversation'|'pronunciation'|'daily-goal';
+export interface DailyGoal { minutes:number; lessons:number; vocabulary:number; speaking:number; review:number; selectedMinutes:5|10|15|20|30; date:string; }
+export interface MotivationSnapshot {
+  date:string; timezone:string; minutes:number; lessons:number; vocabulary:number; speaking:number; review:number; xp:number; completedXpEvents:string[]; active:boolean;
+}
+export interface Achievement { id:string; title:string; description:string; unlocked:boolean; unlockedAt?:string; }
+export interface WeeklySummary { minutesStudied:number; lessonsCompleted:number; wordsReviewed:number; speakingSessions:number; commonMistakes:string[]; nextRecommendedPractice:string; }
