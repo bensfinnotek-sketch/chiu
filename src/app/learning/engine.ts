@@ -1,14 +1,15 @@
 import type { UserProfile } from '../types';
 import type { DailyPlan, LearnerMemory, LearningProgress, MistakeRecord, ReviewItem, ReviewType } from './types';
 import { HSK1_LESSONS } from './content';
+import { storage } from '../services/storage';
 
 const KEY='lina_learning_engine_v1';
 const now=()=>new Date().toISOString();
 const blank=():{reviews:ReviewItem[];mistakes:MistakeRecord[];progress:LearningProgress;memory:LearnerMemory|null}=>({
  reviews:[],mistakes:[],progress:{lessonProgress:{},completedLessons:[],speakingPractice:0,listeningPractice:0,grammarPractice:0,pronunciationPractice:0,tonePractice:0,reviewsCompleted:0,streak:0},memory:null
 });
-const read=()=>{try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return blank()}};
-const write=(x:ReturnType<typeof blank>)=>localStorage.setItem(KEY,JSON.stringify(x));
+const read=()=>storage.readJson(KEY, blank());
+const write=(x:ReturnType<typeof blank>)=>storage.writeJson(KEY,x);
 const addDays=(d:number)=>new Date(Date.now()+d*86400000).toISOString();
 
 export const learningEngine={
@@ -41,8 +42,7 @@ export const learningEngine={
   updateMemory(profile:UserProfile){
     const s=read();const mistakes=s.mistakes;s.memory={level:`HSK${profile.currentHsk||1}`,goal:profile.goal,dailyMinutes:profile.dailyMinutes,weakGrammar:mistakes.filter(x=>x.type==='grammar').slice(0,5).map(x=>x.original),weakVocabulary:mistakes.filter(x=>x.type==='vocabulary').slice(0,5).map(x=>x.original),weakTones:mistakes.filter(x=>x.type==='tone').slice(0,5).map(x=>x.original),preferredTopics:['daily life','conversation'],recentMistakes:mistakes.slice(0,5).map(x=>x.original)};write(s);return s.memory;
   },
-  getMemory(profile:UserProfile):LearnerMemory{const s=read();return s.memory||this.updateMemory(profile);},
-  dailyPlan(profile:UserProfile):DailyPlan{const s=read();const next=HSK1_LESSONS.find(x=>!s.progress.completedLessons.includes(x.id))||HSK1_LESSONS[0];return {minutes:profile.dailyMinutes,lessonId:next.id,reviewCount:Math.min(8,Math.max(5,this.dueReviews(8).length)),speakingCount:2,newWords:3,grammarPoints:1};},
+    dailyPlan(profile:UserProfile):DailyPlan{const s=read();const next=HSK1_LESSONS.find(x=>!s.progress.completedLessons.includes(x.id))||HSK1_LESSONS[0];return {minutes:profile.dailyMinutes,lessonId:next.id,reviewCount:Math.min(8,Math.max(5,this.dueReviews(8).length)),speakingCount:2,newWords:3,grammarPoints:1};},
   adaptiveDifficulty(base:1|2|3|4|5){const s=read();const recent=s.mistakes.slice(0,8);const errors=recent.reduce((n,x)=>n+x.frequency,0);return Math.max(1,Math.min(5,base+(errors>=4?-1:errors===0?1:0))) as 1|2|3|4|5;},
   getMemory(profile:UserProfile):LearnerMemory{const s=read();return s.memory||this.updateMemory(profile);},
   resetProgress(){const s=read();s.progress={lessonProgress:{},completedLessons:[],speakingPractice:0,listeningPractice:0,grammarPractice:0,pronunciationPractice:0,tonePractice:0,reviewsCompleted:0,streak:0};s.reviews=[];s.mistakes=[];s.memory=null;write(s);},
