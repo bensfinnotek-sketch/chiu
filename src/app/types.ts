@@ -1,6 +1,6 @@
 export type LearningGoal = 'travel' | 'work' | 'conversation' | 'hsk' | 'school' | 'culture';
 export type SkillLevel = 'new' | 'basic' | 'intermediate' | 'advanced';
-
+export type TutorMode = 'conversation' | 'teacher';
 export interface User { id: string; name: string; email?: string; }
 export interface UserProfile { name: string; goal: LearningGoal; level: SkillLevel; dailyMinutes: 5 | 10 | 15 | 20; currentHsk: number; targetHsk: number; streak: number; vocabularyLearned: number; lessonsCompleted: number; pronunciationProgress: number; }
 export interface Vocabulary { id: string; hanzi: string; pinyin: string; meaningVi: string; example: string; examplePinyin: string; exampleVi: string; }
@@ -12,3 +12,13 @@ export interface Flashcard { id: string; vocabularyId: string; front: string; ba
 export interface Review { flashcardId: string; rating: 'again'|'hard'|'good'|'easy'; reviewedAt: string; }
 export interface Mistake { id: string; chinese: string; correction: string; explanation: string; }
 export interface UserMemory { recentWords: string[]; weakPoints: string[]; }
+export interface TutorCorrection { original: string; corrected: string; explanation: string; }
+export interface TutorVocabulary { hanzi: string; pinyin: string; meaning: string; example?: string; reason?: string; hsk?: string | number; }
+export interface TutorResponse {
+  reply: string; pinyin: string; translation: string; question?: string | null;
+  corrections: TutorCorrection[]; vocabulary: TutorVocabulary[]; grammarNote?: string | null;
+  encouragement: string; responseType?: 'conversation'|'correction'|'teaching'|'roleplay';
+  emotion?: 'neutral'|'happy'|'encouraging'|'confused'|'error';
+  clarityScore?: number; grammarScore?: number; vocabularyScore?: number; naturalnessScore?: number;
+}
+export interface TutorHint { level: 1|2|3|4; hint: string; }
