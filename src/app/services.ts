@@ -13,7 +13,6 @@ export interface AiTutorService {
 }
 import { postJson } from './services/request';
 import { appLogger } from './services/logger';
-import { appLogger } from './services/logger';
 
 export const aiTutorService:AiTutorService={
   respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay},input.signal),
