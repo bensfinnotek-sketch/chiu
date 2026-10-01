@@ -52,6 +52,11 @@ function ensureGuestSpeakingTime(req: any, res: any): { allowed: boolean; remain
   return { allowed: remainingMs > 0, remainingMs };
 }
 
+
+const AI_TIMEOUT_MS=20000;
+const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+const aiSafeLog=(kind:string,message:string)=>{if(process.env.NODE_ENV!=="production")console.warn("[Lina] "+kind+": "+message.slice(0,180));};
+
 const MODEL_CANDIDATES = Array.from(
   new Set([process.env.GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"].filter(Boolean) as string[])
 );
@@ -69,11 +74,10 @@ export async function generateContentSafely(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: options.contents,
-        config: options.config,
-      });
+      const response = await Promise.race([
+        ai.models.generateContent({model,contents: options.contents,config: options.config}),
+        new Promise<never>((_,reject)=>setTimeout(()=>reject(new Error("AI request timeout")),AI_TIMEOUT_MS)),
+      ]);
       return { text: response.text || "" };
     } catch (err: any) {
       lastError = err;
@@ -86,10 +90,10 @@ export async function generateContentSafely(
         errMsg.includes("RESOURCE_EXHAUSTED");
 
       if (isQuotaOrRate) {
-        console.warn(`[Gemini] Model ${model} exceeded quota/rate limit. Attempting fallback model...`);
+        aiSafeLog("ai-error","model fallback after quota/rate limit");
         continue;
       }
-      console.warn(`[Gemini] Model ${model} error: ${errMsg.slice(0, 100)}. Attempting next candidate...`);
+      aiSafeLog("ai-error","model request failed; trying bounded fallback");
     }
   }
 
