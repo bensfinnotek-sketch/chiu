@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Loader2, AlertCircle, Volume2 } from 'lucide-react';
 
-export type MicrophoneState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'DISABLED' | 'ERROR';
+export type MicrophoneState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'AI_SPEAKING' | 'DISABLED' | 'ERROR';
 
 interface MicrophoneButtonProps {
   state?: MicrophoneState;
