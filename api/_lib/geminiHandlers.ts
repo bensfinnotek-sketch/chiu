@@ -851,13 +851,13 @@ export async function handleLesson(req: any, res: any) {
     const ai=getAI();
     if(!ai)return sendJson(res,503,{error:"GEMINI_API_KEY is not configured on the server."});
     const systemPrompt=`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
-Requested level: ${level}
-Topic: ${topic}
-Goal: ${goal}
-Duration: ${duration} minutes
-Learner weaknesses: ${JSON.stringify(learnerWeaknesses)}
-Target vocabulary: ${JSON.stringify(targetVocabulary)}
-Target grammar: ${JSON.stringify(targetGrammar)}
+Requested level: ${safeLessonLevel}
+Topic: ${safeLessonTopic}
+Goal: ${safeLessonGoal}
+Duration: ${Math.min(180,Math.max(5,Number(duration)||15))} minutes
+Learner weaknesses: ${JSON.stringify(safeWeaknesses)}
+Target vocabulary: ${JSON.stringify(safeTargets)}
+Target grammar: ${JSON.stringify(safeGrammar)}
 Canonical vocabulary data (use only these HSK labels for supported levels): ${JSON.stringify(canonicalVocabulary)}
 
 Important content integrity:
