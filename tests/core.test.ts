@@ -5,7 +5,7 @@ import { learningEngine } from '../src/app/learning/engine';
 import { aiMemoryService } from '../src/app/services/aiMemory';
 import { lessonEngine, validateGeneratedLesson } from '../src/app/services/lessonEngine';
 import { motivationService } from '../src/app/services/motivation';
-import { pronunciationEngine } from '../src/app/services/pronunciationEngine';
+import { pronunciationEngine, toneFromPinyin } from '../src/app/services/pronunciationEngine';
 import { roleplayEngine } from '../src/app/services/roleplay';
 import { MemoryStorage, setStorageAdapter, storage } from '../src/app/services/storage';
 
@@ -35,6 +35,12 @@ test('AI memory stores identical facts once', () => {
   aiMemoryService.rememberFact('learner-fact', 'Tôi thích học buổi tối');
   aiMemoryService.rememberFact('learner-fact', 'Tôi thích học buổi tối');
   assert.equal(aiMemoryService.getState().entries.length, 1);
+});
+
+test('grammar and pinyin data remain structured', () => {
+  assert.ok(HSK1_LESSONS.every(lesson => lesson.grammar.every(grammar => grammar.pattern && grammar.meaning && grammar.explanationVi)));
+  assert.equal(toneFromPinyin('nǐ'), 3);
+  assert.equal(toneFromPinyin('hao'), null);
 });
 
 test('pronunciation does not fabricate acoustic scores', async () => {
