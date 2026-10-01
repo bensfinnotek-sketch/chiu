@@ -4,6 +4,7 @@ import { learningEngine } from '../learning/engine';
 
 export interface ProgressService {
   state(): ReturnType<typeof learningEngine.getState>;
+  getState(): ReturnType<typeof learningEngine.getState>;
   startLesson(lessonId: string): void;
   getLesson(id: string): ReturnType<typeof learningEngine.getLesson>;
   dueReviews(limit?: number): ReturnType<typeof learningEngine.dueReviews>;
@@ -18,6 +19,7 @@ export interface ProgressService {
 
 export const progressService: ProgressService = {
   state: () => learningEngine.getState(),
+  getState: () => learningEngine.getState(),
   startLesson: lessonId => learningEngine.startLesson(lessonId),
   getLesson: id => learningEngine.getLesson(id),
   dueReviews: limit => learningEngine.dueReviews(limit),
