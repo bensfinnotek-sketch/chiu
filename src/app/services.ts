@@ -3,11 +3,12 @@ import { speechService } from './services/speech';
 import { ttsService } from './services/tts';
 import { aiMemoryService } from './services/aiMemory';
 import { linaAvatarProvider } from './services/avatar';
+import type { ImmersionLevel, RoleplayScenario } from './services/roleplay';
 export { pronunciationEngine } from './services/pronunciationEngine';
 export type { PronunciationEngine, WordPronunciationResult, SentencePronunciationResult, TonePronunciationResult } from './services/pronunciationEngine';
 
 export interface AiTutorService {
-  respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';signal?:AbortSignal;}):Promise<TutorResponse>;
+  respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};signal?:AbortSignal;}):Promise<TutorResponse>;
   hint(input:{prompt:string;targetLevel?:string;level:1|2|3|4;signal?:AbortSignal}):Promise<TutorHint>;
 }
 async function postJson<T>(url:string,body:unknown,signal?:AbortSignal):Promise<T>{
@@ -17,7 +18,7 @@ async function postJson<T>(url:string,body:unknown,signal?:AbortSignal):Promise<
   return data as T;
 }
 export const aiTutorService:AiTutorService={
-  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',difficulty:input.difficulty||'normal',memory:input.memory},input.signal),
+  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay},input.signal),
   hint:(input)=>postJson<TutorHint>('/api/ai/hint',{prompt:input.prompt,targetLevel:input.targetLevel||'HSK 1',level:input.level},input.signal),
 };
 
