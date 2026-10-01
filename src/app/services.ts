@@ -45,3 +45,6 @@ export const avatarService={
   stop(){linaAvatarProvider.stop();},
   destroy(){linaAvatarProvider.destroy();}
 };
+
+export { lessonEngine, validateGeneratedLesson, normalizeGeneratedLesson, lessonToStructured } from './services/lessonEngine';
+export type { LessonSchema, LessonGenerationParameters, LessonQuizQuestion, LessonType } from './learning/types';
