@@ -256,6 +256,7 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
       conversationHistory = [],
       nativeLanguage = "vi",
       difficulty = "normal",
+      mode = "conversation",
       memory,
     } = body;
 
@@ -351,7 +352,7 @@ Your job is to help the learner practice Mandarin through natural, turn-by-turn 
 
 Learner Level: ${actualLevel}
 Topic: ${topic}
-Conversation Difficulty: ${difficulty} (easy = simpler words & shorter replies; normal = natural pacing; challenge = more authentic phrasing)
+Conversation Difficulty: ${difficulty} (easy = simpler words & shorter replies; normal = natural pacing; challenge = more authentic phrasing)\nTutor Mode: ${mode === "teacher" ? "Teacher Mode — prioritize meaningful correction, grammar explanation, and guided practice." : "Conversation Mode — prioritize natural conversation and only meaningful corrections."}
 Learner's Native/UI Language: ${langName}
 
 LEVEL-SPECIFIC SPEAKING PROFILE — MUST FOLLOW:
