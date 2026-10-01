@@ -3,7 +3,11 @@ export type SkillLevel = 'new' | 'basic' | 'intermediate' | 'advanced';
 export type TutorMode = 'conversation' | 'teacher';
 export interface User { id: string; name: string; email?: string; }
 export interface UserProfile { name: string; goal: LearningGoal; level: SkillLevel; dailyMinutes: 5 | 10 | 15 | 20; currentHsk: number; targetHsk: number; streak: number; vocabularyLearned: number; lessonsCompleted: number; pronunciationProgress: number; }
-export interface Vocabulary { id: string; hanzi: string; pinyin: string; meaningVi: string; example: string; examplePinyin: string; exampleVi: string; }
+export interface Vocabulary {
+  id: string; hanzi: string; pinyin: string; vietnamese: string; meaningVi: string;
+  partOfSpeech: string; exampleChinese: string; examplePinyin: string; exampleVietnamese: string;
+  example: string; exampleVi: string; hskLevel: number; category: string; audio: string; difficulty: 1|2|3|4|5;
+}
 export interface Lesson { id: string; level: number; lessonNumber: number; title: string; progress: number; sections: Array<'vocabulary'|'grammar'|'listening'|'speaking'|'roleplay'|'review'>; vocabulary: Vocabulary[]; }
 export interface LessonProgress { lessonId: string; progress: number; completedSections: string[]; }
 export interface ConversationMessage { id: string; role: 'user'|'assistant'; chinese: string; pinyin: string; vietnamese: string; }
@@ -22,3 +26,5 @@ export interface TutorResponse {
   clarityScore?: number; grammarScore?: number; vocabularyScore?: number; naturalnessScore?: number;
 }
 export interface TutorHint { level: 1|2|3|4; hint: string; }
+
+export * from './learning/types';
