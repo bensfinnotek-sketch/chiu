@@ -7,6 +7,7 @@ import {
 import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, ConversationMessage, TutorMode, TutorResponse } from './app/types';
 import { HSK1_LESSONS, HSK1_VOCABULARY, HSK_PATHS } from './app/learning/content';
 import { progressService } from './app/services/progress';
+import { storage } from './app/services/storage';
 import { aiMemoryService } from './app/services/aiMemory';
 import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
 import { aiTutorService, speechToTextService, textToSpeechService, avatarService, pronunciationEngine, motivationService } from './app/services';
