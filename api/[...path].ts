@@ -46,6 +46,7 @@ import {
   sendJson,
 } from "./_lib/geminiHandlers.ts";
 import { handleGetLearningPlan } from "./_lib/learningPlanHandlers.ts";
+import { handlePasswordReset, handleDeleteAccount } from "./_lib/authHandlers.ts";
 import { handleGeneratePersonalizedLesson } from "./_lib/personalizedLessonHandlers.ts";
 import {
   handleGetFlashcards,
@@ -78,6 +79,12 @@ export default async function handler(req: any, res: any) {
 
   if (fullSubPath === "analytics/visitors") {
     return handleAnalyticsVisitors(req, res);
+  }
+  if (fullSubPath === "auth/reset-password") {
+    return handlePasswordReset(req, res);
+  }
+  if (fullSubPath === "auth/delete-account") {
+    return handleDeleteAccount(req, res);
   }
   if (fullSubPath === "health") {
     return handleHealth(req, res);
