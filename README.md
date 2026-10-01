@@ -4,7 +4,7 @@
 
 `Frontend → API/service layer → Backend → Database provider`
 
-The UI keeps its existing local/demo learning engine. When Supabase is configured, authentication and server repositories can persist account and learning data without allowing UI code to access the database directly.
+The UI keeps its existing local/demo learning engine. The backend boundary supports managed PostgreSQL through Supabase and a direct PostgreSQL executor adapter for deployments that inject node-postgres, postgres.js, Neon, or another compatible driver. When Supabase is configured, authentication and server repositories can persist account and learning data without allowing UI code to access the database directly.
 
 ### Backend provider boundary
 
@@ -16,7 +16,7 @@ The UI keeps its existing local/demo learning engine. When Supabase is configure
 - `api/_lib/repositories/` — data-access layer; UI never imports database clients.
 - `supabase/migrations/20261001000000_lina_learning_schema.sql` — PostgreSQL schema + RLS.
 
-The schema covers profiles, lessons, vocabulary, grammar, mistakes, reviews, conversations, progress, streaks, achievements, subscriptions, usage, and conversation messages.
+The schema covers profiles, lessons, vocabulary, grammar, mistakes, reviews, conversations, progress, streaks, achievements, subscriptions, usage, and conversation messages. The SQL migration is PostgreSQL-compatible and includes Row Level Security plus an auth-user trigger.
 
 ### Security
 
