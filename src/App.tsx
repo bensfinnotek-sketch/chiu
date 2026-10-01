@@ -193,14 +193,14 @@ function PronunciationCoach() {
         const result=await pronunciationEngine.analyzeTone(current[0],current[2],text);
         setFeedback(result.analysis.feedback);
         setRecording(false);
-        learningEngine.completeSection('pronunciation-coach','pronunciation');
+        learningEngine.completeSection('pronunciation-coach','pronunciation'); motivationService.track('pronunciation',1,'pronunciation-'+Date.now());
       },undefined,message=>{setFeedback(message);setRecording(false);},'zh-CN');
     }catch{setFeedback('Cần microphone/audio analysis provider.');setRecording(false);}
   };
   const chooseTone=(n:number)=>{
     setToneAnswer(n);const ok=n===current[2];setToneCorrect(ok);setToneScore(s=>s+(ok?1:0));
     learningEngine.completeSection('pronunciation-coach','pronunciation');
-    if(!ok)aiMemoryService.recordMistake({type:'tone',original:current[0],corrected:tones.find(x=>x[2]===n)?.[0]||current[0],explanation:'Thanh điệu cần luyện thêm.',severity:'medium',relatedPronunciation:['tone-'+current[2]]});
+    motivationService.track('review',1,'tone-review-'+Date.now()); if(!ok)aiMemoryService.recordMistake({type:'tone',original:current[0],corrected:tones.find(x=>x[2]===n)?.[0]||current[0],explanation:'Thanh điệu cần luyện thêm.',severity:'medium',relatedPronunciation:['tone-'+current[2]]});
   };
   const next=()=>{setActive(i=>(i+1)%tones.length);setToneAnswer(null);setToneCorrect(null);setFeedback('Chưa thể đánh giá chính xác.');};
   const play=()=>void textToSpeechService.speak(current[0],1).catch(()=>setFeedback('Trình duyệt chưa hỗ trợ phát âm thanh.'));
@@ -274,7 +274,7 @@ function RoleplayScreen() {
   };
   const finish=(s=session||roleplayEngine.createSession(scenario),analysis?:TutorResponse)=>{
     const result=roleplayEngine.summarize(s,analysis);
-    setSummary(result);setSession({...s,completed:true});setBusy(false);avatarService.setState('happy');
+    setSummary(result);setSession({...s,completed:true});setBusy(false);avatarService.setState('happy'); motivationService.track('conversation',1,'roleplay-'+scenario.id+'-'+session?.startedAt); motivationService.unlock('first-roleplay');
     aiMemoryService.rememberFact('conversation-summary',result.summary);
     result.vocabularyLearned.forEach(v=>aiMemoryService.rememberFact('learning-history','Ôn roleplay: '+v));
   };
@@ -323,7 +323,7 @@ function TutorScreen() {
     setMessages(m=>[...m,{id:String(Date.now()),role:'user',chinese:value,pinyin:'',vietnamese:''}]); setInput('');setHint('');setNotice('');setBusy(true);setStatus('Thinking');
     try{
       const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:(()=>{const c=aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history);return {summary:c.relevantMemory.map(x=>x.content).join(' | '),keyFacts:c.learner.weakAreas,vocabulary:c.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:c.relevantMistakes.flatMap(x=>x.relatedGrammar)}})()});
-      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history, value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
+      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history, value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]); motivationService.track('conversation',1,'conversation-'+(history[0]?.id||Date.now()));
       const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='error'?'error':'idle';
       avatarService.setState(emotion);
       if(autoPlay)play(analysis.reply); else setStatus('Idle');
