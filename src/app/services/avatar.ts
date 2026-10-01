@@ -67,9 +67,6 @@ export const linaAvatarProvider:AvatarProvider={
   stop(){this.setState('idle');},
   destroy(){initialized=false;listeners.clear();state='idle';}
 };
-export const avatarService=linaAvatarProvider;
-
-
 
 let activeAvatarProvider:AvatarProvider=linaAvatarProvider;
 export function configureAvatarProvider(provider:AvatarProvider){activeAvatarProvider.destroy();activeAvatarProvider=provider;activeAvatarProvider.initialize();return activeAvatarProvider;}
