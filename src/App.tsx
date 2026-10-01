@@ -9,7 +9,7 @@ import { HSK1_LESSONS, HSK1_VOCABULARY, HSK_PATHS } from './app/learning/content
 import { learningEngine } from './app/learning/engine';
 import { aiMemoryService } from './app/services/aiMemory';
 import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
-import { aiTutorService, speechToTextService, textToSpeechService, avatarService } from './app/services';
+import { aiTutorService, speechToTextService, textToSpeechService, avatarService, pronunciationEngine } from './app/services';
 import type { AvatarState } from './app/services/avatar';
 import type { TtsSpeed } from './app/services/tts';
 
@@ -153,18 +153,57 @@ function TutorMessage({ role, chinese, pinyin, vietnamese, showChinese, showPiny
   </div></div>;
 }
 
-function TonePractice() {
-  const tones=[['mā','Thanh 1'],['má','Thanh 2'],['mǎ','Thanh 3'],['mà','Thanh 4'],['ma','Thanh nhẹ']];
-  const [active,setActive]=useState('mā');
+function PronunciationCoach() {
+  const tones=[['mā','Thanh 1',1],['má','Thanh 2',2],['mǎ','Thanh 3',3],['mà','Thanh 4',4],['ma','Thanh nhẹ',5]] as const;
+  const initials=[['b','p','m','f'],['d','t','n','l'],['g','k','h'],['j','q','x'],['zh','ch','sh','r'],['z','c','s']];
+  const finals=[['a','o','e'],['ai','ei','ao','ou'],['an','en','ang','eng'],['ong'],['iao','ian','iang'],['uang','uai','ui','un']];
+  const [active,setActive]=useState(0);
+  const [mode,setMode]=useState<'Word'|'Minimal Pair'|'Tone'|'Sentence'|'Free Speaking'>('Tone');
   const [recording,setRecording]=useState(false);
+  const [feedback,setFeedback]=useState('Chưa thể đánh giá chính xác.');
+  const [toneAnswer,setToneAnswer]=useState<number|null>(null);
+  const [toneCorrect,setToneCorrect]=useState<boolean|null>(null);
+  const [toneScore,setToneScore]=useState(0);
+  const current=tones[active];
+  const record=async()=>{
+    if(recording){speechToTextService.stop();setRecording(false);return;}
+    setRecording(true);setFeedback('Đang nghe…');
+    try{
+      await speechToTextService.start(async text=>{
+        const result=await pronunciationEngine.analyzeTone(current[0],current[2],text);
+        setFeedback(result.analysis.feedback);
+        setRecording(false);
+        learningEngine.completeSection('pronunciation-coach','pronunciation');
+      },undefined,message=>{setFeedback(message);setRecording(false);},'zh-CN');
+    }catch{setFeedback('Cần microphone/audio analysis provider.');setRecording(false);}
+  };
+  const chooseTone=(n:number)=>{
+    setToneAnswer(n);const ok=n===current[2];setToneCorrect(ok);setToneScore(s=>s+(ok?1:0));
+    learningEngine.completeSection('pronunciation-coach','pronunciation');
+    if(!ok)aiMemoryService.recordMistake({type:'tone',original:current[0],corrected:tones.find(x=>x[2]===n)?.[0]||current[0],explanation:'Thanh điệu cần luyện thêm.',severity:'medium',relatedPronunciation:[\`tone-\${current[2]}\`]});
+  };
+  const next=()=>{setActive(i=>(i+1)%tones.length);setToneAnswer(null);setToneCorrect(null);setFeedback('Chưa thể đánh giá chính xác.');};
+  const play=()=>void textToSpeechService.speak(current[0],1).catch(()=>setFeedback('Trình duyệt chưa hỗ trợ phát âm thanh.'));
+  const contour=(tone:number)=>tone===1?'Cao → cao':tone===2?'Thấp → cao':tone===3?'Thấp → cao hơn':tone===4?'Cao → thấp':'Ngắn · nhẹ';
   return <section className="card p-5 sm:p-6">
-    <div className="flex items-start justify-between gap-3"><div><span className="eyebrow">Phát âm</span><h2 className="mt-1 text-xl font-bold">Luyện 5 thanh điệu</h2><p className="mt-1 text-sm text-[var(--muted)]">Chấm âm học chính xác sẽ được bổ sung khi có bộ phân tích audio phù hợp.</p></div><Headphones className="text-[var(--accent)]"/></div>
-    <div className="mt-5 grid grid-cols-5 gap-2">{tones.map(([tone,label])=><button key={tone} onClick={()=>setActive(tone)} className={`rounded-2xl border p-3 text-center ${active===tone?'border-[var(--accent)] bg-[var(--accent-soft)]':'border-[var(--border)]'}`}><b className="font-chinese text-2xl">{tone}</b><small className="mt-1 block text-[10px] text-[var(--muted)]">{label}</small></button>)}</div>
-    <div className="mt-4 flex gap-2"><button className="tool-btn flex-1" onClick={()=>void textToSpeechService.speak(active,1).catch(()=>undefined)}><Volume2 size={16}/> Phát</button><button className={`tool-btn flex-1 ${recording?'bg-[var(--accent-soft)] text-[var(--accent)]':''}`} onClick={()=>setRecording(v=>!v)}><Mic size={16}/> {recording?'Đang ghi…':'Ghi âm'}</button><button className="tool-btn flex-1" onClick={()=>setRecording(false)}><RotateCcw size={16}/> Thử lại</button></div>
-    <p className="mt-3 text-xs text-[var(--muted)]">Phản hồi phát âm hiện được đánh dấu là <b>giới hạn</b>, không giả lập điểm số âm học.</p>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="eyebrow">Chinese Pronunciation Coach</span><h2 className="mt-1 text-xl font-bold">Luyện Pinyin · initials · finals · 4 thanh + thanh nhẹ</h2><p className="mt-1 text-sm text-[var(--muted)]">Không tạo điểm âm học nếu chưa có dữ liệu đủ tin cậy.</p></div><Headphones className="text-[var(--accent)]"/></div>
+    <div className="mt-4 flex flex-wrap gap-2">{(['Word','Minimal Pair','Tone','Sentence','Free Speaking'] as const).map(x=><button key={x} onClick={()=>setMode(x)} className={'toggle-chip '+(mode===x?'active':'')}>{x}</button>)}</div>
+    <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+      <div className="rounded-2xl bg-[var(--surface-2)] p-5">
+        <div className="flex items-center justify-between"><div><b className="font-chinese text-4xl">{current[0]}</b><p className="mt-1 text-sm text-[var(--muted)]">{current[1]}</p></div><button className="tool-btn" onClick={play}><Volume2 size={16}/> Nghe</button></div>
+        <div className="tone-contour mt-5"><span>{contour(current[2])}</span><i className={'tone-line tone-'+current[2]}/></div>
+        <div className="mt-5 grid grid-cols-5 gap-2">{tones.map(([tone,label,n],i)=><button key={tone} onClick={()=>setActive(i)} className={'rounded-2xl border p-3 text-center '+(active===i?'border-[var(--accent)] bg-[var(--accent-soft)]':'border-[var(--border)]')}><b className="font-chinese text-2xl">{tone}</b><small className="mt-1 block text-[10px] text-[var(--muted)]">{label}</small></button>)}</div>
+        <div className="mt-4 flex gap-2"><button className={'tool-btn flex-1 '+(recording?'bg-[var(--accent-soft)] text-[var(--accent)]':'')} onClick={()=>void record()}><Mic size={16}/> {recording?'Đang ghi…':'Lặp lại & ghi'}</button><button className="tool-btn flex-1" onClick={play}><Volume2 size={16}/> So sánh</button><button className="tool-btn flex-1" onClick={next}><RotateCcw size={16}/> Thử lại</button></div>
+        <p className="mt-3 rounded-xl bg-[var(--surface)] p-3 text-sm">{feedback}</p>
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-[var(--border)] p-4"><b>Nghe → chọn thanh</b><p className="mt-1 text-xs text-[var(--muted)]">Nghe mẫu rồi chọn 1–4 hoặc thanh nhẹ.</p><button onClick={play} className="tool-btn mt-3"><Volume2 size={15}/> Phát mẫu</button><div className="mt-3 grid grid-cols-5 gap-2">{[1,2,3,4,5].map(n=><button key={n} onClick={()=>chooseTone(n)} className={'rounded-xl border p-2 text-sm '+(toneAnswer===n?'border-[var(--accent)] bg-[var(--accent-soft)]':'')}>{n===5?'轻':n}</button>)}</div>{toneCorrect!==null&&<p className={'mt-3 text-sm font-semibold '+(toneCorrect?'text-emerald-600':'text-amber-600')}>{toneCorrect?'Chính xác!':'Chưa đúng. Nghe lại và thử lại nhé.'}</p>}<p className="mt-2 text-xs text-[var(--muted)]">Đúng: {toneScore} · Không dùng điểm âm học giả.</p></div>
+        <div className="rounded-2xl border border-[var(--border)] p-4"><b>Pinyin practice</b><p className="mt-2 text-xs text-[var(--muted)]">Nhóm phù hợp HSK 1 trước, sau đó mở rộng theo tiến độ.</p><div className="mt-3 flex flex-wrap gap-2">{initials.flat().map(x=><span key={x} className="pill">{x}</span>)}</div><div className="mt-2 flex flex-wrap gap-2">{finals.flat().map(x=><span key={x} className="pill">{x}</span>)}</div></div>
+        <div className="rounded-2xl bg-[var(--accent-soft)] p-4"><b>Cá nhân hóa</b><p className="mt-1 text-sm">Lina ưu tiên các thanh có lỗi lặp lại và có thể dùng cặp tối thiểu như <span className="font-mono">zh / z</span> khi memory ghi nhận nhầm lẫn.</p><p className="mt-2 text-xs text-[var(--muted)]">Chế độ: {mode} · Tiến độ phát âm được lưu cùng Learning Memory.</p></div>
+      </div>
+    </div>
   </section>;
 }
-
 function TutorScreen() {
   const [messages,setMessages]=useState<Array<{id?:string;role:'user'|'assistant';chinese:string;pinyin:string;vietnamese:string}>>([{id:'welcome',role:'assistant',chinese:'你好，你叫什么名字？',pinyin:'Nǐ hǎo, nǐ jiào shénme míngzi?',vietnamese:'Xin chào, bạn tên là gì?'}]);
   const [input,setInput]=useState(''); const [listening,setListening]=useState(false); const [status,setStatus]=useState<'Idle'|'Listening'|'Thinking'|'Speaking'|'Error'>('Idle');
@@ -232,7 +271,7 @@ function TutorScreen() {
     </section>
 
     <section className="card p-4 sm:p-5"><div className="flex flex-wrap items-center gap-3"><Settings2 size={18} className="text-[var(--accent)]"/><b className="text-sm">Cài đặt giọng nói</b><label className="text-xs text-[var(--muted)]">Ngôn ngữ <select value={language} onChange={e=>setLanguage(e.target.value as typeof language)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="zh-CN">中文 zh-CN</option><option value="zh-TW">中文 zh-TW</option><option value="en-US">English</option><option value="vi-VN">Tiếng Việt</option></select></label><label className="text-xs text-[var(--muted)]">Tốc độ <select value={speed} onChange={e=>setSpeed(Number(e.target.value) as TtsSpeed)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="0.75">0.75x</option><option value="1">1.0x</option><option value="1.25">1.25x</option></select></label><button onClick={()=>setAutoPlay(v=>!v)} className={`toggle-chip ${autoPlay?'active':''}`}>{autoPlay?'✓ Tự phát':'Tự phát'}</button></div></section>
-    <TonePractice/>
+    <PronunciationCoach/>
   </div>;
 }
 
