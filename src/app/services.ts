@@ -13,6 +13,7 @@ export interface AiTutorService {
 }
 import { postJson } from './services/request';
 import { appLogger } from './services/logger';
+import { appLogger } from './services/logger';
 
 export const aiTutorService:AiTutorService={
   respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay},input.signal),
@@ -28,7 +29,7 @@ export const speechToTextService={
 export const textToSpeechService={
   async speak(text:string,rate:0.75|1|1.25=1){
     linaAvatarProvider.setState('speaking');
-    try { return await ttsService.speakChinese(text,{rate,lang:'zh-CN'}); }
+    try { return await ttsService.speakChinese(text,{rate,lang:'zh-CN'}); } catch(error){appLogger.error('tts-error',error);throw error;}
     finally { linaAvatarProvider.setState('idle'); }
   },
   stop(){ttsService.stopSpeaking();linaAvatarProvider.setState('idle');},
