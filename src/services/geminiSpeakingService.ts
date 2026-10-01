@@ -3,7 +3,7 @@
 
 import { geminiService } from './geminiService';
 import type { ConversationMemory } from '../ai/memory/conversationMemory';
-import type { SpeakingAnalysis } from '../ai/schemas/speakingSchema';
+import type { SpeakingAnalysis, TutorMode } from '../ai/schemas/speakingSchema';
 
 
 export interface SpeakingAnalysisInput {
@@ -17,6 +17,7 @@ export interface SpeakingAnalysisInput {
   }>;
   nativeLanguage?: string;
   difficulty?: 'easy' | 'normal' | 'challenge';
+  mode?: TutorMode;
   memory?: ConversationMemory;
 }
 
@@ -250,6 +251,7 @@ class GeminiSpeakingService {
       conversationHistory: input.conversationHistory,
       nativeLanguage: input.nativeLanguage,
       difficulty: input.difficulty,
+      mode: input.mode,
       memory: input.memory,
     });
   }
