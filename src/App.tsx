@@ -51,7 +51,7 @@ const defaultProfile: UserProfile = {
 };
 
 function loadProfile(): UserProfile {
-  try { return { ...defaultProfile, ...(JSON.parse(localStorage.getItem('lina_profile') || '{}')) }; }
+  try { return { ...defaultProfile, ...storage.readJson('lina_profile', {}) }; }
   catch { return defaultProfile; }
 }
 
@@ -461,19 +461,19 @@ function Onboarding({ profile, onComplete }: { profile: UserProfile; onComplete:
 
 export default function App() {
   const [route, setRoute] = useState<Route>('home');
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('lina_theme') as Theme) || 'light');
+  const [theme, setTheme] = useState<Theme>(() => (storage.getItem('lina_theme') as Theme) || 'light');
   const [profile, setProfile] = useState<UserProfile>(loadProfile);
-  const [onboarding, setOnboarding] = useState(() => localStorage.getItem('lina_onboarding_done') !== 'true');
+  const [onboarding, setOnboarding] = useState(() => storage.getItem('lina_onboarding_done') !== 'true');
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('lina_theme', theme);
+    storage.setItem('lina_theme', theme);
   }, [theme]);
 
-  useEffect(() => { localStorage.setItem('lina_profile', JSON.stringify(profile)); }, [profile]);
+  useEffect(() => { storage.writeJson('lina_profile', profile); }, [profile]);
 
   const finishOnboarding = (next: UserProfile) => {
-    setProfile(next); localStorage.setItem('lina_onboarding_done', 'true'); setOnboarding(false);
+    setProfile(next); storage.setItem('lina_onboarding_done', 'true'); setOnboarding(false);
   };
 
   const content = useMemo(() => {
