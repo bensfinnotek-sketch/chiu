@@ -178,3 +178,50 @@ export interface TutorContext {
   currentConversation: string[];
   difficulty: 1|2|3|4|5;
 }
+
+
+export type LessonType = 'vocabulary'|'grammar'|'listening'|'speaking'|'reading'|'writing'|'conversation'|'review'|'mixed';
+
+export interface LessonQuizQuestion {
+  id:string;
+  type:'multiple-choice'|'translation'|'fill-blank'|'reorder'|'listen-choose'|'listen-type'|'speaking'|'matching';
+  question:string;
+  options:string[];
+  answer:string;
+  explanation:string;
+  difficulty:1|2|3|4|5;
+  skill:'vocabulary'|'grammar'|'listening'|'speaking'|'reading'|'writing';
+  relatedVocabulary:string[];
+  relatedGrammar:string[];
+}
+
+export interface LessonSchema {
+  id:string;
+  title:string;
+  description:string;
+  hskLevel:number|null;
+  level:string;
+  objectives:string[];
+  vocabulary:Vocabulary[];
+  grammar:GrammarRecord[];
+  dialogue:LessonDialogueTurn[];
+  listening:string[];
+  speaking:string[];
+  reading:string[];
+  writing:string[];
+  roleplay:{title:string;scenario:string;prompt:string;expectedPatterns:string[]};
+  quiz:LessonQuizQuestion[];
+  review:ReviewType[];
+  estimatedMinutes:number;
+  lessonType:LessonType;
+}
+
+export interface LessonGenerationParameters {
+  level:string;
+  topic:string;
+  goal:string;
+  duration:number;
+  learnerWeaknesses:string[];
+  targetVocabulary:string[];
+  targetGrammar:string[];
+}
