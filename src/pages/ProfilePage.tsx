@@ -118,11 +118,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {onNavigate && (
           <button
             type="button"
-            onClick={() => onNavigate('settings')}
+            onClick={() => onNavigate('study-plan')}
             className="self-start sm:self-auto px-4 py-2 rounded-2xl bg-white dark:bg-[#201A17] border border-[#E86F51]/20 text-xs font-bold text-[#211A17] dark:text-white hover:bg-[#FAF6F2] dark:hover:bg-[#2C231E] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <Settings size={15} />
-            <span>Cài đặt hệ thống</span>
+            <Sparkles size={15} />
+            <span>Kế hoạch học cá nhân</span>
           </button>
         )}
       </div>

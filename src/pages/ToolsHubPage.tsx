@@ -17,6 +17,15 @@ interface ToolsHubPageProps {
 export const ToolsHubPage: React.FC<ToolsHubPageProps> = ({ onNavigate }) => {
   const tools = [
     {
+      id: 'study-plan',
+      title: 'Kế hoạch học cá nhân',
+      subtitle: 'Lộ trình riêng cho bạn',
+      description: 'Chọn mục tiêu, cấp độ và thời gian học để tạo lộ trình theo tuần, kết nối với SRS, bài học và Lina.',
+      badge: 'Personal AI',
+      icon: Brain,
+      color: 'from-[#E86F51] to-[#F5A28E]',
+    },
+    {
       id: 'dictionary',
       title: 'Từ điển Hán ngữ AI',
       subtitle: 'Tra cứu chuyên sâu Hanzi & Pinyin',

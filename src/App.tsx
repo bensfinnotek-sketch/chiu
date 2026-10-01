@@ -36,6 +36,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { ConversationsHistoryPage } from './pages/ConversationsHistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { StudyPlanPage } from './pages/StudyPlanPage';
 
 const VALID_ROUTES = new Set([
   'home',
@@ -47,6 +48,7 @@ const VALID_ROUTES = new Set([
   'onboarding',
   'conversations',
   'settings',
+  'study-plan',
   'learn',
   'learn-detail',
   'practice',
@@ -173,6 +175,7 @@ function AppContent() {
             <ConversationsHistoryPage onNavigate={handleNavigate} onResumeConversation={handleResumeConversation} />
           )}
           {currentRoute === 'settings' && <SettingsPage onNavigate={handleNavigate} />}
+          {currentRoute === 'study-plan' && <StudyPlanPage />}
           {currentRoute === 'learn' && (
             <CurriculumLearnPage
               initialLevel={requestedHskLevel}
