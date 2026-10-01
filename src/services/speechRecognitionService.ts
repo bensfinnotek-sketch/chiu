@@ -1,5 +1,5 @@
-// Web Speech Recognition Service for HanziAI
-// Target language: zh-CN (Mandarin)
+// Browser Speech Recognition adapter. The UI talks to the modular speech facade instead.
+export type SpeechLanguage = 'zh-CN' | 'zh-TW' | 'en-US' | 'vi-VN';
 
 export interface SpeechRecognitionCallbacks {
   onResult: (transcript: string, isFinal: boolean) => void;
@@ -11,9 +11,10 @@ export interface SpeechRecognitionCallbacks {
 
 export class SpeechRecognitionService {
   private recognition: any = null;
-  private isListeningActive: boolean = false;
-  private isSupportedBrowser: boolean = false;
-  private shouldFinalizeOnEnd: boolean = false;
+  private isListeningActive = false;
+  private isSupportedBrowser = false;
+  private shouldFinalizeOnEnd = false;
+  private language: SpeechLanguage = 'zh-CN';
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -26,123 +27,87 @@ export class SpeechRecognitionService {
       if (SpeechRecognition) {
         this.isSupportedBrowser = true;
         this.recognition = new SpeechRecognition();
-        this.recognition.lang = 'zh-CN';
         this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.maxAlternatives = 1;
+        this.recognition.lang = this.language;
       }
     }
   }
 
-  public isSupported(): boolean {
-    return this.isSupportedBrowser;
-  }
+  public isSupported(): boolean { return this.isSupportedBrowser; }
+  public isListening(): boolean { return this.isListeningActive; }
 
-  public isListening(): boolean {
-    return this.isListeningActive;
-  }
-
-  public startListening(callbacks: SpeechRecognitionCallbacks): boolean {
+  public startListening(callbacks: SpeechRecognitionCallbacks, language: SpeechLanguage = 'zh-CN'): boolean {
     if (!this.recognition || !this.isSupportedBrowser) {
-      if (callbacks.onError) {
-        callbacks.onError('Trình duyệt hiện tại không hỗ trợ nhận diện giọng nói (Web Speech API). Bạn có thể gõ trực tiếp câu trả lời!');
-      }
+      callbacks.onError?.('Trình duyệt hiện tại chưa hỗ trợ nhận diện giọng nói. Bạn có thể gõ trực tiếp câu trả lời.');
       return false;
     }
 
-    try {
-      this.abortListening();
-    } catch {
-      // ignore
-    }
+    this.language = language;
+    this.recognition.lang = language;
+    try { this.abortListening(); } catch { /* noop */ }
 
     let finalAccumulated = '';
-
     this.recognition.onstart = () => {
       this.isListeningActive = true;
       this.shouldFinalizeOnEnd = true;
-      if (callbacks.onStart) callbacks.onStart();
+      callbacks.onStart?.();
     };
-
     this.recognition.onresult = (event: any) => {
       let interim = '';
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const item = event.results[i];
-        if (item.isFinal) {
-          finalAccumulated += item[0].transcript;
-        } else {
-          interim += item[0].transcript;
-        }
+        if (item.isFinal) finalAccumulated += item[0].transcript;
+        else interim += item[0].transcript;
       }
-
-      if (interim && callbacks.onInterimResult) {
-        callbacks.onInterimResult(interim);
-      }
-
-      const activeText = [finalAccumulated, interim].filter(Boolean).join(' ').trim();
-      callbacks.onResult(activeText, Boolean(finalAccumulated));
+      callbacks.onInterimResult?.(interim);
+      callbacks.onResult([finalAccumulated, interim].filter(Boolean).join(' ').trim(), Boolean(finalAccumulated));
     };
-
     this.recognition.onerror = (event: any) => {
       this.isListeningActive = false;
       this.shouldFinalizeOnEnd = false;
-      const errorCode = event?.error || 'unknown';
-
-      let userMsg = 'Không thể nhận diện giọng nói.';
-      if (errorCode === 'not-allowed') {
-        userMsg = 'Quyền truy cập micro đã bị từ chối. Vui lòng cấp quyền micro trong cài đặt trình duyệt để luyện nói.';
-      } else if (errorCode === 'no-speech') {
-        userMsg = 'Không phát hiện thấy âm thanh. Hãy thử nói lại gần micro hơn nhé.';
-      } else if (errorCode === 'audio-capture') {
-        userMsg = 'Không tìm thấy micro phù hợp trên thiết bị của bạn.';
-      } else if (errorCode === 'network') {
-        userMsg = 'Mạng yếu hoặc không thể kết nối tới dịch vụ nhận diện giọng nói.';
-      }
-
-      if (callbacks.onError) callbacks.onError(userMsg);
+      const code = event?.error || 'unknown';
+      const userMsg =
+        code === 'not-allowed' || code === 'service-not-allowed'
+          ? 'Bạn chưa cấp quyền microphone.'
+          : code === 'no-speech'
+          ? 'Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.'
+          : code === 'network'
+          ? 'Đang gặp sự cố kết nối. Bạn thử lại nhé.'
+          : code === 'audio-capture'
+          ? 'Không tìm thấy microphone trên thiết bị này.'
+          : 'Mình chưa nghe rõ. Bạn thử nói lại nhé.';
+      callbacks.onError?.(userMsg);
     };
-
     this.recognition.onend = () => {
       this.isListeningActive = false;
       if (this.shouldFinalizeOnEnd) {
         this.shouldFinalizeOnEnd = false;
-        if (callbacks.onEnd) callbacks.onEnd(finalAccumulated.trim());
+        callbacks.onEnd?.(finalAccumulated.trim());
       }
     };
 
     try {
       this.recognition.start();
       return true;
-    } catch (err: any) {
+    } catch {
       this.isListeningActive = false;
-      if (callbacks.onError) {
-        callbacks.onError(err?.message || 'Không thể khởi động micro.');
-      }
+      callbacks.onError?.('Mình chưa thể mở microphone. Bạn thử lại nhé.');
       return false;
     }
   }
 
   public stopListening(): void {
     if (this.recognition && this.isListeningActive) {
-      try {
-        this.recognition.stop();
-      } catch {
-        // ignore
-      }
+      try { this.recognition.stop(); } catch { /* noop */ }
     }
     this.isListeningActive = false;
-    // Keep shouldFinalizeOnEnd=true so a deliberate stop submits the complete
-    // transcript accumulated by the browser before the recognition session ends.
   }
 
   public abortListening(): void {
     if (this.recognition) {
-      try {
-        this.recognition.abort();
-      } catch {
-        // ignore
-      }
+      try { this.recognition.abort(); } catch { /* noop */ }
     }
     this.isListeningActive = false;
     this.shouldFinalizeOnEnd = false;

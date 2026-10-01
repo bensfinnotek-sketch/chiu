@@ -100,6 +100,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
 
   // Settings & Progress state
   const [settings, setSettings] = useState<SpeakingSettings>(progressService.getSettings());
+  useEffect(() => { speechService.setVoice(settings.voice === 'Lina' ? undefined : settings.voice); }, [settings.voice]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [tutorMode, setTutorMode] = useState<TutorMode>('conversation');
@@ -275,7 +276,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             translation: firstMsg.translation, timestamp: new Date().toISOString() });
           if (settings.autoPlayAi) {
             setTeacherState('speaking');
-            textToSpeechService.speakChinese(starter.chinese, { rate: settings.speed, onEnd: () => {
+            textToSpeechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
               setTeacherState('idle'); if (settings.autoListen) handleStartListening();
             }});
           }
@@ -467,6 +468,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         setStatusMessage('Cô Lina đang nói...');
         textToSpeechService.speakChinese(analysis.reply, {
           rate: settings.speed,
+          voice: settings.voice === 'Lina' ? undefined : settings.voice,
           onEnd: () => {
             setTeacherState('idle');
             setStatusMessage('Đến lượt bạn nói!');
@@ -478,6 +480,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
           onError: () => {
             setTeacherState('idle');
             setMicState('IDLE');
+            setStatusMessage('Giọng đọc chưa khả dụng trên trình duyệt này. Bạn vẫn có thể tiếp tục bằng văn bản.');
           },
         });
       } else {
@@ -1318,6 +1321,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
         settings={settings}
         onSave={(updated) => {
           const newSet = progressService.saveSettings(updated);
+          speechService.setVoice(newSet.voice === 'Lina' ? undefined : newSet.voice);
           setSettings(newSet);
         }}
       />

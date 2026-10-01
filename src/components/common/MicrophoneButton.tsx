@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Loader2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Loader2, AlertCircle, Volume2 } from 'lucide-react';
 
 export type MicrophoneState = 'IDLE' | 'LISTENING' | 'PROCESSING' | 'DISABLED' | 'ERROR';
 
@@ -85,7 +85,9 @@ export const MicrophoneButton: React.FC<MicrophoneButtonProps> = ({
             effectiveState === 'LISTENING'
               ? 'Dừng ghi âm (Stop listening)'
               : effectiveState === 'PROCESSING'
-              ? 'Đang xử lý (Processing)'
+              ? 'Đang hiểu...'
+              : effectiveState === 'AI_SPEAKING'
+              ? 'Lina đang nói...'
               : 'Bắt đầu nói tiếng Trung (Start speaking)'
           }
           className={`relative z-10 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 transform active:scale-95 hover:-translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
