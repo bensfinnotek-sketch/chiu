@@ -1,4 +1,4 @@
-export type AvatarState='idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'error';
+export type AvatarState='idle'|'listening'|'thinking'|'speaking'|'happy'|'encouraging'|'confused'|'correcting'|'error';
 
 export type AvatarRenderMode='animated-fallback'|'live-provider';
 
@@ -30,6 +30,10 @@ export interface AvatarProvider {
   getState():AvatarState;
   subscribe(listener:(state:AvatarState)=>void):()=>void;
   speak(text:string,options?:{rate?:0.75|1|1.25}):void;
+  setEmotion?(emotion:'neutral'|'happy'|'encouraging'|'curious'|'confused'|'correcting'):void;
+  setLipSync?(frame:import('./realtimeTypes').LipSyncFrame):void;
+  setFacialExpression?(expression:import('./realtimeTypes').FacialExpression):void;
+  setViseme?(viseme:import('./realtimeTypes').Viseme):void;
   stop():void;
   destroy():void;
 }

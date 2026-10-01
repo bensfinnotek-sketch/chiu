@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, BookOpen, Check, ChevronRight, Clock3, Flame, Headphones,
   Home, Lightbulb, LockKeyhole, Menu, Mic, Moon, Play, RotateCcw,
@@ -16,6 +16,9 @@ import { roleplayEngine, ROLEPLAY_SCENARIOS } from './app/services/roleplay';
 import type { ImmersionLevel, RoleplaySession, RoleplaySummary } from './app/services/roleplay';
 import type { TtsSpeed } from './app/services/tts';
 import { LinaAvatar } from './app/components/LinaAvatar';
+import { realtimeConversationController } from './app/services/realtimeConversation';
+import { RealtimeDebugPanel } from './app/components/RealtimeDebugPanel';
+const appLoggerFallback=(setNotice:(v:string)=>void)=>setNotice('Streaming đang tạm thời không khả dụng; Lina sẽ dùng chế độ phát thông thường.');
 import { AccountPanel } from './app/components/AccountPanel';
 
 type Route = 'home' | 'learn' | 'speak' | 'review' | 'profile';
@@ -320,25 +323,40 @@ function TutorScreen() {
   const [speed,setSpeed]=useState<TtsSpeed>(1); const [autoPlay,setAutoPlay]=useState(true); const [language,setLanguage]=useState<'zh-CN'|'zh-TW'|'en-US'|'vi-VN'>('zh-CN');
   const [interim,setInterim]=useState('');
   const [avatarState,setAvatarState]=useState<AvatarState>('idle');
-  useEffect(()=>{avatarService.initialize();return avatarService.subscribe(setAvatarState);},[]);
+  const requestAbortRef=useRef<AbortController|null>(null);
+  useEffect(()=>{avatarService.initialize();const unsubscribe=avatarService.subscribe(setAvatarState);return()=>{unsubscribe();realtimeConversationController.destroy();};},[]);
 
-  const play=(text:string)=>{setStatus('Speaking');avatarService.setState('speaking');void textToSpeechService.speak(text,speed).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.')).finally(()=>{avatarService.setState('idle');setStatus('Idle');});};
+  const play=(text:string)=>{setStatus('Speaking');void realtimeConversationController.speak(text,{rate:speed}).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.')).finally(()=>{avatarService.setState('idle');setStatus('Idle');});};
   const submit=async(text:string)=>{
     const value=text.trim(); if(!value||busy)return;
+    requestAbortRef.current?.abort(); requestAbortRef.current=new AbortController();
+    realtimeConversationController.interrupt();
     const history=messages.slice(-12).map((m,i)=>({id:m.id||String(i),role:m.role,chinese:m.chinese,pinyin:m.pinyin,vietnamese:m.vietnamese}));
     setMessages(m=>[...m,{id:String(Date.now()),role:'user',chinese:value,pinyin:'',vietnamese:''}]); setInput('');setHint('');setNotice('');setBusy(true);setStatus('Thinking');
     try{
-      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:(()=>{const c=aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history);return {summary:c.relevantMemory.map(x=>x.content).join(' | '),keyFacts:c.learner.weakAreas,vocabulary:c.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:c.relevantMistakes.flatMap(x=>x.relatedGrammar)}})()});
-      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history, value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]); motivationService.track('conversation',1,'conversation-'+(history[0]?.id||Date.now()));
+      let streamedReply='';
+      if(autoPlay){
+        await realtimeConversationController.beginStream({rate:speed});
+        try{
+          streamedReply=await aiTutorService.stream({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,signal:requestAbortRef.current.signal,onDelta:async(chunk)=>{await realtimeConversationController.pushStreamChunk(chunk)}});
+        }catch(streamError){
+          realtimeConversationController.endStream();
+          appLoggerFallback(setNotice);
+        }
+      }
+      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',signal:requestAbortRef.current.signal,memory:(()=>{const c=aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history.map(h=>h.chinese));return {summary:c.relevantMemory.map(x=>x.content).join(' | '),keyFacts:c.learner.weakAreas,vocabulary:c.relevantMistakes.flatMap(x=>x.relatedVocabulary),grammarIssues:c.relevantMistakes.flatMap(x=>x.relatedGrammar)}})()});
+      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history.map(h=>h.chinese), value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]); motivationService.track('conversation',1,'conversation-'+(history[0]?.id||Date.now()));
       const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='error'?'error':'idle';
       avatarService.setState(emotion);
-      if(autoPlay)play(analysis.reply); else setStatus('Idle');
+      if(autoPlay){
+        if(streamedReply) realtimeConversationController.endStream(); else play(analysis.reply);
+      } else setStatus('Idle');
     }catch(error){setStatus('Error');setNotice(error instanceof Error&&error.message.startsWith('AI server')?'Đang gặp sự cố kết nối. Bạn thử lại nhé.':'Lina chưa thể trả lời lúc này. Bạn thử lại nhé.');setStatus('Idle');}
     finally{setBusy(false);}
   };
 
   const toggleMic=async()=>{
-    if(listening){speechToTextService.stop();setListening(false);setStatus('Thinking');return;}
+    if(status==='Speaking'){realtimeConversationController.interrupt();setStatus('Idle');setBusy(false);setNotice('Lina đã dừng nói để nghe bạn.');} if(listening){speechToTextService.stop();setListening(false);setStatus('Thinking');return;}
     setNotice('');setInterim('');setListening(true);setStatus('Listening');avatarService.setState('listening');
     let finalText='';
     try{
@@ -353,7 +371,7 @@ function TutorScreen() {
   return <div className="mx-auto max-w-5xl space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="eyebrow">Nói với Lina</span><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">Luyện hội thoại Mandarin</h1></div><span className={`status-dot ${status.toLowerCase()}`}><span className="h-2 w-2 rounded-full bg-current"/>{statusText}</span></div>
     <section className="card overflow-hidden">
-      <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><LinaAvatar state={avatarState}/><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung · avatar hoạt họa dự phòng</p></div>
+      <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><LinaAvatar state={avatarState}/><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung · realtime pipeline + fallback trình duyệt</p></div>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
         <button onClick={()=>setMode('conversation')} className={`toggle-chip ${mode==='conversation'?'active':''}`}>Trò chuyện</button><button onClick={()=>setMode('teacher')} className={`toggle-chip ${mode==='teacher'?'active':''}`}>Gia sư</button>
         {[
@@ -371,13 +389,14 @@ function TutorScreen() {
       {notice&&<div className="mx-4 mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{notice}</div>}
       <div className="border-t border-[var(--border)] p-3 sm:p-4">
         <div className="flex items-end gap-2"><textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();void submit(input);}}} placeholder="Nhập câu tiếng Trung..." rows={1} className="input min-h-12 flex-1 resize-none"/>
-          <button onClick={()=>void toggleMic()} disabled={busy} className={`mic-btn ${listening?'active':''}`} aria-label={listening?'Dừng nói':'Nói'}><Mic size={23}/></button><button onClick={()=>void submit(input)} disabled={busy} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)]" aria-label="Gửi"><ArrowRight size={20}/></button>
+          <button onClick={()=>void toggleMic()} disabled={false} className={`mic-btn ${listening?'active':''}`} aria-label={listening?'Dừng nói':'Nói'}><Mic size={23}/></button><button onClick={()=>void submit(input)} disabled={busy} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)]" aria-label="Gửi"><ArrowRight size={20}/></button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"><button className="tool-btn" onClick={()=>void requestHint()}><Lightbulb size={16}/> Gợi ý {hintLevel}</button><button className="tool-btn" onClick={()=>play(messages[messages.length-1]?.chinese||'你好')}><Volume2 size={16}/> Nghe lại</button><button className="tool-btn hidden sm:flex"><Headphones size={16}/> Luyện nghe</button></div>
       </div>
     </section>
 
     <section className="card p-4 sm:p-5"><div className="flex flex-wrap items-center gap-3"><Settings2 size={18} className="text-[var(--accent)]"/><b className="text-sm">Cài đặt giọng nói</b><label className="text-xs text-[var(--muted)]">Ngôn ngữ <select value={language} onChange={e=>setLanguage(e.target.value as typeof language)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="zh-CN">中文 zh-CN</option><option value="zh-TW">中文 zh-TW</option><option value="en-US">English</option><option value="vi-VN">Tiếng Việt</option></select></label><label className="text-xs text-[var(--muted)]">Tốc độ <select value={speed} onChange={e=>setSpeed(Number(e.target.value) as TtsSpeed)} className="ml-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1"><option value="0.75">0.75x</option><option value="1">1.0x</option><option value="1.25">1.25x</option></select></label><button onClick={()=>setAutoPlay(v=>!v)} className={`toggle-chip ${autoPlay?'active':''}`}>{autoPlay?'✓ Tự phát':'Tự phát'}</button></div></section>
+    <RealtimeDebugPanel/>
     <RoleplayScreen/>
     <PronunciationCoach/>
   </div>;

@@ -130,3 +130,30 @@ test('storage adapter round-trips JSON and keys', () => {
   assert.deepEqual(storage.readJson('test', null), { learner: 'vi', level: 1 });
   assert.ok(storage.keys().includes('test'));
 });
+
+test('audio-driven lip sync is honest about its capability', async () => {
+  const { lipSyncEngine } = await import('../src/app/services/lipSync');
+  const frame = lipSyncEngine.fromAudio({ volume: 0.4, energy: 0.08, isSpeaking: true, lowFrequency: 0.2, midFrequency: 0.4, highFrequency: 0.3, timestamp: 10 });
+  assert.equal(frame.viseme, 'unknown');
+  assert.ok(frame.mouthOpen > 0);
+});
+
+test('validated emotion rejects untrusted values', async () => {
+  const { validateEmotion } = await import('../src/app/services/realtimeTypes');
+  assert.equal(validateEmotion('happy'), 'happy');
+  assert.equal(validateEmotion('ignore-system-prompt'), 'neutral');
+});
+
+test('streaming TTS provider exposes explicit non-streaming-audio fallback', async () => {
+  const { streamingTtsProvider } = await import('../src/app/services/streamingTts');
+  assert.equal(streamingTtsProvider.id, 'browser-speech-chunked');
+  assert.equal(streamingTtsProvider.streamingAudio, false);
+});
+
+test('realtime controller supports interruption without throwing', async () => {
+  const { realtimeConversationController } = await import('../src/app/services/realtimeConversation');
+  await realtimeConversationController.beginStream();
+  assert.equal(realtimeConversationController.state().status, 'speaking');
+  realtimeConversationController.interrupt();
+  assert.equal(realtimeConversationController.state().status, 'idle');
+});

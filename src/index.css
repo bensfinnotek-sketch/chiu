@@ -91,8 +91,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-listening .lina-eye { transform:scaleY(1.35); }
 .lina-avatar-thinking { animation:thinking 2.2s ease-in-out infinite; }
 .lina-avatar-thinking .lina-eye { transform:translateY(-2px); }
-.lina-avatar-speaking { animation:speaking .32s ease-in-out infinite alternate; }
-.lina-avatar-speaking .lina-mouth { height:10px; width:15px; border:2px solid #9b4e4e; border-radius:50%; }
+.lina-avatar-speaking { transform:translateY(-2px); }
+.lina-avatar-speaking .lina-mouth { border-bottom-width:2px; }
 .lina-avatar-happy .lina-mouth, .lina-avatar-encouraging .lina-mouth { width:24px; height:11px; border-bottom-width:3px; }
 .lina-avatar-happy { transform:translateY(-2px); }
 .lina-avatar-encouraging { animation:encourage 1.4s ease-in-out infinite; }
@@ -133,8 +133,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-stage-thinking .lina-avatar-bust{animation:lina-thinking 2.2s ease-in-out infinite}
 .lina-avatar-stage-thinking .lina-avatar-eye.left{transform:translate(-3px,-2px)}
 .lina-avatar-stage-thinking .lina-avatar-eye.right{transform:translate(3px,-2px)}
-.lina-avatar-stage-speaking .lina-avatar-bust{animation:lina-speaking .34s ease-in-out infinite alternate}
-.lina-avatar-stage-speaking .lina-avatar-mouth{width:15px;height:11px;border:2px solid #9b4e4e;border-radius:50%}
+.lina-avatar-stage-speaking .lina-avatar-bust{transform:translateY(-2px)}
+.lina-avatar-stage-speaking .lina-avatar-mouth{border-bottom-width:2px}
 .lina-avatar-stage-happy .lina-avatar-bust,.lina-avatar-stage-encouraging .lina-avatar-bust{transform:translateY(-3px)}
 .lina-avatar-stage-happy .lina-avatar-mouth,.lina-avatar-stage-encouraging .lina-avatar-mouth{width:25px;height:11px;border-bottom-width:3px}
 .lina-avatar-stage-encouraging .lina-avatar-bust{animation:lina-encourage 1.5s ease-in-out infinite}

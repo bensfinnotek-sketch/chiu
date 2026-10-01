@@ -36,6 +36,7 @@ import {
   handleHealth,
   handleConversation,
   handleSpeakingAnalyze,
+  handleSpeakingStream,
   handleSummarize,
   handleCorrect,
   handleSpeakingFeedback,
@@ -88,6 +89,9 @@ export default async function handler(req: any, res: any) {
   }
   if (fullSubPath === "health") {
     return handleHealth(req, res);
+  }
+  if (fullSubPath === "ai/speaking/stream") {
+    return handleSpeakingStream(req, res);
   }
   if (fullSubPath === "ai/speaking" || fullSubPath === "gemini/speaking-analyze") {
     return handleSpeakingAnalyze(req, res);
