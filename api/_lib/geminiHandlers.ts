@@ -4,7 +4,7 @@ import { parseBody, sendJson } from "./httpUtils.ts";
 import { extractBearerToken, getAuthenticatedUser, getSupabaseServerClient } from "./authMiddleware.ts";
 import { PLAN_ENTITLEMENTS, normalizePlan } from "../../src/config/planEntitlements.ts";
 import { getFlashcardsForUser, upsertFlashcardForUser } from "./flashcardHandlers.ts";
-import { safeConversationMessages, safeErrorMessage, safeText } from "./inputValidation.ts";
+import { safeConversationMessages, safeErrorMessage, safeStringList, safeText } from "./inputValidation.ts";
 
 
 const GUEST_SPEAKING_LIMIT_MS = 5 * 60 * 1000;
@@ -842,6 +842,12 @@ export async function handleLesson(req: any, res: any) {
   try {
     const body=parseBody(req);
     const {level="HSK 1",topic="Greetings",goal="Build practical Mandarin ability",duration=15,learnerWeaknesses=[],targetVocabulary=[],targetGrammar=[],canonicalVocabulary=[]}=body;
+    const safeLessonLevel=safeText(level,40)||"HSK 1";
+    const safeLessonTopic=safeText(topic,160)||"Greetings";
+    const safeLessonGoal=safeText(goal,240)||"Build practical Mandarin ability";
+    const safeWeaknesses=safeStringList(learnerWeaknesses,8,180);
+    const safeTargets=safeStringList(targetVocabulary,12,80);
+    const safeGrammar=safeStringList(targetGrammar,8,120);
     const ai=getAI();
     if(!ai)return sendJson(res,503,{error:"GEMINI_API_KEY is not configured on the server."});
     const systemPrompt=`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
