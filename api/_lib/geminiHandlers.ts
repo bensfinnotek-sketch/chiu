@@ -212,37 +212,37 @@ function getSpeakingLevelGuidance(level: string): {
 } {
   const profiles: Record<string, { vocabulary: string; pace: string; depth: string; coaching: string }> = {
     "HSK 1": {
-      vocabulary: "Khoảng 150 từ nền; dùng từ thông dụng và mẫu câu rất cơ bản.",
+      vocabulary: "Từ vựng và mẫu câu nền tảng; ưu tiên ngôn ngữ đời sống đơn giản.",
       pace: "Chậm, rõ; ưu tiên câu ngắn.",
       depth: "Một ý chính mỗi lượt, tránh cấu trúc phức tạp.",
       coaching: "Ưu tiên khả năng hiểu được, trật tự câu và lỗi ngữ pháp cốt lõi.",
     },
     "HSK 2": {
-      vocabulary: "Khoảng 300 từ; giao tiếp hàng ngày, mua sắm, thời gian và di chuyển.",
+      vocabulary: "Từ vựng giao tiếp quen thuộc; mở rộng các tình huống đời sống.",
       pace: "Tự nhiên nhưng vẫn rõ ràng.",
       depth: "Một đến hai câu, có thể nối ý đơn giản.",
       coaching: "Tăng độ trôi chảy và sửa lỗi quan trọng mà không ngắt dòng hội thoại.",
     },
     "HSK 3": {
-      vocabulary: "Khoảng 600 từ; du lịch, công việc, trải nghiệm và biểu đạt.",
+      vocabulary: "Mở rộng giao tiếp, trải nghiệm, công việc và biểu đạt.",
       pace: "Tự nhiên, khuyến khích phản xạ liên tục.",
       depth: "Hai đến ba câu, có giải thích và kể lại trải nghiệm.",
       coaching: "Khuyến khích mở rộng ý, nguyên nhân-kết quả và quan điểm cá nhân.",
     },
     "HSK 4": {
-      vocabulary: "Khoảng 1200 từ; đời sống, xã hội, công việc và chủ đề đa dạng.",
+      vocabulary: "Hội thoại và văn bản đa dạng hơn; khuyến khích câu phức.",
       pace: "Tự nhiên, gần hội thoại thực tế.",
       depth: "Hai đến ba câu có liên kết logic.",
       coaching: "Khuyến khích lập luận, phản hồi ý kiến khác và câu phức.",
     },
     "HSK 5": {
-      vocabulary: "Khoảng 2500 từ; báo chí, phim ảnh, kinh doanh và chủ đề trừu tượng.",
+      vocabulary: "Chủ đề đa dạng và ngôn ngữ giàu sắc thái; tăng tính tự nhiên.",
       pace: "Tăng phản xạ, giảm phụ thuộc vào câu mẫu.",
       depth: "Ba câu trở lên khi cần, có giải thích hoặc ví dụ.",
       coaching: "Tập trung phân tích, tóm tắt, thuyết trình và sắc thái từ vựng.",
     },
     "HSK 6": {
-      vocabulary: "5000+ từ; học thuật, chuyên sâu, thành ngữ và sắc thái.",
+      vocabulary: "Ngôn ngữ nâng cao, sắc thái, văn phong và lập luận.",
       pace: "Tăng phản xạ, ưu tiên diễn đạt tự nhiên ở trình độ cao.",
       depth: "Lập luận nhiều lớp, diễn đạt linh hoạt và tinh tế.",
       coaching: "Tập trung sắc thái, văn phong, thành ngữ, lập luận và cách diễn đạt gần tự nhiên.",
