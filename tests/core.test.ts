@@ -8,6 +8,7 @@ import { motivationService } from '../src/app/services/motivation';
 import { pronunciationEngine, toneFromPinyin } from '../src/app/services/pronunciationEngine';
 import { roleplayEngine } from '../src/app/services/roleplay';
 import { MemoryStorage, setStorageAdapter, storage } from '../src/app/services/storage';
+import { safeConversationMessages, safeText } from '../api/_lib/inputValidation';
 
 beforeEach(() => setStorageAdapter(new MemoryStorage()));
 
@@ -114,6 +115,11 @@ test('STT and TTS expose browser capability boundaries', async () => {
   const { ttsService } = await import('../src/app/services/tts');
   assert.equal(typeof speechService.isSupported(), 'boolean');
   assert.equal(typeof ttsService.isSupported(), 'boolean');
+});
+
+test('server input validation bounds untrusted text and history', () => {
+  assert.equal(safeText('  hello\\u0000 ', 5), 'hello');
+  assert.equal(safeConversationMessages([{ role: 'user', text: 'xin chào' }, { role: 'assistant', text: '你好' }]).length, 2);
 });
 
 test('storage adapter round-trips JSON and keys', () => {
