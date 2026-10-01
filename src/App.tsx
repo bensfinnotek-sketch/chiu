@@ -105,14 +105,14 @@ function VocabularyCard({ item, onReview }: { item: Vocabulary; onReview?: (id:s
 }
 
 function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: (r: Route) => void }) {
-  const today = 6;
+  const today = 6; const plan=learningEngine.dailyPlan(profile); const nextLesson=learningEngine.getLesson(plan.lessonId);
   const goal = profile.dailyMinutes;
   return <div className="space-y-6">
     <section className="hero-card">
       <div className="max-w-2xl">
         <span className="eyebrow"><Sparkles size={14}/> Lina AI Chinese</span>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">Xin chào, {profile.name} 👋</h1>
-        <p className="mt-3 max-w-xl text-base text-[var(--muted)]">Hôm nay chúng ta cùng học tiếng Trung nhé!</p>
+        <p className="mt-3 max-w-xl text-base text-[var(--muted)]">Hôm nay chúng ta cùng học tiếng Trung nhé! Hôm nay: {plan.newWords} từ mới · {plan.grammarPoints} điểm ngữ pháp · {plan.speakingCount} bài nói.</p>
         <div className="mt-6 flex flex-wrap gap-2"><span className="pill">HSK {profile.currentHsk}</span><span className="pill">{goalLabels[profile.goal]}</span><span className="pill"><Flame size={14}/> {profile.streak} ngày</span></div>
       </div>
       <div className="hidden w-44 shrink-0 rounded-3xl bg-white/70 p-5 text-center shadow-sm dark:bg-white/5 sm:block"><div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[var(--accent-soft)] text-4xl">👩🏻‍🏫</div><p className="mt-3 text-sm font-bold">Lina</p><p className="text-xs text-[var(--muted)]">Gia sư AI</p></div>
@@ -120,7 +120,7 @@ function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: 
 
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="card p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4"><div><span className="eyebrow">Tiếp tục học</span><h2 className="mt-2 text-xl font-bold">HSK 1 · Bài 1</h2><p className="mt-1 text-[var(--muted)]">Chào hỏi</p></div><BookOpen className="text-[var(--accent)]"/></div>
+        <div className="flex items-start justify-between gap-4"><div><span className="eyebrow">Tiếp tục học</span><h2 className="mt-2 text-xl font-bold">HSK 1 · Bài {nextLesson.lessonNumber}</h2><p className="mt-1 text-[var(--muted)]">{nextLesson.title}</p></div><BookOpen className="text-[var(--accent)]"/></div>
         <ProgressBar value={learningEngine.getState().progress.lessonProgress['hsk1-lesson-1']||1}/><div className="mt-2 flex justify-between text-xs text-[var(--muted)]"><span>{learningEngine.getState().progress.lessonProgress['hsk1-lesson-1']||1}% hoàn thành</span><span>~10 phút</span></div>
         <button onClick={() => setRoute('learn')} className="btn-primary mt-5 w-full">Tiếp tục <ArrowRight size={17}/></button>
       </section>
@@ -131,7 +131,7 @@ function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: 
       </section>
 
       <section className="card p-5 sm:p-6">
-        <div className="flex items-center justify-between"><div><span className="eyebrow">Today's review</span><h2 className="mt-2 text-xl font-bold">Bạn có 8 từ cần ôn hôm nay.</h2></div><RotateCcw className="text-[var(--accent)]"/></div>
+        <div className="flex items-center justify-between"><div><span className="eyebrow">Today's review</span><h2 className="mt-2 text-xl font-bold">Bạn có {plan.reviewCount} thẻ cần ôn hôm nay.</h2></div><RotateCcw className="text-[var(--accent)]"/></div>
         <button onClick={() => setRoute('review')} className="btn-secondary mt-5 w-full">Ôn tập <ChevronRight size={17}/></button>
       </section>
 
