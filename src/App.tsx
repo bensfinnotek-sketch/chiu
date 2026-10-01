@@ -15,6 +15,7 @@ import type { AvatarState } from './app/services/avatar';
 import { roleplayEngine, ROLEPLAY_SCENARIOS } from './app/services/roleplay';
 import type { ImmersionLevel, RoleplaySession, RoleplaySummary } from './app/services/roleplay';
 import type { TtsSpeed } from './app/services/tts';
+import { LinaAvatar } from './app/components/LinaAvatar';
 
 type Route = 'home' | 'learn' | 'speak' | 'review' | 'profile';
 type Theme = 'light' | 'dark';
@@ -351,7 +352,7 @@ function TutorScreen() {
   return <div className="mx-auto max-w-5xl space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><span className="eyebrow">Nói với Lina</span><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">Luyện hội thoại Mandarin</h1></div><span className={`status-dot ${status.toLowerCase()}`}><span className="h-2 w-2 rounded-full bg-current"/>{statusText}</span></div>
     <section className="card overflow-hidden">
-      <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><div className={`lina-avatar lina-avatar-${avatarState}`} aria-label={`Lina 林娜 · ${avatarState}`}><div className="lina-face"><span className="lina-hair"/><span className="lina-eye lina-eye-left"/><span className="lina-eye lina-eye-right"/><span className="lina-mouth"/></div></div><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung</p></div>
+      <div className="flex flex-col items-center justify-center border-b border-[var(--border)] bg-gradient-to-b from-[var(--accent-soft)] to-transparent px-5 py-6 sm:py-8"><LinaAvatar state={avatarState}/><p className="mt-3 text-sm font-bold">Lina 林娜</p><p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung · avatar hoạt họa dự phòng</p></div>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
         <button onClick={()=>setMode('conversation')} className={`toggle-chip ${mode==='conversation'?'active':''}`}>Trò chuyện</button><button onClick={()=>setMode('teacher')} className={`toggle-chip ${mode==='teacher'?'active':''}`}>Gia sư</button>
         {[
