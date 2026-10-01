@@ -4,8 +4,8 @@ import {
   Home, Lightbulb, LockKeyhole, Menu, Mic, Moon, Play, RotateCcw,
   Search, Settings2, Sparkles, Star, Sun, User, Volume2, X
 } from 'lucide-react';
-import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, Lesson } from './app/types';
-import { speechToTextService, textToSpeechService } from './app/services';
+import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, Lesson, ConversationMessage, TutorMode, TutorResponse } from './app/types';
+import { aiTutorService, speechToTextService, textToSpeechService } from './app/services';
 
 type Route = 'home' | 'learn' | 'speak' | 'review' | 'profile';
 type Theme = 'light' | 'dark';
@@ -166,14 +166,42 @@ function TutorScreen() {
   const [showPinyin, setShowPinyin] = useState(true);
   const [showVietnamese, setShowVietnamese] = useState(true);
   const [notice, setNotice] = useState('');
+  const [mode, setMode] = useState<TutorMode>('conversation');
+  const [busy, setBusy] = useState(false);
+  const [hintLevel, setHintLevel] = useState<1|2|3|4>(1);
+  const [hint, setHint] = useState('');
+  const [lastAnalysis, setLastAnalysis] = useState<TutorResponse | null>(null);
 
-  const submit = (text: string) => {
-    const value = text.trim(); if (!value) return;
-    setMessages(m => [...m, { role: 'user', chinese: value, pinyin: '', vietnamese: '' }]);
-    setInput('');
-    setStatus('Thinking');
-    setNotice('AI Tutor chưa được kết nối ở phiên bản này. Tin nhắn của bạn đã được giữ trong phiên học để sẵn sàng cho phase Gemini tiếp theo.');
-    window.setTimeout(() => setStatus('Idle'), 500);
+  const submit = async (text: string) => {
+    const value = text.trim(); if (!value || busy) return;
+    const history = messages.slice(-12).map((m, i) => ({ id: m.id || String(i), role: m.role, chinese: m.chinese, pinyin: m.pinyin, vietnamese: m.vietnamese }));
+    setMessages(m => [...m, { id: String(Date.now()), role: 'user', chinese: value, pinyin: '', vietnamese: '' }]);
+    setInput(''); setHint(''); setNotice(''); setBusy(true); setStatus('Thinking');
+    try {
+      const analysis = await aiTutorService.respond({
+        userText: value, targetLevel: 'HSK 1', topic: 'Self introduction',
+        mode, conversationHistory: history, difficulty: 'normal',
+      });
+      setLastAnalysis(analysis);
+      setMessages(m => [...m, { id: String(Date.now() + 1), role: 'assistant', chinese: analysis.reply, pinyin: analysis.pinyin, vietnamese: analysis.translation }]);
+      setStatus('Speaking');
+      void textToSpeechService.speak(analysis.reply).catch(() => undefined);
+      window.setTimeout(() => setStatus('Idle'), 900);
+    } catch (error) {
+      setStatus('Idle');
+      setNotice(error instanceof Error ? error.message : 'Lina chưa thể trả lời lúc này. Bạn thử lại nhé.');
+    } finally { setBusy(false); }
+  };
+
+  const requestHint = async () => {
+    const prompt = input.trim() || lastAnalysis?.question || messages[messages.length - 1]?.chinese || 'Giới thiệu bản thân bằng tiếng Trung';
+    try {
+      const result = await aiTutorService.hint({ prompt, targetLevel: 'HSK 1', level: hintLevel });
+      setHint(result.hint);
+      setHintLevel(Math.min(4, hintLevel + 1) as 1|2|3|4);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Không thể tạo gợi ý lúc này.');
+    }
   };
 
   const toggleMic = async () => {
@@ -196,20 +224,30 @@ function TutorScreen() {
         <p className="text-xs text-[var(--muted)]">Gia sư tiếng Trung</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
+        <button onClick={() => setMode('conversation')} className={`toggle-chip ${mode === 'conversation' ? 'active' : ''}`}>Trò chuyện</button>
+        <button onClick={() => setMode('teacher')} className={`toggle-chip ${mode === 'teacher' ? 'active' : ''}`}>Gia sư</button>
+
         {[['Hán tự', showChinese, setShowChinese], ['Pinyin', showPinyin, setShowPinyin], ['Tiếng Việt', showVietnamese, setShowVietnamese]].map(([label, value, setter]) => <button key={String(label)} onClick={() => (setter as React.Dispatch<React.SetStateAction<boolean>>)(v => !v)} className={`toggle-chip ${value ? 'active' : ''}`}><Check size={13} className={value ? '' : 'opacity-0'}/>{label}</button>)}
       </div>
       <div className="max-h-[46vh] min-h-64 space-y-3 overflow-y-auto p-4 sm:p-6">
         {messages.map((m, i) => <TutorMessage key={i} {...m} showChinese={showChinese} showPinyin={showPinyin} showVietnamese={showVietnamese}/>)}
       </div>
+      {hint && <div className="mx-4 mb-3 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm"><b>Gợi ý:</b> {hint}</div>}
+      {lastAnalysis && mode === 'teacher' && (lastAnalysis.corrections.length > 0 || lastAnalysis.grammarNote) && <div className="mx-4 mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="eyebrow">Sửa nhẹ & giải thích</div>
+        {lastAnalysis.corrections.map((c, i) => <div key={i} className="mt-3"><p className="text-sm text-[var(--muted)]">Bạn nói: <span className="font-chinese text-[var(--text)]">{c.original}</span></p><p className="mt-1 text-sm font-semibold">Tự nhiên hơn: <span className="font-chinese">{c.corrected}</span></p><p className="mt-1 text-sm text-[var(--muted)]">{c.explanation}</p></div>)}
+        {lastAnalysis.grammarNote && <p className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm text-[var(--muted)]">{lastAnalysis.grammarNote}</p>}
+        <p className="mt-3 text-sm font-semibold text-[var(--accent)]">Hãy thử nói lại câu vừa sửa nhé.</p>
+      </div>}
       {notice && <div className="mx-4 mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{notice}</div>}
       <div className="border-t border-[var(--border)] p-3 sm:p-4">
         <div className="flex items-end gap-2">
           <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input); } }} placeholder="Nhập câu tiếng Trung..." rows={1} className="input min-h-12 flex-1 resize-none"/>
           <button onClick={toggleMic} className={`mic-btn ${listening ? 'active' : ''}`} aria-label={listening ? 'Dừng nói' : 'Nói'}><Mic size={23}/></button>
-          <button onClick={() => submit(input)} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)]" aria-label="Gửi"><ArrowRight size={20}/></button>
+          <button onClick={() => void submit(input)} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)]" aria-label="Gửi"><ArrowRight size={20}/></button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <button className="tool-btn" onClick={() => setNotice('Gợi ý: Hãy bắt đầu bằng “我叫…” (Wǒ jiào…).')}><Lightbulb size={16}/> Gợi ý</button>
+          <button className="tool-btn" onClick={() => void requestHint()}><Lightbulb size={16}/> Gợi ý {hintLevel}</button>
           <button className="tool-btn" onClick={() => void textToSpeechService.speak('你好，你叫什么名字？').catch(() => undefined)}><Volume2 size={16}/> Nghe lại</button>
           <button className="tool-btn hidden sm:flex"><Headphones size={16}/> Luyện nghe</button>
         </div>
