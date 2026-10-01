@@ -835,7 +835,7 @@ Output JSON:
 export async function handleLesson(req: any, res: any) {
   try {
     const body=parseBody(req);
-    const {level="HSK 1",topic="Greetings",goal="Build practical Mandarin ability",duration=15,learnerWeaknesses=[],targetVocabulary=[],targetGrammar=[]}=body;
+    const {level="HSK 1",topic="Greetings",goal="Build practical Mandarin ability",duration=15,learnerWeaknesses=[],targetVocabulary=[],targetGrammar=[],canonicalVocabulary=[]}=body;
     const ai=getAI();
     if(!ai)return sendJson(res,503,{error:"GEMINI_API_KEY is not configured on the server."});
     const systemPrompt=`You are Lina's structured Mandarin curriculum engine. Generate ONE lesson as strict JSON, never markdown.
@@ -846,6 +846,7 @@ Duration: ${duration} minutes
 Learner weaknesses: ${JSON.stringify(learnerWeaknesses)}
 Target vocabulary: ${JSON.stringify(targetVocabulary)}
 Target grammar: ${JSON.stringify(targetGrammar)}
+Canonical vocabulary data (use only these HSK labels for supported levels): ${JSON.stringify(canonicalVocabulary)}
 
 Important content integrity:
 - Only assign an HSK level when the requested level is backed by the application's canonical content data. HSK1 is currently canonical; do not invent HSK2-6 vocabulary labels.
