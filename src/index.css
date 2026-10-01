@@ -100,3 +100,12 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-confused .lina-mouth { transform:translateX(-50%) rotate(-8deg); }
 .lina-avatar-error { filter:saturate(.7); }
 @keyframes encourage { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+
+.tone-contour{display:flex;align-items:center;gap:.75rem;border:1px solid var(--border);border-radius:1rem;padding:.75rem 1rem;overflow:hidden}
+.tone-contour span{font-size:.75rem;color:var(--muted);min-width:6.5rem}
+.tone-line{display:block;position:relative;height:3rem;flex:1;border-radius:999px;background:linear-gradient(90deg,transparent 0%,var(--accent) 45%,transparent 100%);clip-path:polygon(0 75%,25% 45%,50% 20%,75% 45%,100% 75%,100% 88%,75% 58%,50% 33%,25% 58%,0 88%)}
+.tone-1{clip-path:polygon(0 35%,100% 35%,100% 48%,0 48%)}
+.tone-2{clip-path:polygon(0 75%,100% 18%,100% 32%,0 89%)}
+.tone-3{clip-path:polygon(0 72%,45% 88%,100% 35%,100% 50%,45% 100%,0 87%)}
+.tone-4{clip-path:polygon(0 18%,100% 78%,100% 92%,0 32%)}
+.tone-5{clip-path:polygon(0 48%,100% 52%,100% 62%,0 58%)}
