@@ -71,7 +71,7 @@ export class SpeechRecognitionService {
       this.shouldFinalizeOnEnd = false;
       const code = event?.error || 'unknown';
       const userMsg =
-        code === 'not-allowed' || code === 'service-not-allowed' || code === 'service-not-allowed'
+        code === 'not-allowed' || code === 'service-not-allowed'
           ? 'Bạn chưa cấp quyền microphone.'
           : code === 'no-speech'
           ? 'Mình chưa nghe rõ. Bạn thử nói chậm hơn nhé.'

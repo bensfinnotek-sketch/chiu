@@ -275,6 +275,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             translation: firstMsg.translation, timestamp: new Date().toISOString() });
           if (settings.autoPlayAi) {
             setTeacherState('speaking');
+            setMicState('AI_SPEAKING');
             speechService.speakChinese(starter.chinese, { rate: settings.speed, voice: settings.voice === 'Lina' ? undefined : settings.voice, onEnd: () => {
               setTeacherState('idle'); if (settings.autoListen) handleStartListening();
             }});
@@ -1120,7 +1121,7 @@ export const AiConversationPage: React.FC<AiConversationPageProps> = ({
             {teacherState === 'thinking' && (
               <div className="flex items-center gap-2.5 text-xs text-[#716761] dark:text-[#A89E97] animate-pulse px-3 py-2.5 rounded-2xl bg-[#FFF9F4] dark:bg-[#29201B] border border-[#F0E4D8] dark:border-[#382E27] w-fit">
                 <LinaAvatar size="sm" state="thinking" />
-                <span>Cô Lina đang lắng nghe và chuẩn bị câu trả lời...</span>
+                <span>Đang hiểu...</span>
               </div>
             )}
 
