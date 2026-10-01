@@ -47,3 +47,5 @@ export { lessonEngine, validateGeneratedLesson, normalizeGeneratedLesson, lesson
 export type { LessonSchema, LessonGenerationParameters, LessonQuizQuestion, LessonType } from './learning/types';
 
 export { motivationService } from './services/motivation';
+
+export { progressService } from './services/progress';
