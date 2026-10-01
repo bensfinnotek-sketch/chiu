@@ -7,6 +7,7 @@ import {
 import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, ConversationMessage, TutorMode, TutorResponse } from './app/types';
 import { HSK1_LESSONS, HSK1_VOCABULARY, HSK_PATHS } from './app/learning/content';
 import { learningEngine } from './app/learning/engine';
+import { aiMemoryService } from './app/services/aiMemory';
 import type { PinyinDisplay, StructuredLesson } from './app/learning/types';
 import { aiTutorService, speechToTextService, textToSpeechService, avatarService } from './app/services';
 import type { AvatarState } from './app/services/avatar';
@@ -181,8 +182,8 @@ function TutorScreen() {
     const history=messages.slice(-12).map((m,i)=>({id:m.id||String(i),role:m.role,chinese:m.chinese,pinyin:m.pinyin,vietnamese:m.vietnamese}));
     setMessages(m=>[...m,{id:String(Date.now()),role:'user',chinese:value,pinyin:'',vietnamese:''}]); setInput('');setHint('');setNotice('');setBusy(true);setStatus('Thinking');
     try{
-      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:learningEngine.getMemory(loadProfile())});
-      setLastAnalysis(analysis); analysis.corrections.forEach(c=>learningEngine.recordMistake('grammar',c.original,c.corrected,c.explanation)); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
+      const analysis=await aiTutorService.respond({userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,difficulty:'normal',memory:aiMemoryService.buildTutorContext(loadProfile(),'Self introduction',null,history)});
+      setLastAnalysis(analysis); analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'})); aiMemoryService.summarizeConversation([...history, value, analysis.reply]); setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
       const emotion=analysis.emotion==='happy'?'happy':analysis.emotion==='encouraging'?'encouraging':analysis.emotion==='confused'?'confused':analysis.emotion==='error'?'error':'idle';
       avatarService.setState(emotion);
       if(autoPlay)play(analysis.reply); else setStatus('Idle');
