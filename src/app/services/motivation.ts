@@ -1,10 +1,10 @@
 import type { DailyGoal, MotivationActivity, MotivationSnapshot, Achievement, WeeklySummary } from '../learning/types';
+import { storage } from './storage';
 
 const KEY='lina_motivation_v1';
-const TZ_KEY='lina_timezone_v1';
 const blank=()=>({xp:0,days:{} as Record<string,MotivationSnapshot>,achievements:{} as Record<string,string>});
-const read=()=>{try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return blank()}};
-const write=(s:any)=>localStorage.setItem(KEY,JSON.stringify(s));
+const read=()=>storage.readJson(KEY, blank());
+const write=(s:any)=>storage.writeJson(KEY,s);
 const tz=()=>Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
 const dateKey=(date=new Date(),timeZone=tz())=>new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 const previous=(key:string,timeZone:string)=>{const [y,m,d]=key.split('-').map(Number);return dateKey(new Date(Date.UTC(y,m-1,d-1,12)),timeZone);};
