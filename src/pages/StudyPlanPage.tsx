@@ -105,7 +105,9 @@ export const StudyPlanPage: React.FC = () => {
   const [durationWeeks, setDurationWeeks] = useState(12);
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [activeWeek, setActiveWeek] = useState(1);
-  const [saved, setSaved] = useState(false);\n  const [adaptiveDays, setAdaptiveDays] = useState<Record<string, AdaptiveDay>>({});\n  const [speakingProgress, setSpeakingProgress] = useState(() => progressService.getProgress());
+  const [saved, setSaved] = useState(false);
+  const [adaptiveDays, setAdaptiveDays] = useState<Record<string, AdaptiveDay>>({});
+  const [speakingProgress, setSpeakingProgress] = useState(() => progressService.getProgress());
 
   useEffect(() => {
     try {
@@ -127,7 +129,8 @@ export const StudyPlanPage: React.FC = () => {
   const weeks = useMemo(() => (plan ? buildWeeks(plan) : []), [plan]);
   const activeWeekData = weeks.find((item) => item.week === activeWeek) || weeks[0];
   const weeklyMinutes = (plan?.dailyMinutes || dailyMinutes) * (plan?.daysPerWeek || daysPerWeek);
-  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;\n  const completedPlanDays = Object.values(adaptiveDays).filter((day) => day.completed).length;
+  const estimatedHours = plan ? Math.round((weeklyMinutes * plan.durationWeeks) / 60) : 0;
+  const completedPlanDays = Object.values(adaptiveDays).filter((day) => day.completed).length;
   const recentPlanDays = Object.values(adaptiveDays).slice(-7);
   const recentCompletionRate = recentPlanDays.length ? (recentPlanDays.filter((day) => day.completed).length / recentPlanDays.length) * 100 : 50;
 
