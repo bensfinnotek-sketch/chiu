@@ -22,7 +22,7 @@ export const aiTutorService:AiTutorService={
 
 export const speechToTextService={
   async start(onText:(text:string)=>void, onInterim?:(text:string)=>void, onError?:(message:string)=>void, language:'zh-CN'|'zh-TW'|'en-US'|'vi-VN'='zh-CN'){
-    await speechService.start({language,callbacks:{onFinal:onText,onInterim,onError}});
+    await speechService.start({language,callbacks:{onFinal:onText,onInterim,onError:message=>{appLogger.error('stt-error',message);onError?.(message);}}});
   },
   stop(){speechService.stop();}, abort(){speechService.abort();}, isSupported(){return speechService.isSupported();}
 };
