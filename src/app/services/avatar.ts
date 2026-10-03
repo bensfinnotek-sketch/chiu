@@ -45,11 +45,11 @@ export const linaAvatarDesign:AvatarDesign={
   name:'Lina / 林娜',
   face:'fictional young adult Mandarin tutor with an original face; proportions inspired by a 4:3 medium bust reference',
   hair:'dark shoulder-length hair',
-  outfit:'soft dusty-rose ribbed tutor top with a modest scoop neckline',
+  outfit:'dusty-rose ribbed knit long-sleeve top with a wide natural scoop neckline and softly fitted shoulders',
   background:'soft neutral studio composition, 4:3 bust framing',
   expression:'friendly and attentive',
   lighting:'soft diffused',
-  cameraAngle:'front-facing 4:3 medium bust shot with wider shoulders and optional raised-hand greeting'
+  cameraAngle:'front-facing 4:3 medium bust shot; torso and scoop neckline clearly visible, with optional raised-hand greeting'
 };
 
 let state:AvatarState='idle';
