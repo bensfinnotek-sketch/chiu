@@ -164,10 +164,13 @@ button { -webkit-tap-highlight-color: transparent; }
 
 
 /* Photo-reference framing: wider bust, soft pink top and a friendly raised-hand gesture. */
-.lina-avatar-shoulders{box-shadow:inset 0 7px 0 rgba(255,255,255,.22),0 -8px 25px rgba(180,92,82,.13)}
-.lina-avatar-neckline{position:absolute;left:22%;top:13%;width:56%;height:56%;border:3px solid rgba(112,65,57,.28);border-top:0;border-radius:0 0 50% 50%;background:transparent;transform:scaleX(1.05)}
+.lina-avatar-shoulders{box-shadow:inset 0 7px 0 rgba(255,255,255,.20),0 -8px 25px rgba(180,92,82,.13);background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 7px),linear-gradient(160deg,#eab0a0,#c98276 62%,#b86f68)}
+.lina-avatar-shoulders::before,.lina-avatar-shoulders::after{content:"";position:absolute;top:8%;width:29%;height:78%;background:inherit;border-radius:42% 42% 18% 18%;opacity:.98}
+.lina-avatar-shoulders::before{left:-2%;transform:rotate(7deg);transform-origin:top center}
+.lina-avatar-shoulders::after{right:-2%;transform:rotate(-7deg);transform-origin:top center}
+.lina-avatar-neckline{position:absolute;z-index:3;left:23%;top:4%;width:54%;height:58%;border:2px solid rgba(150,87,78,.24);border-top:0;border-radius:0 0 50% 50%;background:linear-gradient(160deg,#f0b49f,#e6a07f);box-shadow:0 2px 0 rgba(255,255,255,.16);transform:scaleX(1.03)}
 .lina-avatar-hair-front::after{content:"";position:absolute;right:5%;top:5%;width:38%;height:88%;border-radius:55% 45% 60% 35%;background:linear-gradient(150deg,rgba(76,55,50,.78),rgba(23,18,16,.2));transform:rotate(10deg)}
-.lina-avatar-hand{position:absolute;z-index:8;left:2%;bottom:14%;width:20%;height:54%;pointer-events:none;filter:drop-shadow(0 10px 12px rgba(112,65,50,.10))}
+.lina-avatar-hand{position:absolute;z-index:8;left:1%;bottom:13%;width:20%;height:54%;pointer-events:none;filter:drop-shadow(0 10px 12px rgba(112,65,50,.10));transform:rotate(-2deg)}
 .lina-avatar-hand:before{content:"";position:absolute;left:31%;bottom:0;width:42%;height:43%;border-radius:48% 48% 42% 42%;background:linear-gradient(145deg,#f7c9ae,#e3a17e)}
 .lina-avatar-hand .finger{position:absolute;bottom:31%;width:18%;border-radius:999px;background:linear-gradient(145deg,#f7c9ae,#e3a17e);transform-origin:50% 100%}
 .lina-avatar-hand .index{left:24%;height:53%;transform:rotate(-9deg)}
