@@ -29,17 +29,22 @@ export const aiTutorService:AiTutorService={
     speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
   },input.signal),
   async stream(input){
-    // Keep the conversation path stable: use the established JSON speaking endpoint
-    // and reveal the reply through the existing onDelta UI callback. The dedicated
-    // SSE route remains available, but it must not be able to break the core tutor flow.
-    const response=await postJson<TutorResponse>('/api/ai/speaking',{
-      userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
-      mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),
-      nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
-    },input.signal);
-    const text=String(response.reply||'');
-    if(text) input.onDelta(text);
-    return {text,response,model:'speaking-analyze'};
+    try{
+      const response=await postJson<TutorResponse>('/api/speaking',{
+        userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
+        mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),
+        nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
+      },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
+      const text=String(response.reply||'');
+      if(text) input.onDelta(text);
+      return {text,response,model:'speaking-analyze'};
+    }catch(error:any){
+      if(input.signal?.aborted) throw error;
+      appLogger.error('speaking-api-fallback',error?.message||String(error));
+      const response=buildClientSpeakingFallback(input.userText);
+      input.onDelta(response.reply);
+      return {text:response.reply,response,model:'client-fallback'};
+    }
   },
   hint:(input)=>postJson<TutorHint>('/api/ai/hint',{prompt:input.prompt,targetLevel:input.targetLevel||'HSK 1',level:input.level},input.signal),
 };
