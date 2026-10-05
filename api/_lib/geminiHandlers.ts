@@ -54,7 +54,7 @@ function ensureGuestSpeakingTime(req: any, res: any): { allowed: boolean; remain
 }
 
 
-const AI_TIMEOUT_MS=20000;
+const AI_TIMEOUT_MS=8000;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 const aiSafeLog=(kind:string,message:string)=>{if(process.env.NODE_ENV!=="production")console.warn("[Lina] "+kind+": "+message.slice(0,180));};
 
@@ -251,6 +251,57 @@ function getSpeakingLevelGuidance(level: string): {
   return profiles[level] || profiles["HSK 1"];
 }
 
+function buildSpeakingFallback(actualUserText: string, actualLevel: string, topic: string) {
+  const text = actualUserText.trim();
+  const normalized = text.replace(/[。！？!?]+$/u, "");
+  let reply = "说得不错！我们继续练习吧。";
+  let pinyin = "Shuō de búcuò! Wǒmen jìxù liànxí ba.";
+  let translation = "Bạn nói khá tốt! Chúng ta tiếp tục luyện tập nhé.";
+  let question = null as string | null;
+
+  if (/你好|您好/u.test(normalized)) {
+    reply = "你好！很高兴和你练习中文。你叫什么名字？";
+    pinyin = "Nǐ hǎo! Hěn gāoxìng hé nǐ liànxí Zhōngwén. Nǐ jiào shénme míngzi?";
+    translation = "Xin chào! Rất vui được luyện tiếng Trung cùng bạn. Bạn tên là gì?";
+    question = "你叫什么名字？";
+  } else if (/我叫|名字|姓名/u.test(normalized)) {
+    reply = "很高兴认识你！你平时喜欢做什么？";
+    pinyin = "Hěn gāoxìng rènshi nǐ! Nǐ píngshí xǐhuan zuò shénme?";
+    translation = "Rất vui được làm quen với bạn! Bình thường bạn thích làm gì?";
+    question = "你平时喜欢做什么？";
+  } else if (/喜欢|爱/u.test(normalized)) {
+    reply = "很好！这个话题很适合练习。你为什么喜欢它？";
+    pinyin = "Hěn hǎo! Zhège huàtí hěn shìhé liànxí. Nǐ wèishénme xǐhuan tā?";
+    translation = "Rất tốt! Chủ đề này rất phù hợp để luyện tập. Tại sao bạn thích nó?";
+    question = "你为什么喜欢它？";
+  } else if (/谢谢/u.test(normalized)) {
+    reply = "不客气！你说得很自然。我们再练一句，好吗？";
+    pinyin = "Bú kèqi! Nǐ shuō de hěn zìrán. Wǒmen zài liàn yí jù, hǎo ma?";
+    translation = "Không có gì! Bạn nói khá tự nhiên. Chúng ta luyện thêm một câu nhé?";
+    question = "我们再练一句，好吗？";
+  }
+
+  return {
+    reply,
+    pinyin,
+    translation,
+    question,
+    corrections: [],
+    vocabulary: [],
+    grammarNote: "Đây là phản hồi dự phòng để buổi luyện nói không bị gián đoạn.",
+    encouragement: "继续加油！",
+    emotion: "encouraging",
+    responseType: "conversation",
+    clarityScore: 4,
+    grammarScore: 4,
+    vocabularyScore: 3,
+    naturalnessScore: 4,
+    fallback: true,
+    level: actualLevel,
+    topic,
+  };
+}
+
 // Handler for AI Speaking Analysis & Conversation (turn-by-turn)
 export async function handleSpeakingAnalyze(req: any, res: any) {
   try {
@@ -278,9 +329,7 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
     const langName = nativeLanguage === "vi" ? "Vietnamese" : nativeLanguage === "zh" ? "Chinese" : "English";
 
     if (!ai) {
-      return sendJson(res, 503, {
-        error: "GEMINI_API_KEY is not configured on the server. Please set GEMINI_API_KEY in environment variables.",
-      });
+      return sendJson(res, 200, buildSpeakingFallback(actualUserText, actualLevel, topic));
     }
 
     // Authenticate user from Bearer token (returns null for Guest or invalid token)
@@ -577,9 +626,7 @@ Format output strictly as JSON with this exact schema:
     return sendJson(res, 200, data);
   } catch (error: any) {
     console.error("Speaking analysis API error:", error?.message || error);
-    return sendJson(res, 500, {
-      error: error?.message || "Internal server error during speaking analysis.",
-    });
+    return sendJson(res, 200, buildSpeakingFallback(actualUserText, actualLevel, topic));
   }
 }
 
