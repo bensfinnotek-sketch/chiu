@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { LearningGoal, SkillLevel, UserProfile, Vocabulary, ConversationMessage, TutorMode, TutorResponse } from './app/types';
 import { HSK1_LESSONS, HSK1_VOCABULARY, HSK_PATHS } from './app/learning/content';
+import { SPEAKING_VOCABULARY, QUICK_SPEAKING_PROMPTS } from './app/learning/speakingVocabulary';
 import { progressService } from './app/services/progress';
 import { storage } from './app/services/storage';
 import { aiMemoryService } from './app/services/aiMemory';
@@ -324,6 +325,8 @@ function TutorScreen() {
   const [speed,setSpeed]=useState<TtsSpeed>(1); const [autoPlay,setAutoPlay]=useState(true); const [language,setLanguage]=useState<'zh-CN'|'zh-TW'|'en-US'|'vi-VN'>('zh-CN');
   const [interim,setInterim]=useState('');
   const [avatarState,setAvatarState]=useState<AvatarState>('idle');
+  const [reflexMode,setReflexMode]=useState(true);
+  const [activePrompt,setActivePrompt]=useState(QUICK_SPEAKING_PROMPTS[0].id);
   useEffect(()=>{avatarService.initialize();const unsubscribe=avatarService.subscribe(setAvatarState);return()=>{unsubscribe();realtimeConversationController.destroy();realtimeSpeechOrchestrator.destroy();};},[]);
 
   const play=(text:string)=>{setStatus('Speaking');void realtimeConversationController.speak(text,{rate:speed}).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.')).finally(()=>{avatarService.setState('idle');setStatus('Idle');});};
@@ -337,8 +340,9 @@ function TutorScreen() {
     try{
       let streamed;
       streamed=await aiTutorService.stream({
-        userText:value,targetLevel:'HSK 1',topic:'Self introduction',mode,conversationHistory:history,
-        signal:turn.signal,
+        userText:value,targetLevel:'HSK 1',topic:'Daily conversation + speaking reflex',mode,conversationHistory:history,
+        signal:turn.signal,speakingGoal:reflexMode?'reflex':'conversation',
+        vocabularyContext:SPEAKING_VOCABULARY.slice(0,24).map(v=>`${v.hanzi} · ${v.pinyin} · ${v.vietnamese}`),
         onDelta:chunk=>{realtimeSpeechOrchestrator.receiveStreamingText(chunk,{turnId:turn.turnId,speak:autoPlay,onText:()=>{}});}
       });
       const analysis=streamed.response;
@@ -405,6 +409,23 @@ function TutorScreen() {
           <button onClick={()=>void toggleMic()} disabled={false} className={`mic-btn ${listening?'active':''}`} aria-label={listening?'Dừng nói':'Nói'}><Mic size={23}/></button><button onClick={()=>void submit(input)} disabled={busy} className="icon-btn min-h-12 min-w-12 bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)]" aria-label="Gửi"><ArrowRight size={20}/></button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"><button className="tool-btn" onClick={()=>void requestHint()}><Lightbulb size={16}/> Gợi ý {hintLevel}</button><button className="tool-btn" onClick={()=>play(messages[messages.length-1]?.chinese||'你好')}><Volume2 size={16}/> Nghe lại</button><button className="tool-btn hidden sm:flex"><Headphones size={16}/> Luyện nghe</button></div>
+        <div className="mt-4 rounded-2xl bg-[var(--surface-2)] p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><b className="text-sm">⚡ Phản xạ nhanh</b><span className="ml-2 text-xs text-[var(--muted)]">Trả lời ngắn, Lina hỏi tiếp ngay</span></div>
+            <button onClick={()=>setReflexMode(v=>!v)} className={`toggle-chip ${reflexMode?'active':''}`}>{reflexMode?'Đang bật':'Tắt'}</button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {QUICK_SPEAKING_PROMPTS.map(p=><button key={p.id} onClick={()=>choosePrompt(p.id)} className={`toggle-chip ${activePrompt===p.id?'active':''}`}>{p.label}</button>)}
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-[var(--border)] p-3">
+          <div className="flex items-center justify-between gap-2"><b className="text-sm">Từ mới dùng ngay</b><span className="text-xs text-[var(--muted)]">{SPEAKING_VOCABULARY.length} từ</span></div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {SPEAKING_VOCABULARY.slice(0,12).map(v=><button key={v.id} onClick={()=>{setInput(v.hanzi);setActivePrompt('')}} className="shrink-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-left">
+              <b className="font-chinese text-sm">{v.hanzi}</b><span className="ml-2 text-[10px] text-[var(--accent)]">{v.pinyin}</span><span className="block text-[10px] text-[var(--muted)]">{v.vietnamese}</span>
+            </button>)}
+          </div>
+        </div>
       </div>
     </section>
 
