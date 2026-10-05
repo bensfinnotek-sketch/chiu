@@ -19,6 +19,7 @@ import type { TtsSpeed } from './app/services/tts';
 import { LinaAvatar } from './app/components/LinaAvatar';
 import { realtimeConversationController } from './app/services/realtimeConversation';
 import { realtimeSpeechOrchestrator } from './app/services/realtimeOrchestrator';
+import { speakingSessionService } from './app/services/speakingSession';
 import { RealtimeDebugPanel } from './app/components/RealtimeDebugPanel';
 const appLoggerFallback=(setNotice:(v:string)=>void)=>setNotice('Streaming đang tạm thời không khả dụng; Lina sẽ dùng chế độ phát thông thường.');
 import { AccountPanel } from './app/components/AccountPanel';
@@ -327,6 +328,8 @@ function TutorScreen() {
   const [avatarState,setAvatarState]=useState<AvatarState>('idle');
   const [reflexMode,setReflexMode]=useState(true);
   const [activePrompt,setActivePrompt]=useState(QUICK_SPEAKING_PROMPTS[0].id);
+  const [session,setSession]=useState(()=>speakingSessionService.get());
+  const choosePrompt=(promptId:string)=>{const prompt=QUICK_SPEAKING_PROMPTS.find(item=>item.id===promptId);if(!prompt)return;setActivePrompt(promptId);setInput(prompt.prompt);};
   useEffect(()=>{avatarService.initialize();const unsubscribe=avatarService.subscribe(setAvatarState);return()=>{unsubscribe();realtimeConversationController.destroy();realtimeSpeechOrchestrator.destroy();};},[]);
 
   const play=(text:string)=>{setStatus('Speaking');void realtimeConversationController.speak(text,{rate:speed}).catch(()=>setNotice('Trình duyệt chưa hỗ trợ phát giọng nói tiếng Trung.')).finally(()=>{avatarService.setState('idle');setStatus('Idle');});};
@@ -355,6 +358,7 @@ function TutorScreen() {
         } else throw new Error('stream-empty');
       } else {
         setLastAnalysis(analysis);
+        setSession(speakingSessionService.record(analysis));
         analysis.corrections.forEach(c=>aiMemoryService.recordMistake({type:'grammar',originalInput:c.original,correctedInput:c.corrected,explanation:c.explanation,severity:'medium'}));
         aiMemoryService.summarizeConversation([...history.map(h=>h.chinese),value,analysis.reply]);
         setMessages(m=>[...m,{id:String(Date.now()+1),role:'assistant',chinese:analysis.reply,pinyin:analysis.pinyin,vietnamese:analysis.translation}]);
@@ -403,6 +407,18 @@ function TutorScreen() {
       </div>
       {hint&&<div className="mx-4 mb-3 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm"><b>Gợi ý:</b> {hint}</div>}
       {lastAnalysis&&mode==='teacher'&&(lastAnalysis.corrections.length>0||lastAnalysis.grammarNote)&&<div className="mx-4 mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"><div className="eyebrow">Sửa nhẹ & giải thích</div>{lastAnalysis.corrections.map((c,i)=><div key={i} className="mt-3"><p className="text-sm text-[var(--muted)]">Bạn nói: <span className="font-chinese text-[var(--text)]">{c.original}</span></p><p className="mt-1 text-sm font-semibold">Tự nhiên hơn: <span className="font-chinese">{c.corrected}</span></p><p className="mt-1 text-sm text-[var(--muted)]">{c.explanation}</p></div>)}{lastAnalysis.grammarNote&&<p className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm text-[var(--muted)]">{lastAnalysis.grammarNote}</p>}<p className="mt-3 text-sm font-semibold text-[var(--accent)]">Hãy thử nói lại câu vừa sửa nhé.</p></div>}
+      <div className="mx-4 mb-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><div className="eyebrow">Phản xạ phiên này</div><p className="mt-1 text-xs text-[var(--muted)]">Tối đa 5 lượt · điểm tổng hợp từ độ rõ, ngữ pháp, từ vựng và độ tự nhiên.</p></div>
+          <div className="flex items-center gap-2"><span className="pill">{session.turns.length}/5 lượt</span><b className="text-lg text-[var(--accent)]">{session.score}/100</b></div>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--surface-2)]"><span className="block h-full rounded-full bg-[var(--accent)] transition-all" style={{width:`${session.score}%`}}/></div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {session.turns.map((turn,index)=><span key={turn.at} className="toggle-chip active">L{index+1} · {turn.score}</span>)}
+          <button onClick={()=>setSession(speakingSessionService.reset())} className="toggle-chip">Làm phiên mới</button>
+        </div>
+        {session.completed&&<p className="mt-3 text-sm font-semibold text-[var(--accent)]">🎉 Hoàn thành 5 lượt. Hãy làm lại phiên và thử nâng điểm.</p>}
+      </div>
       {lastAnalysis&&lastAnalysis.vocabulary.length>0&&<div className="mx-4 mb-3 rounded-xl bg-[var(--accent-soft)] p-4"><div className="flex items-center justify-between gap-2"><div><div className="eyebrow">Từ Lina vừa dùng</div><p className="mt-1 text-xs text-[var(--muted)]">Ưu tiên dùng lại trong 1–2 lượt tiếp theo để tạo phản xạ.</p></div><span className="pill">{lastAnalysis.vocabulary.length} từ</span></div><div className="mt-3 flex flex-wrap gap-2">{lastAnalysis.vocabulary.slice(0,6).map((v,i)=><button key={i} onClick={()=>setInput(v.hanzi)} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-left"><b className="font-chinese text-sm">{v.hanzi}</b><span className="ml-2 text-[10px] text-[var(--accent)]">{v.pinyin}</span><span className="block text-[10px] text-[var(--muted)]">{v.meaning}</span></button>)}</div></div>}
       {notice&&<div className="mx-4 mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{notice}</div>}
       <div className="border-t border-[var(--border)] p-3 sm:p-4">
