@@ -179,3 +179,94 @@ button { -webkit-tap-highlight-color: transparent; }
 .lina-avatar-hand .pinky{left:74%;height:46%;transform:rotate(11deg)}
 .lina-avatar-hand .thumb{left:60%;bottom:28%;width:25%;height:38%;transform:rotate(43deg)}
 @media (max-width:560px){.lina-avatar-hand{left:0;width:21%;bottom:13%}}
+
+
+/* Preview: uploaded Lina hero image */
+.lina-avatar-photo-shell{
+  position:relative;
+  width:min(320px,92vw);
+  height:260px;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:32px;
+  background:linear-gradient(145deg,var(--surface),var(--surface-2));
+  border:1px solid var(--border);
+  box-shadow:0 20px 55px rgba(72,46,34,.12),0 0 0 8px color-mix(in srgb,var(--accent) 7%,transparent);
+  isolation:isolate;
+}
+.lina-avatar-photo-glow{
+  position:absolute;
+  inset:-35%;
+  z-index:-1;
+  background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--accent) 24%,transparent),transparent 58%);
+  filter:blur(12px);
+}
+.lina-avatar-photo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  display:block;
+  transform:scale(1.02);
+  transition:transform .45s ease,filter .35s ease;
+  filter:saturate(.98) contrast(1.02);
+}
+.lina-avatar-photo-shade{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),transparent 48%,rgba(35,20,15,.12));
+}
+.lina-avatar-state-orb{
+  position:absolute;
+  right:16px;
+  top:16px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 12%,transparent),0 0 22px color-mix(in srgb,var(--accent) 45%,transparent);
+}
+.lina-avatar-stage-listening .lina-avatar-photo-shell{
+  box-shadow:0 20px 55px rgba(94,159,112,.16),0 0 0 8px rgba(94,159,112,.08);
+}
+.lina-avatar-stage-listening .lina-avatar-state-orb{background:#5e9f70;box-shadow:0 0 0 7px rgba(94,159,112,.12),0 0 22px rgba(94,159,112,.42);}
+.lina-avatar-stage-thinking .lina-avatar-photo{animation:lina-photo-float 2.2s ease-in-out infinite;}
+.lina-avatar-stage-speaking .lina-avatar-photo{transform:scale(1.045);}
+.lina-avatar-stage-happy .lina-avatar-photo,
+.lina-avatar-stage-encouraging .lina-avatar-photo{transform:scale(1.035);}
+.lina-avatar-stage-error .lina-avatar-photo{filter:saturate(.72) contrast(.96);}
+.lina-avatar-state-label{
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  padding:7px 12px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--surface) 86%,transparent);
+  border:1px solid var(--border);
+  color:var(--text);
+  backdrop-filter:blur(10px);
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+  box-shadow:0 8px 20px rgba(35,20,15,.08);
+}
+.lina-avatar-stage.compact .lina-avatar-photo-shell{
+  width:150px;
+  height:170px;
+  border-radius:24px;
+}
+.lina-avatar-stage.compact .lina-avatar-state-label{bottom:7px;padding:5px 9px;font-size:10px;}
+.lina-avatar-stage.compact .lina-avatar-state-orb{right:10px;top:10px;width:9px;height:9px;}
+@keyframes lina-photo-float{
+  0%,100%{transform:scale(1.02) translateY(0)}
+  50%{transform:scale(1.035) translateY(-4px)}
+}
+@media (max-width:767px){
+  .lina-avatar-photo-shell{width:min(300px,94vw);height:248px;border-radius:28px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .lina-avatar-photo{animation:none!important;transition:none!important;}
+}
