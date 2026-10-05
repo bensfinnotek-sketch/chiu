@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { getAvatarProvider, linaAvatarDesign, type AvatarState } from '../services/avatar';
+import avatarImage from './welcome-hero-800.webp';
 
 const stateLabel: Record<AvatarState, string> = {
   idle: 'sẵn sàng',
@@ -55,12 +56,7 @@ export function LinaAvatar({ state, compact = false }: { state: AvatarState; com
     >
       <div className="lina-avatar-photo-shell" aria-hidden="true">
         <div className="lina-avatar-photo-glow" />
-        <img
-          className="lina-avatar-photo"
-          src="/src/app/components/welcome-hero-800.webp"
-          alt=""
-          draggable={false}
-        />
+        <img className="lina-avatar-photo" src={avatarImage} alt="" draggable={false} />
         <div className="lina-avatar-photo-shade" />
         <div className="lina-avatar-state-orb" />
       </div>
