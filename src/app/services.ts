@@ -17,8 +17,13 @@ export interface AiTutorService {
 }
 function buildClientSpeakingFallback(userText:string):TutorResponse {
   const text=userText.trim();
-  if(/你好|您好/.test(text)) return {reply:"你好！很高兴和你练习中文。你叫什么名字？",pinyin:"Nǐ hǎo! Hěn gāoxìng hé nǐ liànxí Zhōngwén. Nǐ jiào shénme míngzi?",translation:"Xin chào! Rất vui được luyện tiếng Trung cùng bạn. Bạn tên là gì?",question:"你叫什么名字？",corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging",responseType:"conversation",clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
-  return {reply:"说得不错！我们继续练习吧。",pinyin:"Shuō de búcuò! Wǒmen jìxù liànxí ba.",translation:"Bạn nói khá tốt! Chúng ta tiếp tục luyện tập nhé.",question:null,corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging",responseType:"conversation",clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
+  const base={corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging" as const,responseType:"conversation" as const,clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
+  if(/你好|您好/.test(text)) return {...base,reply:"你好！很高兴和你练习中文。你叫什么名字？",pinyin:"Nǐ hǎo! Hěn gāoxìng hé nǐ liànxí Zhōngwén. Nǐ jiào shénme míngzi?",translation:"Xin chào! Rất vui được luyện tiếng Trung cùng bạn. Bạn tên là gì?",question:"你叫什么名字？"};
+  if(/我叫|我.*名字|姓名|名字是/.test(text)) return {...base,reply:"很高兴认识你，明！你平时喜欢做什么？",pinyin:"Hěn gāoxìng rènshi nǐ, Míng! Nǐ píngshí xǐhuan zuò shénme?",translation:"Rất vui được làm quen với bạn, Minh! Bình thường bạn thích làm gì?",question:"你平时喜欢做什么？"};
+  if(/好的|好啊|可以|行/.test(text)) return {...base,reply:"太好了！那我们继续。你今天想练习什么？",pinyin:"Tài hǎo le! Nà wǒmen jìxù. Nǐ jīntiān xiǎng liànxí shénme?",translation:"Tuyệt quá! Vậy chúng ta tiếp tục nhé. Hôm nay bạn muốn luyện gì?",question:"你今天想练习什么？"};
+  if(/喜欢|爱/.test(text)) return {...base,reply:"很好！我也想了解你的兴趣。你最喜欢什么？",pinyin:"Hěn hǎo! Wǒ yě xiǎng liǎojiě nǐ de xìngqù. Nǐ zuì xǐhuan shénme?",translation:"Rất tốt! Mình cũng muốn biết sở thích của bạn. Bạn thích điều gì nhất?",question:"你最喜欢什么？"};
+  if(/谢谢/.test(text)) return {...base,reply:"不客气！你说得很自然。我们再练一句吧。",pinyin:"Bú kèqi! Nǐ shuō de hěn zìrán. Wǒmen zài liàn yí jù ba.",translation:"Không có gì! Bạn nói khá tự nhiên. Chúng ta luyện thêm một câu nhé.",question:null};
+  return {...base,reply:"明白了！我们继续练习中文。你今天想聊什么？",pinyin:"Míngbai le! Wǒmen jìxù liànxí Zhōngwén. Nǐ jīntiān xiǎng liáo shénme?",translation:"Mình hiểu rồi! Chúng ta tiếp tục luyện tiếng Trung nhé. Hôm nay bạn muốn nói về chủ đề gì?",question:"你今天想聊什么？"};
 }
 
 export const aiTutorService:AiTutorService={
