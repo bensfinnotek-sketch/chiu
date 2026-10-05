@@ -49,20 +49,20 @@ export default async function handler(req: any, res: any) {
     res.setHeader("X-Accel-Buffering", "no");
 
     if (!data || statusCode >= 400) {
-      originalWrite(`data: ${JSON.stringify({ type: "error", error: data?.error || "Speaking analysis failed." })}\\n\\n`);
+      originalWrite(`data: ${JSON.stringify({ type: "error", error: data?.error || "Speaking analysis failed." })}\n\n`);
       return originalEnd();
     }
 
     const reply = String(data.reply || data.chinese || "");
-    if (reply) originalWrite(`data: ${JSON.stringify({ type: "delta", text: reply })}\\n\\n`);
-    originalWrite(`data: ${JSON.stringify({ type: "structured", data })}\\n\\n`);
-    originalWrite(`data: ${JSON.stringify({ type: "done", model: "speaking-analyze" })}\\n\\n`);
+    if (reply) originalWrite(`data: ${JSON.stringify({ type: "delta", text: reply })}\n\n`);
+    originalWrite(`data: ${JSON.stringify({ type: "structured", data })}\n\n`);
+    originalWrite(`data: ${JSON.stringify({ type: "done", model: "speaking-analyze" })}\n\n`);
     return originalEnd();
   } catch (error: any) {
     res.write = originalWrite;
     res.end = originalEnd;
     if (!res.headersSent) return sendJson(res, 500, { error: error?.message || "Speaking stream failed." });
-    originalWrite(`data: ${JSON.stringify({ type: "error", error: "Speaking stream failed." })}\\n\\n`);
+    originalWrite(`data: ${JSON.stringify({ type: "error", error: "Speaking stream failed." })}\n\n`);
     return originalEnd();
   }
 }
