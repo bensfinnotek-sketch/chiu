@@ -15,8 +15,14 @@ export interface AiTutorService {
   stream(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];signal?:AbortSignal;onDelta:(text:string)=>void;speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[]}):Promise<{text:string;response?:TutorResponse;model?:string}>;
   hint(input:{prompt:string;targetLevel?:string;level:1|2|3|4;signal?:AbortSignal}):Promise<TutorHint>;
 }
+function buildClientSpeakingFallback(userText:string):TutorResponse {
+  const text=userText.trim();
+  if(/你好|您好/.test(text)) return {reply:"你好！很高兴和你练习中文。你叫什么名字？",pinyin:"Nǐ hǎo! Hěn gāoxìng hé nǐ liànxí Zhōngwén. Nǐ jiào shénme míngzi?",translation:"Xin chào! Rất vui được luyện tiếng Trung cùng bạn. Bạn tên là gì?",question:"你叫什么名字？",corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging",responseType:"conversation",clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
+  return {reply:"说得不错！我们继续练习吧。",pinyin:"Shuō de búcuò! Wǒmen jìxù liànxí ba.",translation:"Bạn nói khá tốt! Chúng ta tiếp tục luyện tập nhé.",question:null,corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging",responseType:"conversation",clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
+}
+
 export const aiTutorService:AiTutorService={
-  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{
+  respond:(input)=>postJson<TutorResponse>('/api/speaking',{
     userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
     mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',
     difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
