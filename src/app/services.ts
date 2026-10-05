@@ -11,23 +11,32 @@ import { postJson } from './services/request';
 import { appLogger } from './services/logger';
 
 export interface AiTutorService {
-  respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};signal?:AbortSignal;}):Promise<TutorResponse>;
-  stream(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];signal?:AbortSignal;onDelta:(text:string)=>void;}):Promise<{text:string;response?:TutorResponse;model?:string}>;
+  respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[];signal?:AbortSignal;}):Promise<TutorResponse>;
+  stream(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];signal?:AbortSignal;onDelta:(text:string)=>void;speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[]}):Promise<{text:string;response?:TutorResponse;model?:string}>;
   hint(input:{prompt:string;targetLevel?:string;level:1|2|3|4;signal?:AbortSignal}):Promise<TutorHint>;
 }
 export const aiTutorService:AiTutorService={
-  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay},input.signal),
+  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{
+    userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
+    mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',
+    difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
+    speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
+  },input.signal),
   async stream(input){
     const controller=new AbortController(); const signal=input.signal; const abort=()=>controller.abort(); signal?.addEventListener('abort',abort,{once:true});
     try {
-      const response=await fetch('/api/ai/speaking/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-8)}),signal:controller.signal});
+      const response=await fetch('/api/ai/speaking/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
+        mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-8),
+        nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
+      }),signal:controller.signal});
       if(!response.ok||!response.body) throw new Error('stream-unavailable');
       const reader=response.body.getReader(); const decoder=new TextDecoder(); let buffer=''; let full=''; let structured:TutorResponse|undefined; let model:string|undefined;
       while(true){
         const {done,value}=await reader.read(); if(done)break;
-        buffer+=decoder.decode(value,{stream:true}); const events=buffer.split(/\\n\\n/); buffer=events.pop()||'';
+        buffer+=decoder.decode(value,{stream:true}); const events=buffer.split(/\n\n/); buffer=events.pop()||'';
         for(const event of events){
-          const line=event.split('\\n').find(x=>x.startsWith('data: ')); if(!line)continue;
+          const line=event.split('\n').find(x=>x.startsWith('data: ')); if(!line)continue;
           let payload:any; try{payload=JSON.parse(line.slice(6));}catch{continue;}
           if(payload.type==='delta'){full+=String(payload.text||'');input.onDelta(String(payload.text||''));}
           if(payload.type==='structured'&&payload.data)structured=payload.data as TutorResponse;
