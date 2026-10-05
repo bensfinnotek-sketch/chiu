@@ -304,6 +304,12 @@ function buildSpeakingFallback(actualUserText: string, actualLevel: string, topi
 
 // Handler for AI Speaking Analysis & Conversation (turn-by-turn)
 export async function handleSpeakingAnalyze(req: any, res: any) {
+  // Keep fallback context outside the try block so a Gemini/network failure
+  // can never turn into a secondary ReferenceError while building the fallback.
+  let fallbackUserText = "";
+  let fallbackLevel = "HSK 1";
+  let fallbackTopic = "Daily Life";
+
   try {
     const body = parseBody(req);
     const {
@@ -323,13 +329,19 @@ export async function handleSpeakingAnalyze(req: any, res: any) {
 
     const actualUserText = safeText(userText || message, 4000);
     const actualLevel = safeText(targetLevel || learnerLevel, 40) || "HSK 1";
+    const actualTopic = safeText(topic, 160) || "Daily Life";
+
+    fallbackUserText = actualUserText;
+    fallbackLevel = actualLevel;
+    fallbackTopic = actualTopic;
+
     if (!actualUserText) return sendJson(res, 400, { error: "Bạn chưa nhập nội dung luyện tập." });
 
     const ai = getAI();
     const langName = nativeLanguage === "vi" ? "Vietnamese" : nativeLanguage === "zh" ? "Chinese" : "English";
 
     if (!ai) {
-      return sendJson(res, 200, buildSpeakingFallback(actualUserText, actualLevel, topic));
+      return sendJson(res, 200, buildSpeakingFallback(fallbackUserText || "你好", fallbackLevel, fallbackTopic));
     }
 
     // Authenticate user from Bearer token (returns null for Guest or invalid token)
@@ -606,7 +618,7 @@ Format output strictly as JSON with this exact schema:
             pinyin: item.pinyin,
             meaning: item.meaning,
             example_sentence: item.example || actualUserText,
-            topic,
+            actualTopic,
             hsk_level: itemHskLevel,
             auto_saved: true,
           },
@@ -626,7 +638,7 @@ Format output strictly as JSON with this exact schema:
     return sendJson(res, 200, data);
   } catch (error: any) {
     console.error("Speaking analysis API error:", error?.message || error);
-    return sendJson(res, 200, buildSpeakingFallback(actualUserText, actualLevel, topic));
+    return sendJson(res, 200, buildSpeakingFallback(fallbackUserText || "你好", fallbackLevel, fallbackTopic));
   }
 }
 
