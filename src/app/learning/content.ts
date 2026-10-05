@@ -58,7 +58,7 @@ v('xiexie','谢谢','xièxie','cảm ơn','cụm từ','谢谢你。','Xièxie n
 v('zaijian','再见','zàijiàn','tạm biệt','cụm từ','再见！','Zàijiàn!','Tạm biệt!','greetings',1),
 v('dui bu qi','对不起','duìbuqǐ','xin lỗi','cụm từ','对不起。','Duìbuqǐ.','Xin lỗi.','greetings',1),
 v('meiguanxi','没关系','méiguānxi','không sao','cụm từ','没关系。','Méi guānxi.','Không sao.','greetings',1)
-  ...SPEAKING_VOCABULARY
+  ...SPEAKING_VOCABULARY,
 ];
 
 const by = (ids:string[]) => ids.map(id => HSK1_VOCABULARY.find(x=>x.id===id)!).filter(Boolean);
