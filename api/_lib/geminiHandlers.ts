@@ -59,7 +59,7 @@ const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 const aiSafeLog=(kind:string,message:string)=>{if(process.env.NODE_ENV!=="production")console.warn("[Lina] "+kind+": "+message.slice(0,180));};
 
 const MODEL_CANDIDATES = Array.from(
-  new Set([process.env.GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"].filter(Boolean) as string[])
+  new Set([process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash-001", "gemini-3.1-flash-lite", "gemini-3.8-flash"].filter(Boolean) as string[])
 );
 
 export { parseBody, sendJson };
