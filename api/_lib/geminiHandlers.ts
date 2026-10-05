@@ -618,7 +618,7 @@ Format output strictly as JSON with this exact schema:
             pinyin: item.pinyin,
             meaning: item.meaning,
             example_sentence: item.example || actualUserText,
-            actualTopic,
+            topic: actualTopic,
             hsk_level: itemHskLevel,
             auto_saved: true,
           },
