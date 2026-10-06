@@ -59,7 +59,7 @@ export const aiTutorService:AiTutorService={
           topic:(input.topic||'Daily Life')+' — avoid repeating the previous assistant wording',
           mode:input.mode||'conversation',
           conversationHistory:[...history,{id:'guard-recent',role:'assistant',chinese:response.reply,pinyin:response.pinyin||'',vietnamese:response.translation||''}],
-          nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
+          nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[],adaptiveStrategy
         },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
       }
       try { captureLearnerMemory(input.userText,response); } catch (error) { appLogger.error('ai-error',error); }
