@@ -199,3 +199,18 @@ test('conversation guard normalizes punctuation and detects near-duplicate repli
   const guarded = guardTutorResponse({ reply: '你好，很高兴认识你。你叫什么名字？', pinyin: '', translation: '', question: '你叫什么名字？', corrections: [], vocabulary: [], grammarNote: '', encouragement: '', emotion: 'neutral', responseType: 'conversation', clarityScore: 4, grammarScore: 4, vocabularyScore: 4, naturalnessScore: 4 }, history);
   assert.equal(guarded.grammarNote, 'Lina đã phát hiện câu trả lời vừa rồi quá giống lượt trước và sẽ đổi cách diễn đạt.');
 });
+
+test('conversation memory captures name, preference, goal, and repeated corrections', async () => {
+  const { captureLearnerMemory } = await import('../src/app/services/conversationMemory');
+  const captured = captureLearnerMemory('我叫明。我喜欢咖啡。我想提高中文。', {
+    reply: '很好！', pinyin: 'Hěn hǎo!', translation: 'Rất tốt!', question: null,
+    corrections: [{ original: '我喜欢咖啡咖啡', corrected: '我喜欢咖啡', explanation: 'Không lặp từ.' }],
+    vocabulary: [], grammarNote: null, encouragement: '继续加油！', emotion: 'encouraging', responseType: 'conversation'
+  });
+  assert.equal(captured.length, 3);
+  const memory = aiMemoryService.getState();
+  assert.ok(memory.entries.some(entry => entry.content.includes('Learner name: 明')));
+  assert.ok(memory.entries.some(entry => entry.content.includes('Learner preference: 咖啡')));
+  assert.ok(memory.entries.some(entry => entry.content.includes('Learner goal: 提高中文')));
+  assert.equal(memory.mistakes.length, 1);
+});

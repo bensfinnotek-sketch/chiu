@@ -10,6 +10,7 @@ export type { PronunciationEngine, WordPronunciationResult, SentencePronunciatio
 import { postJson } from './services/request';
 import { appLogger } from './services/logger';
 import { guardTutorResponse, isRepeatedAssistantReply } from './services/conversationGuard';
+import { captureLearnerMemory } from './services/conversationMemory';
 
 export interface AiTutorService {
   respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[];signal?:AbortSignal;}):Promise<TutorResponse>;
@@ -36,7 +37,9 @@ export const aiTutorService:AiTutorService={
       difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
       speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
     },input.signal);
-    return guardTutorResponse(response,history);
+    const guarded=guardTutorResponse(response,history);
+    try { captureLearnerMemory(input.userText,guarded); } catch (error) { appLogger.error('ai-error',error); }
+    return guarded;
   },
   async stream(input){
     try{
@@ -56,6 +59,7 @@ export const aiTutorService:AiTutorService={
           nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
         },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
       }
+      try { captureLearnerMemory(input.userText,response); } catch (error) { appLogger.error('ai-error',error); }
       const text=String(response.reply||'');
       if(text) input.onDelta(text);
       return {text,response,model:'speaking-analyze'};
