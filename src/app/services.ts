@@ -9,7 +9,7 @@ export type { PronunciationEngine, WordPronunciationResult, SentencePronunciatio
 
 import { postJson } from './services/request';
 import { appLogger } from './services/logger';
-import { isRepeatedAssistantReply } from './services/conversationGuard';
+import { guardTutorResponse, isRepeatedAssistantReply } from './services/conversationGuard';
 
 export interface AiTutorService {
   respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[];signal?:AbortSignal;}):Promise<TutorResponse>;
@@ -30,12 +30,13 @@ function buildClientSpeakingFallback(userText:string):TutorResponse {
 export const aiTutorService:AiTutorService={
   async respond(input){
     const history=(input.conversationHistory||[]).slice(-12);
-    return postJson<TutorResponse>('/api/speaking',{
+    const response=await postJson<TutorResponse>('/api/speaking',{
       userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
       mode:input.mode||'conversation',conversationHistory:history,nativeLanguage:'vi',
       difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
       speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
     },input.signal);
+    return guardTutorResponse(response,history);
   },
   async stream(input){
     try{
