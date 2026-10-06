@@ -188,3 +188,14 @@ test('TTS queue enforces sequential ordering and bounded pending work', async ()
   await queue.waitForIdle();
   assert.deepEqual(played,['one','two']);
 });
+
+
+test('conversation guard normalizes punctuation and detects near-duplicate replies', async () => {
+  const { normalizeConversationText, isRepeatedAssistantReply, guardTutorResponse } = await import('../src/app/services/conversationGuard');
+  assert.equal(normalizeConversationText('  你好！ 很高兴认识你。  '), '你好很高兴认识你');
+  const history = [{ id: 'a1', role: 'assistant' as const, chinese: '你好！很高兴认识你。你叫什么名字？', pinyin: '', vietnamese: '' }];
+  assert.equal(isRepeatedAssistantReply('你好，很高兴认识你。你叫什么名字？', history), true);
+  assert.equal(isRepeatedAssistantReply('很好！你平时喜欢做什么？', history), false);
+  const guarded = guardTutorResponse({ reply: '你好，很高兴认识你。你叫什么名字？', pinyin: '', translation: '', question: '你叫什么名字？', corrections: [], vocabulary: [], grammarNote: '', encouragement: '', emotion: 'neutral', responseType: 'conversation', clarityScore: 4, grammarScore: 4, vocabularyScore: 4, naturalnessScore: 4 }, history);
+  assert.equal(guarded.grammarNote, 'Lina đã phát hiện câu trả lời vừa rồi quá giống lượt trước và sẽ đổi cách diễn đạt.');
+});
