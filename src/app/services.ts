@@ -46,7 +46,7 @@ export const aiTutorService:AiTutorService={
         nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
       },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
       if(isRepeatedAssistantReply(String(response.reply||''),history)){
-        appLogger.warn('speaking-repetition-guard','retrying repeated assistant response');
+        appLogger.info('ai-request','speaking repetition guard retry');
         response=await postJson<TutorResponse>('/api/speaking',{
           userText:input.userText,targetLevel:input.targetLevel||'HSK 1',
           topic:(input.topic||'Daily Life')+' — avoid repeating the previous assistant wording',
