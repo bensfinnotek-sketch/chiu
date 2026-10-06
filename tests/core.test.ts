@@ -9,6 +9,7 @@ import { pronunciationEngine, toneFromPinyin } from '../src/app/services/pronunc
 import { roleplayEngine } from '../src/app/services/roleplay';
 import { MemoryStorage, setStorageAdapter, storage } from '../src/app/services/storage';
 import { safeConversationMessages, safeText } from '../api/_lib/inputValidation';
+import { buildTutorStrategy } from '../src/app/services/tutorStrategy';
 
 beforeEach(() => setStorageAdapter(new MemoryStorage()));
 
