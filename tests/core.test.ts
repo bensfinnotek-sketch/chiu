@@ -10,6 +10,7 @@ import { roleplayEngine } from '../src/app/services/roleplay';
 import { MemoryStorage, setStorageAdapter, storage } from '../src/app/services/storage';
 import { safeConversationMessages, safeText } from '../api/_lib/inputValidation';
 import { buildTutorStrategy } from '../src/app/services/tutorStrategy';
+import { buildLearningLoopPlan } from '../src/app/services/learningLoop';
 
 beforeEach(() => setStorageAdapter(new MemoryStorage()));
 
@@ -214,4 +215,45 @@ test('conversation memory captures name, preference, goal, and repeated correcti
   assert.ok(memory.entries.some(entry => entry.content.includes('Learner preference: 咖啡')));
   assert.ok(memory.entries.some(entry => entry.content.includes('Learner goal: 提高中文')));
   assert.equal(memory.mistakes.length, 1);
+});
+
+test('adaptive learning loop prioritizes due SRS and unresolved weaknesses', async () => {
+  const profile = {
+    name: 'Minh', goal: 'conversation' as const, level: 'basic' as const, dailyMinutes: 10 as const,
+    currentHsk: 1, targetHsk: 2, streak: 1, vocabularyLearned: 20, lessonsCompleted: 0, pronunciationProgress: 10
+  };
+  learningEngine.review('你', 'again');
+  aiMemoryService.recordMistake({
+    type: 'grammar',
+    originalInput: '我喜欢咖啡咖啡',
+    correctedInput: '我喜欢咖啡',
+    explanation: 'Không lặp từ.',
+    severity: 'medium'
+  });
+  const plan = buildLearningLoopPlan(profile, {
+    startedAt: new Date().toISOString(),
+    turns: [{ score: 60, clarity: 60, grammar: 55, vocabulary: 70, naturalness: 60, at: new Date().toISOString() }],
+    score: 60,
+    completed: false
+  });
+  assert.equal(plan.focus, 'grammar');
+  assert.equal(plan.decision, 'review_weakness');
+  assert.equal(plan.difficulty, 'easy');
+  assert.ok(plan.confidence >= 0.8);
+});
+
+test('adaptive learning loop raises challenge after a strong speaking session', async () => {
+  const profile = {
+    name: 'Minh', goal: 'conversation' as const, level: 'intermediate' as const, dailyMinutes: 15 as const,
+    currentHsk: 2, targetHsk: 3, streak: 4, vocabularyLearned: 80, lessonsCompleted: 3, pronunciationProgress: 60
+  };
+  const plan = buildLearningLoopPlan(profile, {
+    startedAt: new Date().toISOString(),
+    turns: [{ score: 94, clarity: 95, grammar: 94, vocabulary: 92, naturalness: 95, at: new Date().toISOString() }],
+    score: 94,
+    completed: true
+  });
+  assert.equal(plan.focus, 'conversation');
+  assert.equal(plan.decision, 'practice_conversation');
+  assert.equal(plan.difficulty, 'challenge');
 });
