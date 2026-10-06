@@ -20,6 +20,7 @@ import { LinaAvatar } from './app/components/LinaAvatar';
 import { realtimeConversationController } from './app/services/realtimeConversation';
 import { realtimeSpeechOrchestrator } from './app/services/realtimeOrchestrator';
 import { speakingSessionService } from './app/services/speakingSession';
+import { buildLearningLoopPlan } from './app/services/learningLoop';
 import { RealtimeDebugPanel } from './app/components/RealtimeDebugPanel';
 const appLoggerFallback=(setNotice:(v:string)=>void)=>setNotice('Streaming đang tạm thời không khả dụng; Lina sẽ dùng chế độ phát thông thường.');
 import { AccountPanel } from './app/components/AccountPanel';
@@ -139,6 +140,7 @@ function VocabularyCard({ item, onReview }: { item: Vocabulary; onReview?: (id:s
 function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: (r: Route) => void }) {
   const today = 6; const plan=progressService.dailyPlan(profile); const nextLesson=progressService.getLesson(plan.lessonId);
   const goal = profile.dailyMinutes;
+  const learningLoop = buildLearningLoopPlan(profile, speakingSessionService.get());
   return <div className="space-y-6">
     <section className="hero-card">
       <div className="max-w-2xl">
@@ -172,6 +174,19 @@ function HomeDashboard({ profile, setRoute }: { profile: UserProfile; setRoute: 
         <div className="mt-5"><ProgressBar value={Math.round(today / goal * 100)}/><div className="mt-2 text-xs text-[var(--muted)]">{today}/{goal} phút</div></div>
       </section>
     </div>
+
+    <section className="card p-5 sm:p-6">
+      <div className="flex items-start gap-4">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]"><Sparkles/></div>
+        <div className="min-w-0 flex-1">
+          <span className="eyebrow">Lina đề xuất tiếp theo</span>
+          <h2 className="mt-2 text-xl font-bold">{learningLoop.focus === 'lesson' ? 'Học bài mới' : learningLoop.focus === 'conversation' ? 'Luyện hội thoại' : learningLoop.focus === 'pronunciation' ? 'Ôn phát âm' : learningLoop.focus === 'grammar' ? 'Ôn ngữ pháp' : 'Ôn từ vựng'}</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">{learningLoop.reason}</p>
+          <div className="mt-3 flex flex-wrap gap-2"><span className="pill">Độ khó: {learningLoop.difficulty}</span><span className="pill">Độ tin cậy: {Math.round(learningLoop.confidence * 100)}%</span></div>
+        </div>
+      </div>
+      <button onClick={() => setRoute(learningLoop.focus === 'conversation' || learningLoop.focus === 'pronunciation' ? 'speak' : learningLoop.focus === 'vocabulary' ? 'review' : 'learn')} className="btn-secondary mt-5 w-full">Bắt đầu đề xuất <ArrowRight size={17}/></button>
+    </section>
   </div>;
 }
 
