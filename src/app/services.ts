@@ -9,6 +9,9 @@ export type { PronunciationEngine, WordPronunciationResult, SentencePronunciatio
 
 import { postJson } from './services/request';
 import { appLogger } from './services/logger';
+import { guardTutorResponse, isRepeatedAssistantReply } from './services/conversationGuard';
+import { captureLearnerMemory } from './services/conversationMemory';
+import { buildTutorStrategy } from './services/tutorStrategy';
 
 export interface AiTutorService {
   respond(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];memory?:{summary?:string;keyFacts?:string[];vocabulary?:string[];grammarIssues?:string[]};difficulty?:'easy'|'normal'|'challenge';immersion?:ImmersionLevel;roleplay?:{scenario:RoleplayScenario;learnerFacts?:string[];choices?:string[]};speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[];signal?:AbortSignal;}):Promise<TutorResponse>;
@@ -27,19 +30,39 @@ function buildClientSpeakingFallback(userText:string):TutorResponse {
 }
 
 export const aiTutorService:AiTutorService={
-  respond:(input)=>postJson<TutorResponse>('/api/speaking',{
-    userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
-    mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',
-    difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
-    speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
-  },input.signal),
+  async respond(input){
+    const history=(input.conversationHistory||[]).slice(-12);
+    const adaptiveStrategy=buildTutorStrategy();
+    const response=await postJson<TutorResponse>('/api/speaking',{
+      userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
+      mode:input.mode||'conversation',conversationHistory:history,nativeLanguage:'vi',
+      difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
+      speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[],adaptiveStrategy
+    },input.signal);
+    const guarded=guardTutorResponse(response,history);
+    try { captureLearnerMemory(input.userText,guarded); } catch (error) { appLogger.error('ai-error',error); }
+    return guarded;
+  },
   async stream(input){
     try{
-      const response=await postJson<TutorResponse>('/api/speaking',{
+      const history=(input.conversationHistory||[]).slice(-12);
+      const adaptiveStrategy=buildTutorStrategy();
+      let response=await postJson<TutorResponse>('/api/speaking',{
         userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
-        mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),
-        nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
+        mode:input.mode||'conversation',conversationHistory:history,
+        nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[],adaptiveStrategy
       },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
+      if(isRepeatedAssistantReply(String(response.reply||''),history)){
+        appLogger.info('ai-request','speaking repetition guard retry');
+        response=await postJson<TutorResponse>('/api/speaking',{
+          userText:input.userText,targetLevel:input.targetLevel||'HSK 1',
+          topic:(input.topic||'Daily Life')+' — avoid repeating the previous assistant wording',
+          mode:input.mode||'conversation',
+          conversationHistory:[...history,{id:'guard-recent',role:'assistant',chinese:response.reply,pinyin:response.pinyin||'',vietnamese:response.translation||''}],
+          nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[],adaptiveStrategy
+        },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
+      }
+      try { captureLearnerMemory(input.userText,response); } catch (error) { appLogger.error('ai-error',error); }
       const text=String(response.reply||'');
       if(text) input.onDelta(text);
       return {text,response,model:'speaking-analyze'};
