@@ -15,37 +15,41 @@ export interface AiTutorService {
   stream(input:{userText:string;targetLevel?:string;topic?:string;mode?:TutorMode;conversationHistory?:ConversationMessage[];signal?:AbortSignal;onDelta:(text:string)=>void;speakingGoal?:'reflex'|'conversation'|'correction';vocabularyContext?:string[]}):Promise<{text:string;response?:TutorResponse;model?:string}>;
   hint(input:{prompt:string;targetLevel?:string;level:1|2|3|4;signal?:AbortSignal}):Promise<TutorHint>;
 }
+function buildClientSpeakingFallback(userText:string):TutorResponse {
+  const text=userText.trim();
+  const base={corrections:[],vocabulary:[],grammarNote:"Phản hồi dự phòng.",encouragement:"继续加油！",emotion:"encouraging" as const,responseType:"conversation" as const,clarityScore:4,grammarScore:4,vocabularyScore:3,naturalnessScore:4};
+  if(/你好|您好/.test(text)) return {...base,reply:"你好！很高兴和你练习中文。你叫什么名字？",pinyin:"Nǐ hǎo! Hěn gāoxìng hé nǐ liànxí Zhōngwén. Nǐ jiào shénme míngzi?",translation:"Xin chào! Rất vui được luyện tiếng Trung cùng bạn. Bạn tên là gì?",question:"你叫什么名字？"};
+  if(/我叫|我.*名字|姓名|名字是/.test(text)) return {...base,reply:"很高兴认识你，明！你平时喜欢做什么？",pinyin:"Hěn gāoxìng rènshi nǐ, Míng! Nǐ píngshí xǐhuan zuò shénme?",translation:"Rất vui được làm quen với bạn, Minh! Bình thường bạn thích làm gì?",question:"你平时喜欢做什么？"};
+  if(/好的|好啊|可以|行/.test(text)) return {...base,reply:"太好了！那我们继续。你今天想练习什么？",pinyin:"Tài hǎo le! Nà wǒmen jìxù. Nǐ jīntiān xiǎng liànxí shénme?",translation:"Tuyệt quá! Vậy chúng ta tiếp tục nhé. Hôm nay bạn muốn luyện gì?",question:"你今天想练习什么？"};
+  if(/喜欢|爱/.test(text)) return {...base,reply:"很好！我也想了解你的兴趣。你最喜欢什么？",pinyin:"Hěn hǎo! Wǒ yě xiǎng liǎojiě nǐ de xìngqù. Nǐ zuì xǐhuan shénme?",translation:"Rất tốt! Mình cũng muốn biết sở thích của bạn. Bạn thích điều gì nhất?",question:"你最喜欢什么？"};
+  if(/谢谢/.test(text)) return {...base,reply:"不客气！你说得很自然。我们再练一句吧。",pinyin:"Bú kèqi! Nǐ shuō de hěn zìrán. Wǒmen zài liàn yí jù ba.",translation:"Không có gì! Bạn nói khá tự nhiên. Chúng ta luyện thêm một câu nhé.",question:null};
+  return {...base,reply:"明白了！我们继续练习中文。你今天想聊什么？",pinyin:"Míngbai le! Wǒmen jìxù liànxí Zhōngwén. Nǐ jīntiān xiǎng liáo shénme?",translation:"Mình hiểu rồi! Chúng ta tiếp tục luyện tiếng Trung nhé. Hôm nay bạn muốn nói về chủ đề gì?",question:"你今天想聊什么？"};
+}
+
 export const aiTutorService:AiTutorService={
-  respond:(input)=>postJson<TutorResponse>('/api/ai/speaking',{
+  respond:(input)=>postJson<TutorResponse>('/api/speaking',{
     userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
     mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),nativeLanguage:'vi',
     difficulty:input.difficulty||'normal',memory:input.memory,immersion:input.immersion,roleplay:input.roleplay,
     speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
   },input.signal),
   async stream(input){
-    const controller=new AbortController(); const signal=input.signal; const abort=()=>controller.abort(); signal?.addEventListener('abort',abort,{once:true});
-    try {
-      const response=await fetch('/api/ai/speaking/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    try{
+      const response=await postJson<TutorResponse>('/api/speaking',{
         userText:input.userText,targetLevel:input.targetLevel||'HSK 1',topic:input.topic||'Daily Life',
-        mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-8),
+        mode:input.mode||'conversation',conversationHistory:(input.conversationHistory||[]).slice(-12),
         nativeLanguage:'vi',speakingGoal:input.speakingGoal||'conversation',vocabularyContext:input.vocabularyContext||[]
-      }),signal:controller.signal});
-      if(!response.ok||!response.body) throw new Error('stream-unavailable');
-      const reader=response.body.getReader(); const decoder=new TextDecoder(); let buffer=''; let full=''; let structured:TutorResponse|undefined; let model:string|undefined;
-      while(true){
-        const {done,value}=await reader.read(); if(done)break;
-        buffer+=decoder.decode(value,{stream:true}); const events=buffer.split(/\n\n/); buffer=events.pop()||'';
-        for(const event of events){
-          const line=event.split('\n').find(x=>x.startsWith('data: ')); if(!line)continue;
-          let payload:any; try{payload=JSON.parse(line.slice(6));}catch{continue;}
-          if(payload.type==='delta'){full+=String(payload.text||'');input.onDelta(String(payload.text||''));}
-          if(payload.type==='structured'&&payload.data)structured=payload.data as TutorResponse;
-          if(payload.type==='done')model=payload.model;
-          if(payload.type==='error')throw new Error(String(payload.error||'stream-error'));
-        }
-      }
-      return {text:full,response:structured,model};
-    } finally {signal?.removeEventListener('abort',abort)}
+      },input.signal,{timeoutMs:22000,retries:0,dedupe:false});
+      const text=String(response.reply||'');
+      if(text) input.onDelta(text);
+      return {text,response,model:'speaking-analyze'};
+    }catch(error:any){
+      if(input.signal?.aborted) throw error;
+      appLogger.error('speaking-api-fallback',error?.message||String(error));
+      const response=buildClientSpeakingFallback(input.userText);
+      input.onDelta(response.reply);
+      return {text:response.reply,response,model:'client-fallback'};
+    }
   },
   hint:(input)=>postJson<TutorHint>('/api/ai/hint',{prompt:input.prompt,targetLevel:input.targetLevel||'HSK 1',level:input.level},input.signal),
 };
